@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmPortal.Api", "VmPortal.Api\VmPortal.Api.csproj", "{84F54B5C-DAB8-4CC7-9285-B41229A56760}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmPortal.Core", "VmPortal.Core\VmPortal.Core.csproj", "{C7AD3BC5-C667-4264-8FAF-D6A46F1A5796}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{84F54B5C-DAB8-4CC7-9285-B41229A56760}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84F54B5C-DAB8-4CC7-9285-B41229A56760}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84F54B5C-DAB8-4CC7-9285-B41229A56760}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84F54B5C-DAB8-4CC7-9285-B41229A56760}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7AD3BC5-C667-4264-8FAF-D6A46F1A5796}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7AD3BC5-C667-4264-8FAF-D6A46F1A5796}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7AD3BC5-C667-4264-8FAF-D6A46F1A5796}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7AD3BC5-C667-4264-8FAF-D6A46F1A5796}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
