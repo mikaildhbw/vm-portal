@@ -5,7 +5,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<IVirtualizationProvider, DummyVirtualizationProvider>();
-builder.Services.AddScoped<IAuthService, DummyAuthService>();
+builder.Services.AddScoped<IAuthService>(_ =>
+    new LdapAuthService(
+        ldapHost: "192.168.122.196",
+        baseDn: "DC=testumgebung,DC=local",
+        ldapPort: 389
+    ));
 
 var app = builder.Build();
 
