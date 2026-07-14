@@ -1,4 +1,5 @@
 using Novell.Directory.Ldap;
+using VmPortal.Core.Configuration;
 using VmPortal.Core.Interfaces;
 
 namespace VmPortal.Core.Services;
@@ -10,11 +11,11 @@ public class LdapAuthService : IAuthService
     private readonly string _baseDn;
     private readonly ITokenService _tokenService;
 
-    public LdapAuthService(string ldapHost, string baseDn, ITokenService tokenService, int ldapPort = 389)
+    public LdapAuthService(LdapSettings settings, ITokenService tokenService)
     {
-        _ldapHost = ldapHost;
-        _ldapPort = ldapPort;
-        _baseDn = baseDn;
+        _ldapHost = settings.Host;
+        _ldapPort = settings.Port;
+        _baseDn = settings.BaseDn;
         _tokenService = tokenService;
     }
 
