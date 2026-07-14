@@ -8,12 +8,14 @@ public class LdapAuthService : IAuthService
     private readonly string _ldapHost;
     private readonly int _ldapPort;
     private readonly string _baseDn;
+    private readonly ITokenService _tokenService;
 
-    public LdapAuthService(string ldapHost, string baseDn, int ldapPort = 389)
+    public LdapAuthService(string ldapHost, string baseDn, ITokenService tokenService, int ldapPort = 389)
     {
         _ldapHost = ldapHost;
         _ldapPort = ldapPort;
         _baseDn = baseDn;
+        _tokenService = tokenService;
     }
 
     public async Task<AuthResult> LoginAsync(string username, string password)
@@ -60,7 +62,7 @@ public class LdapAuthService : IAuthService
                 // Referrals ignorieren
             }
 
-            return new AuthResult(true, $"ldap-authenticated:{username}:{role}", null);
+            return new AuthResult(true, _tokenService.GenerateToken(username, role), null);
         }
         catch (LdapException ex)
         {
@@ -69,5 +71,5 @@ public class LdapAuthService : IAuthService
     }
 
     public Task<bool> ValidateTokenAsync(string token) =>
-        Task.FromResult(token.StartsWith("ldap-authenticated:"));
+        Task.FromResult(_tokenService.ValidateToken(token));
 }
