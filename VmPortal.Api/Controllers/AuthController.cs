@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VmPortal.Api.Constants;
 using VmPortal.Core.Interfaces;
 
 namespace VmPortal.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -15,13 +18,14 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.LoginAsync(request.Username, request.Password);
         if (!result.Success)
             return Unauthorized(new { message = result.ErrorMessage });
 
-        Response.Cookies.Append("jwt", result.Token!, new CookieOptions
+        Response.Cookies.Append(AuthConstants.TokenCookieName, result.Token!, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
@@ -35,7 +39,7 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        Response.Cookies.Delete("jwt");
+        Response.Cookies.Delete(AuthConstants.TokenCookieName);
         return Ok(new { message = "Logout erfolgreich" });
     }
 }

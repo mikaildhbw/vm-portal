@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VmPortal.Core.Interfaces;
 
@@ -5,6 +6,7 @@ namespace VmPortal.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class VmController : ControllerBase
 {
     private readonly IVirtualizationProvider _virtualizationProvider;
