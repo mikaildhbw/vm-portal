@@ -68,9 +68,7 @@ static void RegisterVirtualizationProvider(WebApplicationBuilder builder)
 
     if (string.Equals(provider, "HyperV", StringComparison.OrdinalIgnoreCase))
     {
-        var hyperVSettings = builder.Configuration.GetSection("HyperV").Get<HyperVSettings>()
-            ?? throw new InvalidOperationException("Abschnitt 'HyperV' fehlt in appsettings.json");
-        builder.Services.AddSingleton(hyperVSettings);
+        // Lokale Ausführung auf dem Hyper-V-Host — keine Verbindungskonfiguration nötig.
         builder.Services.AddScoped<IVirtualizationProvider, HyperVProvider>();
         return;
     }

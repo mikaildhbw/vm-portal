@@ -29,7 +29,8 @@ VmPortal.Api/
 
 ### Zentrale Abstraktion
 `IVirtualizationProvider` kapselt den Hypervisor. Konkrete Implementierungen:
-- `HyperVProvider` — Microsoft Hyper-V über PowerShell-Remoting (WinRM/HTTPS).
+- `HyperVProvider` — Microsoft Hyper-V über lokale PowerShell-Ausführung (die App läuft auf
+  dem Hyper-V-Host, kein WinRM/Remoting).
 - `DummyVirtualizationProvider` — In-Memory-Platzhalter für lokale Entwicklung.
 
 Ein `ProxmoxProvider` wäre über dieselbe Schnittstelle umsetzbar. **Diese
@@ -45,11 +46,11 @@ ASPNETCORE_ENVIRONMENT=Production  dotnet run --project VmPortal.Api  # Hyper-V-
 Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appsettings.*.json`.
 
 ## Testumgebung (nur Entwicklung — keine Produktions-Secrets)
-- Windows Server 2022 als KVM-Gast auf Ubuntu, IP `192.168.122.196`.
+- Windows Server 2022 als KVM-Gast auf Ubuntu, IP `192.168.122.196`, zugleich Hyper-V-Host.
 - AD-Domäne `testumgebung.local`, LDAP auf Port 389.
-- WinRM-HTTPS-Listener auf Port 5986 (selbstsigniertes Zertifikat).
 - Testbenutzer: `mugur` / `Test1234!` und `jburath` / `Test1234!`
   (Gruppe `VM-Portal-Benutzer`, Rolle `VMUser`).
+- Hyper-V-VMs: `VM-Mikail` (Notes = `mugur`), `VM-Burath` (Notes = `jburath`).
 
 ## Was bereits implementiert ist (M1–M4)
 - **M1/M2:** Projektstruktur, Interfaces, Models, Dummy-Services, DI, testbare API.
@@ -58,10 +59,11 @@ Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appset
   (`SameSite=Strict`, `Secure`); JWT-Bearer-Middleware liest Token aus dem Cookie; alle
   Endpunkte außer `/api/auth/login` sind mit `[Authorize]` geschützt; RBAC im `VmController`
   (nur eigene VMs, `403` bei fremder VM).
-- **M4:** `HyperVProvider` über PowerShell-Remoting (`Get-VM`, `Start-VM`, `Stop-VM -Force`,
-  `Restart-VM -Force`, `Checkpoint-VM`); konfigurierbare Provider-Auswahl;
-  `VirtualizationExceptionMiddleware` liefert bei Hyper-V-/WinRM-Fehlern einen sprechenden
-  `502` statt `500`; Logging aller Aktionen.
+- **M4:** `HyperVProvider` über lokale PowerShell-Ausführung (`Get-VM`, `Start-VM`,
+  `Stop-VM -Force`, `Restart-VM -Force`, `Checkpoint-VM`) — kein WinRM/Remoting, da die App
+  auf dem Hyper-V-Host läuft; konfigurierbare Provider-Auswahl;
+  `VirtualizationExceptionMiddleware` liefert bei Hyper-V-Fehlern einen sprechenden `502`
+  statt `500`; VM↔Benutzer-Zuordnung aus dem Hyper-V-Notizfeld; Logging aller Aktionen.
 
 ## Was noch kommt (Phase 5–7)
 - **Phase 5 — Persistenz:** Datenbank (z. B. PostgreSQL/EF Core) für die persistente
@@ -85,9 +87,12 @@ Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appset
 - **Fehlerübersetzung via Middleware:** Infrastrukturfehler (WinRM nicht erreichbar) werden
   als `502` mit Klartextmeldung sichtbar, fachliche Fehler bleiben `403`/`404` — saubere
   Trennung der Fehlersemantik.
-- **PowerShell-Remoting statt nativer Hyper-V-.NET-API:** Die Hyper-V-Cmdlets sind die
-  offiziell unterstützte, stabile Automatisierungsschnittstelle und funktionieren remote über
-  WinRM; die App läuft auf Windows Server, wo der WSMan-Client nativ vorhanden ist.
+- **Lokale PowerShell-Ausführung statt nativer Hyper-V-.NET-API:** Die Hyper-V-Cmdlets sind
+  die offiziell unterstützte, stabile Automatisierungsschnittstelle. Da die App direkt auf dem
+  Hyper-V-Host läuft, werden sie lokal ausgeführt — das umgeht die WinRM-Zugriffs- und
+  Zertifikatsproblematik und benötigt keine Netzwerk-Zugangsdaten. Der Runspace wird mit
+  `InitialSessionState.CreateDefault2()` erstellt, damit nur die Core-Cmdlets geladen werden
+  und das Hyper-V-Modul bei Bedarf über den PSModulePath nachgeladen wird.
 
 ## Konventionen und Constraints
 - ASP.NET Core 8, C#. Kein Blazor, kein Django, kein Python.
@@ -99,6 +104,7 @@ Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appset
   Beschreibung); `dotnet build VmPortal.sln` muss grün sein.
 
 ## Bekannte Einschränkung beim Testen
-Der WSMan-Client ist nur unter Windows zur Laufzeit verfügbar. Unter Linux baut und startet die
-App, der `HyperV`-Provider quittiert einen Zugriff aber planmäßig mit `502` (WSMan-Client
-fehlt). Ein vollständiger Hyper-V-End-to-End-Test läuft daher auf dem Windows-Server-Deployment.
+Die Hyper-V-Cmdlets sind nur unter Windows verfügbar. Unter Linux baut und startet die App, der
+`HyperV`-Provider quittiert einen Zugriff aber planmäßig mit `502` (`Get-VM` nicht bekannt). Ein
+vollständiger Hyper-V-End-to-End-Test läuft daher auf dem Windows-Server-Deployment:
+`GET /api/vm` liefert dort die realen VMs (`VM-Mikail`, `VM-Burath`), `start`/`stop` steuern sie.

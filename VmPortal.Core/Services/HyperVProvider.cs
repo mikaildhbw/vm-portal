@@ -1,9 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
-using System.Security;
 using Microsoft.Extensions.Logging;
-using VmPortal.Core.Configuration;
 using VmPortal.Core.Interfaces;
 using VmPortal.Core.Models;
 
@@ -11,34 +9,31 @@ namespace VmPortal.Core.Services;
 
 /// <summary>
 /// Konkrete Umsetzung von <see cref="IVirtualizationProvider"/> für Microsoft Hyper-V.
-/// Die Hyper-V-Cmdlets werden per PowerShell-Remoting (WSMan/WinRM über HTTPS) auf dem
-/// Windows-Host ausgeführt. Die Abstraktion über das Interface erlaubt es, denselben
-/// Portal-Kern gegen andere Hypervisoren (z. B. Proxmox) zu betreiben, ohne die API-Schicht
-/// zu ändern — das ist der plattformunabhängige Kern der Arbeit.
+/// Die App läuft direkt auf dem Hyper-V-Host, daher werden die Hyper-V-Cmdlets über eine
+/// lokale PowerShell-Instanz ausgeführt — ohne WinRM/Remoting und ohne Netzwerkverbindung.
+/// Die Abstraktion über das Interface erlaubt es, denselben Portal-Kern gegen andere
+/// Hypervisoren (z. B. Proxmox) zu betreiben, ohne die API-Schicht zu ändern — das ist der
+/// plattformunabhängige Kern der Arbeit.
 /// </summary>
 public class HyperVProvider : IVirtualizationProvider
 {
-    private const string ShellUri = "http://schemas.microsoft.com/powershell/Microsoft.PowerShell";
-
-    private readonly HyperVSettings _settings;
     private readonly ILogger<HyperVProvider> _logger;
 
-    public HyperVProvider(HyperVSettings settings, ILogger<HyperVProvider> logger)
+    public HyperVProvider(ILogger<HyperVProvider> logger)
     {
-        _settings = settings;
         _logger = logger;
     }
 
     public async Task<IEnumerable<VirtualMachine>> GetVmsAsync()
     {
-        _logger.LogInformation("Rufe alle VMs vom Hyper-V-Host {Host} ab", _settings.Host);
+        _logger.LogInformation("Rufe alle VMs vom lokalen Hyper-V-Host ab");
         var results = await InvokeAsync(ps => ps.AddCommand("Get-VM"));
         return results.Select(MapVm).ToList();
     }
 
     public async Task<VirtualMachine?> GetVmByIdAsync(string id)
     {
-        _logger.LogInformation("Rufe VM {VmId} vom Hyper-V-Host {Host} ab", id, _settings.Host);
+        _logger.LogInformation("Rufe VM {VmId} vom lokalen Hyper-V-Host ab", id);
         var results = await InvokeAsync(ps => ps
             .AddCommand("Get-VM")
             .AddParameter("Name", id)
@@ -88,7 +83,10 @@ public class HyperVProvider : IVirtualizationProvider
 
         try
         {
-            runspace = RunspaceFactory.CreateRunspace(CreateConnectionInfo());
+            // CreateDefault2 lädt nur die Core-Cmdlets aus System.Management.Automation und
+            // vermeidet damit die Abhängigkeit zum Konsolen-Host. Das Hyper-V-Modul wird auf
+            // dem Windows-Host bei Bedarf automatisch über den PSModulePath nachgeladen.
+            runspace = RunspaceFactory.CreateRunspace(InitialSessionState.CreateDefault2());
             runspace.Open();
 
             powerShell = PowerShell.Create();
@@ -113,10 +111,9 @@ public class HyperVProvider : IVirtualizationProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "WinRM-Verbindung zum Hyper-V-Host {Host}:{Port} fehlgeschlagen",
-                _settings.Host, _settings.Port);
+            _logger.LogError(ex, "Lokale Hyper-V-Ausführung fehlgeschlagen");
             throw new VirtualizationException(
-                $"Verbindung zum Hyper-V-Host {_settings.Host}:{_settings.Port} nicht möglich: {ex.Message}", ex);
+                $"Lokale Hyper-V-Ausführung nicht möglich: {ex.Message}", ex);
         }
         finally
         {
@@ -125,45 +122,13 @@ public class HyperVProvider : IVirtualizationProvider
         }
     }
 
-    private WSManConnectionInfo CreateConnectionInfo()
-    {
-        var credential = new PSCredential(_settings.Username, ToSecureString(_settings.Password));
-        var connectionInfo = new WSManConnectionInfo(
-            useSsl: _settings.UseSsl,
-            computerName: _settings.Host,
-            port: _settings.Port,
-            appName: "/wsman",
-            shellUri: ShellUri,
-            credential: credential)
-        {
-            AuthenticationMechanism = AuthenticationMechanism.Negotiate,
-            // Das Testsystem nutzt ein selbstsigniertes Zertifikat. In Produktion wird ein
-            // von der internen CA ausgestelltes Zertifikat vertraut, sodass diese Prüfungen
-            // (siehe CertificateThumbprint in appsettings.json) nicht übersprungen werden müssen.
-            SkipCACheck = true,
-            SkipCNCheck = true,
-            SkipRevocationCheck = true
-        };
-
-        return connectionInfo;
-    }
-
-    private static SecureString ToSecureString(string value)
-    {
-        var secure = new SecureString();
-        foreach (var character in value)
-            secure.AppendChar(character);
-        secure.MakeReadOnly();
-        return secure;
-    }
-
     private static VirtualMachine MapVm(PSObject psObject) => new()
     {
         Id = GetProperty(psObject, "Name"),
         Name = GetProperty(psObject, "Name"),
         Status = MapStatus(GetProperty(psObject, "State")),
-        // Zuordnung VM → Benutzer wird im Hyper-V-Notizfeld gepflegt. Eine persistente
-        // Zuordnung über eine Datenbank folgt in Phase 5.
+        // Zuordnung VM → Benutzer wird im Hyper-V-Notizfeld gepflegt (z. B. Notes = "mugur").
+        // Eine persistente Zuordnung über eine Datenbank folgt in Phase 5.
         AssignedUserId = GetProperty(psObject, "Notes").Trim()
     };
 

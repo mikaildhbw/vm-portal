@@ -27,7 +27,7 @@ wäre über dieselbe Schnittstelle möglich — diese Plattformunabhängigkeit i
 wissenschaftliche Kern der Arbeit.
 
 ```
-HTTP-Client → VmController → IVirtualizationProvider ─┬─ HyperVProvider  (WinRM/PowerShell)
+HTTP-Client → VmController → IVirtualizationProvider ─┬─ HyperVProvider  (lokale PowerShell)
                                                       └─ DummyProvider   (In-Memory)
 ```
 
@@ -56,13 +56,14 @@ HTTP-Client → VmController → IVirtualizationProvider ─┬─ HyperVProvide
 | POST    | `/api/vm/{id}/snapshot`    | Snapshot/Checkpoint erstellen         | ✓    |
 
 Antwortcodes bei VM-Operationen: `200` Erfolg, `403` fremde VM, `404` VM unbekannt,
-`502` Hyper-V-Host nicht erreichbar.
+`502` Hyper-V-Ausführung fehlgeschlagen.
 
 ## Voraussetzungen
 
 - .NET SDK 8.0
-- Für den Produktivbetrieb: Windows Server 2022 mit Hyper-V-Rolle und aktiviertem
-  WinRM-HTTPS-Listener (Port 5986)
+- Für den Produktivbetrieb: Windows Server 2022 mit Hyper-V-Rolle. Die App läuft direkt auf
+  dem Hyper-V-Host und ruft die Hyper-V-Cmdlets über eine lokale PowerShell-Instanz auf —
+  kein WinRM/Remoting nötig.
 
 ## Bauen und Starten
 
@@ -96,27 +97,23 @@ curl -b cookies.txt http://localhost:5165/api/vm
 {
   "Virtualization": { "Provider": "HyperV" },   // oder "Dummy"
   "Ldap":  { "Host": "…", "Port": 389, "BaseDn": "DC=…,DC=…" },
-  "HyperV": {
-    "Host": "192.168.122.196",
-    "Port": 5986,
-    "Username": "testumgebung\\Administrator",
-    "Password": "…",
-    "CertificateThumbprint": "…",
-    "UseSsl": true
-  },
   "Jwt": { "Secret": "…", "Issuer": "VmPortal.Api", "Audience": "VmPortal.Client", "ExpiryHours": 8 }
 }
 ```
+
+Der `HyperV`-Provider führt PowerShell lokal aus und benötigt daher keine
+Verbindungskonfiguration (kein Host/Port/Zugangsdaten).
 
 > **Hinweis:** `appsettings.json` enthält in der Testumgebung Klartext-Secrets. In Produktion
 > gehören diese in Umgebungsvariablen bzw. einen Secret-Store (siehe Phase 5).
 
 ## Deployment-Modell
 
-Die Entwicklung erfolgt unter Ubuntu; die Anwendung wird auf einem Windows Server 2022
-ausgeführt. Die Windows-spezifischen APIs (PowerShell-Remoting, WinRM, Hyper-V-Cmdlets)
-funktionieren dort nativ. Der Build läuft plattformübergreifend; die WSMan-Clientbibliothek
-ist ausschließlich unter Windows zur Laufzeit verfügbar.
+Die Entwicklung erfolgt unter Ubuntu; die Anwendung wird auf dem Windows Server 2022
+ausgeführt, der zugleich der Hyper-V-Host ist. Die Hyper-V-Cmdlets werden über eine lokale
+PowerShell-Instanz aufgerufen und funktionieren dort nativ. Der Build läuft
+plattformübergreifend; die Hyper-V-Cmdlets sind ausschließlich unter Windows zur Laufzeit
+verfügbar.
 
 ## Projektstand
 
