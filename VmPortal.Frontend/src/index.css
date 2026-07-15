@@ -1,0 +1,249 @@
+:root {
+  --teal: #009999;
+  --teal-dark: #007a7a;
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --text: #1a1a1a;
+  --muted: #6b6b6b;
+  --border: #d9d9d9;
+  --running: #009999;
+  --stopped: #8c8c8c;
+  --danger: #b00020;
+
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background-color: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  border: none;
+  border-radius: 0;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  background-color: var(--teal);
+  color: #ffffff;
+  transition: background-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background-color: var(--teal-dark);
+}
+
+button:disabled {
+  background-color: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background-color: transparent;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+}
+
+button.secondary:hover:not(:disabled) {
+  background-color: rgba(0, 153, 153, 0.08);
+}
+
+input {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background-color: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+
+input:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: -1px;
+}
+
+a {
+  color: var(--teal);
+}
+
+/* Layout */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--surface);
+  border-bottom: 3px solid var(--teal);
+  padding: 1rem 1.5rem;
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.app-header .user {
+  color: var(--muted);
+  margin-right: 1rem;
+  font-size: 0.9rem;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Login */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--teal);
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-card h1 {
+  margin-top: 0;
+  font-size: 1.4rem;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.form-error {
+  background-color: rgba(176, 0, 32, 0.08);
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* VM list */
+.vm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--stopped);
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.vm-row:hover {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+}
+
+.vm-row.running {
+  border-left-color: var(--running);
+}
+
+.vm-row .vm-name {
+  font-weight: 600;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.8rem;
+  color: #ffffff;
+  background-color: var(--stopped);
+}
+
+.status-badge.running {
+  background-color: var(--running);
+}
+
+/* VM detail */
+.detail-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--teal);
+  padding: 1.5rem;
+}
+
+.detail-card h2 {
+  margin-top: 0;
+}
+
+.detail-meta {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.action-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.snapshot-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 1.2rem;
+}
+
+.snapshot-row .field {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.toolbar {
+  margin-bottom: 1rem;
+}
+
+.notice {
+  color: var(--muted);
+  padding: 1rem 0;
+}
+
+.notice.error {
+  color: var(--danger);
+}
