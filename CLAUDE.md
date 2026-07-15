@@ -8,10 +8,12 @@ konzipiert, implementiert und hinsichtlich Sicherheit, Benutzerfreundlichkeit un
 Plattformunabhängigkeit bewertet?
 
 ## Architektur
-Zwei Projekte, klare Schichtentrennung:
+Drei Projekte, klare Schichtentrennung:
 
-- **VmPortal.Api** — REST-API (ASP.NET Core 8): Controller, Middleware, DI, Authentifizierung.
+- **VmPortal.Api** — REST-API (ASP.NET Core 8): Controller, Middleware, DI, Authentifizierung;
+  liefert im Produktivbetrieb zusätzlich das gebaute Frontend aus `wwwroot` aus.
 - **VmPortal.Core** — Fachlogik: Interfaces, Models, Services, Konfigurationsklassen.
+- **VmPortal.Frontend** — React-SPA (Vite, plain JavaScript): Login, VM-Übersicht, VM-Detail.
 
 ```
 VmPortal.Core/
@@ -19,12 +21,18 @@ VmPortal.Core/
   Models/         VirtualMachine, VmStatus
   Services/       HyperVProvider, DummyVirtualizationProvider,
                   LdapAuthService, JwtTokenService, VirtualizationException
-  Configuration/  HyperVSettings, LdapSettings, JwtSettings
+  Configuration/  LdapSettings, JwtSettings
 VmPortal.Api/
   Controllers/    AuthController, VmController
   Middleware/     VirtualizationExceptionMiddleware
   Constants/      AuthConstants
-  Program.cs      Composition Root (DI, Auth, Provider-Auswahl)
+  wwwroot/        gebautes React-Frontend (generiert, nicht versioniert)
+  Program.cs      Composition Root (DI, Auth, CORS, Static/SPA, Provider-Auswahl)
+VmPortal.Frontend/
+  src/api/        client (Axios, withCredentials, 401-Interceptor), vmApi
+  src/pages/      Login, VmList, VmDetail
+  src/components/ Header
+  vite.config.js  Dev-Proxy /api -> Windows-Server-API
 ```
 
 ### Zentrale Abstraktion
@@ -45,6 +53,12 @@ ASPNETCORE_ENVIRONMENT=Production  dotnet run --project VmPortal.Api  # Hyper-V-
 ```
 Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appsettings.*.json`.
 
+Frontend:
+```bash
+cd VmPortal.Frontend && npm install && npm run dev   # Dev-Server auf :5173, proxyt /api
+npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in die API
+```
+
 ## Testumgebung (nur Entwicklung — keine Produktions-Secrets)
 - Windows Server 2022 als KVM-Gast auf Ubuntu, IP `192.168.122.196`, zugleich Hyper-V-Host.
 - AD-Domäne `testumgebung.local`, LDAP auf Port 389.
@@ -52,7 +66,7 @@ Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appset
   (Gruppe `VM-Portal-Benutzer`, Rolle `VMUser`).
 - Hyper-V-VMs: `VM-Mikail` (Notes = `mugur`), `VM-Burath` (Notes = `jburath`).
 
-## Was bereits implementiert ist (M1–M4)
+## Was bereits implementiert ist (M1–M5)
 - **M1/M2:** Projektstruktur, Interfaces, Models, Dummy-Services, DI, testbare API.
 - **M3:** LDAP-Authentifizierung gegen AD; Rolle aus AD-Gruppenmitgliedschaft; echtes JWT
   (HMAC-SHA256, Claims `username`/`role`, 8 h); JWT im `httpOnly`-Cookie
@@ -64,13 +78,16 @@ Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appset
   auf dem Hyper-V-Host läuft; konfigurierbare Provider-Auswahl;
   `VirtualizationExceptionMiddleware` liefert bei Hyper-V-Fehlern einen sprechenden `502`
   statt `500`; VM↔Benutzer-Zuordnung aus dem Hyper-V-Notizfeld; Logging aller Aktionen.
+- **M5:** React-SPA (Vite, plain JS) mit Login-, VM-Übersichts- und VM-Detail-View
+  (Status-Polling alle 5 s, Snapshot); Axios mit `withCredentials`, zentraler
+  401-Interceptor, kein Auth-Token im Frontend-State/localStorage; kantiges Siemens-Design.
+  Backend: CORS für den Vite-Dev-Server (`AllowCredentials`), Auslieferung des Builds aus
+  `wwwroot` und SPA-Fallback (`MapFallbackToFile`).
 
-## Was noch kommt (Phase 5–7)
-- **Phase 5 — Persistenz:** Datenbank (z. B. PostgreSQL/EF Core) für die persistente
+## Was noch kommt (Phase 6–7)
+- **Phase 6 — Persistenz:** Datenbank (z. B. PostgreSQL/EF Core) für die persistente
   Zuordnung VM ↔ Benutzer sowie Audit-Log. Secrets aus `appsettings.json` in
   Umgebungsvariablen/Secret-Store auslagern.
-- **Phase 6 — Frontend:** Web-Oberfläche (kein Blazor; ASP.NET-konforme Alternative) mit
-  Cookie-Auth-Flow.
 - **Phase 7 — Evaluation:** Bewertung nach Sicherheit, Benutzerfreundlichkeit und
   Plattformunabhängigkeit; konzeptioneller Vergleich Hyper-V vs. Proxmox über das gemeinsame
   Interface.
@@ -84,9 +101,12 @@ Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appset
 - **JWT im `httpOnly`-Cookie statt `localStorage`:** Schutz gegen XSS-Token-Diebstahl;
   bewusste Sicherheitsentscheidung, die in der Arbeit begründet wird.
 - **Rolle aus AD-Gruppe:** keine doppelte Benutzerverwaltung; das AD bleibt führendes System.
-- **Fehlerübersetzung via Middleware:** Infrastrukturfehler (WinRM nicht erreichbar) werden
-  als `502` mit Klartextmeldung sichtbar, fachliche Fehler bleiben `403`/`404` — saubere
+- **Fehlerübersetzung via Middleware:** Infrastrukturfehler (Hyper-V-Ausführung schlägt fehl)
+  werden als `502` mit Klartextmeldung sichtbar, fachliche Fehler bleiben `403`/`404` — saubere
   Trennung der Fehlersemantik.
+- **Cookie-Auth im SPA statt Token im Browser-Speicher:** Das Frontend hält kein JWT; es liegt
+  nur im httpOnly-Cookie und wird per `withCredentials` mitgeschickt. Konsequente Fortführung
+  der XSS-Härtung bis in die Client-Schicht.
 - **Lokale PowerShell-Ausführung statt nativer Hyper-V-.NET-API:** Die Hyper-V-Cmdlets sind
   die offiziell unterstützte, stabile Automatisierungsschnittstelle. Da die App direkt auf dem
   Hyper-V-Host läuft, werden sie lokal ausgeführt — das umgeht die WinRM-Zugriffs- und

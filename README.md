@@ -13,12 +13,13 @@ erfolgt gegen Active Directory, die Autorisierung rollenbasiert.
 
 ## Architektur
 
-Die Lösung besteht aus zwei Projekten:
+Die Lösung besteht aus drei Projekten:
 
-| Projekt          | Verantwortung                                                        |
-| ---------------- | -------------------------------------------------------------------- |
-| `VmPortal.Api`   | REST-API-Schicht (ASP.NET Core 8): Controller, Middleware, DI, Auth  |
-| `VmPortal.Core`  | Fachlogik: Interfaces, Models, Services, Konfiguration               |
+| Projekt             | Verantwortung                                                        |
+| ------------------- | -------------------------------------------------------------------- |
+| `VmPortal.Api`      | REST-API-Schicht (ASP.NET Core 8): Controller, Middleware, DI, Auth  |
+| `VmPortal.Core`     | Fachlogik: Interfaces, Models, Services, Konfiguration               |
+| `VmPortal.Frontend` | React-SPA (Vite, plain JavaScript): Login, VM-Übersicht, VM-Detail   |
 
 Kern des Entwurfs ist die Schnittstelle **`IVirtualizationProvider`** als Abstraktion über den
 Hypervisor. `HyperVProvider` ist die konkrete Implementierung für Microsoft Hyper-V;
@@ -91,6 +92,38 @@ curl -c cookies.txt -X POST http://localhost:5165/api/auth/login \
 curl -b cookies.txt http://localhost:5165/api/vm
 ```
 
+## Frontend (VmPortal.Frontend)
+
+React-SPA mit Vite (plain JavaScript). Das JWT liegt ausschließlich im httpOnly-Cookie;
+Axios sendet es über `withCredentials: true` automatisch mit. Ein zentraler Interceptor leitet
+bei `401` zur Login-Seite. Views: Login (`/`), VM-Übersicht (`/vms`), VM-Detail (`/vms/:id`
+mit Status-Polling alle 5 s und Snapshot-Funktion).
+
+### Entwicklung
+
+```bash
+cd VmPortal.Frontend
+npm install
+npm run dev            # Dev-Server auf http://localhost:5173
+```
+
+Der Vite-Dev-Server proxyt `/api` an die echte API (`http://192.168.122.196:5000`, siehe
+`vite.config.js`), sodass Frontend und API unter derselben Origin laufen. Alternativ erlaubt
+das Backend CORS für `http://localhost:5173` (konfigurierbar über `Cors:AllowedOrigins`).
+
+### Produktions-Build und Auslieferung
+
+```bash
+cd VmPortal.Frontend
+npm run build                       # erzeugt dist/
+cp -r dist/* ../VmPortal.Api/wwwroot/   # in wwwroot der API kopieren
+```
+
+Die API liefert das Frontend über `UseStaticFiles()` aus; ein SPA-Fallback
+(`MapFallbackToFile("index.html")`) beantwortet alle Nicht-API-Routen mit `index.html`, damit
+das clientseitige Routing funktioniert. `VmPortal.Api/wwwroot/` ist generiertes Build-Output
+und wird nicht versioniert.
+
 ## Konfiguration
 
 ```jsonc
@@ -122,5 +155,6 @@ verfügbar.
 | M1          | Projektstruktur, Interfaces, Models                 | ✅     |
 | M2          | Dummy-Services, DI, testbare API                    | ✅     |
 | M3          | LDAP-Auth, JWT, geschützte Endpunkte, RBAC          | ✅     |
-| M4          | Hyper-V-Anbindung über WinRM/PowerShell             | ✅     |
-| M5–M7       | Persistenz, Frontend, Evaluation (siehe CLAUDE.md)  | ⏳     |
+| M4          | Hyper-V-Anbindung über lokale PowerShell            | ✅     |
+| M5          | React-Frontend (Login, Übersicht, Detail)           | ✅     |
+| M6–M7       | Persistenz, Evaluation (siehe CLAUDE.md)            | ⏳     |
