@@ -14,6 +14,19 @@ var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
 var ldapSettings = builder.Configuration.GetSection("Ldap").Get<LdapSettings>()
     ?? throw new InvalidOperationException("Abschnitt 'Ldap' fehlt in appsettings.json");
 
+const string FrontendCorsPolicy = "FrontendDev";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy => policy
+        .WithOrigins(allowedOrigins)
+        .AllowCredentials()   // notwendig, damit das httpOnly-Cookie übertragen wird
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 builder.Services.AddControllers();
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(ldapSettings);
@@ -53,9 +66,19 @@ var app = builder.Build();
 
 app.UseMiddleware<VirtualizationExceptionMiddleware>();
 app.UseHttpsRedirection();
+
+// Statisches React-Frontend aus wwwroot ausliefern.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseCors(FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// SPA-Fallback: alle Nicht-API-Routen liefern index.html, damit das clientseitige
+// Routing (React Router) funktioniert.
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
