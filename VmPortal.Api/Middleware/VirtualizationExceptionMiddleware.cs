@@ -5,6 +5,8 @@ namespace VmPortal.Api.Middleware;
 /// <summary>
 /// Übersetzt <see cref="VirtualizationException"/> (z. B. eine fehlgeschlagene WinRM-Verbindung
 /// zum Hyper-V-Host) in eine sprechende HTTP-502-Antwort, statt einen generischen 500 zu liefern.
+/// Bewusst nicht umgesetzte Provider-Aktionen (<see cref="NotImplementedException"/>) werden
+/// als HTTP 501 mit ihrer Begründung sichtbar.
 /// </summary>
 public class VirtualizationExceptionMiddleware
 {
@@ -27,6 +29,12 @@ public class VirtualizationExceptionMiddleware
         {
             _logger.LogError(ex, "Hyper-V-Operation fehlgeschlagen");
             context.Response.StatusCode = StatusCodes.Status502BadGateway;
+            await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+        }
+        catch (NotImplementedException ex)
+        {
+            _logger.LogWarning("Nicht umgesetzte Provider-Aktion aufgerufen: {Message}", ex.Message);
+            context.Response.StatusCode = StatusCodes.Status501NotImplemented;
             await context.Response.WriteAsJsonAsync(new { message = ex.Message });
         }
     }
