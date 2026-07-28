@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using VmPortal.Core.Configuration;
 using VmPortal.Core.Interfaces;
+using VmPortal.Core.Models;
 
 namespace VmPortal.Core.Services;
 
@@ -16,15 +17,20 @@ public class JwtTokenService : ITokenService
         _settings = settings;
     }
 
-    public string GenerateToken(string username, string role)
+    public string GenerateToken(string username, string role, IReadOnlyDictionary<string, VmRole>? vmRoles = null)
     {
-        var claims = new[]
+        // "role" bleibt als globaler Legacy-Claim erhalten; die VM-spezifische
+        // Autorisierung läuft über den "vmroles"-Claim.
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, username),
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.Role, role),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, username),
+            new(ClaimTypes.Name, username),
+            new(ClaimTypes.Role, role),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (vmRoles is { Count: > 0 })
+            claims.Add(new Claim(VmRoleClaims.ClaimType, VmRoleClaims.Serialize(vmRoles), JsonClaimValueTypes.Json));
 
         var credentials = new SigningCredentials(CreateSigningKey(), SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(
