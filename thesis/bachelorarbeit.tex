@@ -18,6 +18,7 @@
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{longtable}
 
 % ---- TikZ ----
 \usepackage{tikz}
@@ -227,11 +228,17 @@ This bachelor thesis investigates how a secure self-service portal for virtual m
 
 \subsection{Problemstellung und Motivation}
 
-TODO: Problemstellung beschreiben — manuelle VM-Verwaltung durch Administratoren als Engpass, Bedarf an Self-Service für Mitarbeitende, Sicherheitsanforderungen im Unternehmensumfeld (Siemens AG).
+In der Unternehmensumgebung der Siemens AG werden virtuelle Maschinen (VMs) bislang ausschließlich durch IT-Administratoren verwaltet. Jede Aktion — vom Starten einer VM über die Statusabfrage bis zur Erstellung eines Snapshots — erfordert eine manuelle Anfrage an die IT-Abteilung. Für die Mitarbeitenden entstehen dadurch Wartezeiten bei Routineaufgaben, die sie fachlich selbst verantworten könnten; für die IT-Administration bindet die Abarbeitung dieser Anfragen Ressourcen, die für anspruchsvollere Aufgaben fehlen. Die manuelle VM-Verwaltung wird damit zum organisatorischen Engpass, obwohl die zugrunde liegenden Operationen technisch einfach und gut automatisierbar sind.
+
+Ein Self-Service-Ansatz, bei dem Mitarbeitende die ihnen zugewiesenen VMs eigenständig steuern, löst diese Abhängigkeit auf — er darf jedoch die bestehenden Sicherheitsstandards nicht aufweichen. Im Unternehmensumfeld ergeben sich daraus konkrete Anforderungen: Die Authentifizierung muss gegen den bestehenden Verzeichnisdienst (Active Directory) erfolgen, ohne eine parallele Benutzerverwaltung aufzubauen; die Autorisierung muss sicherstellen, dass jeder Benutzer ausschließlich die ihm zugewiesenen VMs sieht und steuert; die Kommunikation muss durchgängig verschlüsselt erfolgen; und das Portal selbst darf keine administrativen Rechte auf dem Hypervisor benötigen, die über das Notwendige hinausgehen (Least Privilege).
+
+Hinzu kommt eine architektonische Dimension: Virtualisierungslandschaften sind heterogen und verändern sich. Eine Lösung, die fest mit einem einzelnen Hypervisor — hier Microsoft Hyper-V — verdrahtet ist, müsste bei einem Plattformwechsel grundlegend neu entwickelt werden. Die Motivation dieser Arbeit liegt daher nicht nur in der Bereitstellung eines konkreten Portals, sondern in der Frage, wie die Fachlogik eines solchen Portals so vom konkreten Hypervisor entkoppelt werden kann, dass das Architekturmuster auf andere Virtualisierungsplattformen übertragbar bleibt.
 
 \subsection{Zielsetzung der Arbeit}
 
-TODO: Zielsetzung formulieren — Konzeption und Implementierung eines sicheren, plattformunabhängigen Self-Service-Portals (VmPortal) mit Hyper-V-Anbindung und Evaluation.
+Ziel der Arbeit ist die Konzeption eines plattformunabhängigen Architekturmusters für ein webbasiertes Self-Service-Portal sowie dessen exemplarische Implementierung für eine Hyper-V-Umgebung im Unternehmenskontext der Siemens AG. Mitarbeitende sollen sich mit ihren bestehenden Active-Directory-Zugangsdaten anmelden, die ihnen zugewiesenen VMs einsehen und diese starten, stoppen, neu starten sowie Snapshots erstellen können — ohne administrativen Zugriff auf den Hypervisor.
+
+Die praktische Umsetzung für Hyper-V dient dabei als Nachweis der Tragfähigkeit des Konzepts. Der wissenschaftliche Mehrwert der Arbeit liegt in der Abstraktion selbst: in der Beantwortung der Frage, welche Architekturentscheidungen plattformspezifisch und welche verallgemeinerbar sind. Die Übertragbarkeit des Architekturmusters wird anhand einer vergleichenden Betrachtung alternativer Virtualisierungsplattformen, insbesondere der Open-Source-Lösung Proxmox VE, diskutiert, ohne dass eine vollständige Zweitimplementierung erfolgt. Abschließend wird das entwickelte System anhand der Kriterien Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit evaluiert.
 
 \subsection{Forschungsfrage und Teilfragen}
 \label{sec:forschungsfrage}
@@ -242,15 +249,31 @@ Vor dem Hintergrund der beschriebenen Zielsetzung ergibt sich folgende zentrale 
 \textit{Wie wird ein sicheres Self-Service-Portal für virtuelle Maschinen konzipiert, implementiert und hinsichtlich Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit bewertet?}
 \end{quote}
 
-TODO: Teilfragen ableiten (z.\,B. Sicherheitskonzept, Hypervisor-Abstraktion, Bewertungskriterien) und operationalisieren.
+Zur Strukturierung der Untersuchung wird die Forschungsfrage in drei Teilfragen zerlegt:
+
+\begin{enumerate}
+  \item Welche Architekturschicht muss die Anbindung an unterschiedliche Virtualisierungsplattformen abstrahieren, ohne die Sicherheitsanforderungen zu verletzen — und wie lässt sich die Fachlogik damit vom konkreten Hypervisor entkoppeln?
+  \item Welche Anforderungen an Authentifizierung, Autorisierung und Schnittstellengestaltung ergeben sich aus dem Anspruch der Plattformunabhängigkeit, und wie wird die Autorisierung sicher und granular umgesetzt?
+  \item Wie lässt sich rollenbasierte Zugriffskontrolle plattformunabhängig modellieren, sodass das führende System (Active Directory) unverändert bleibt?
+\end{enumerate}
+
+Die Teilfragen werden in den Kapiteln zur Konzeption (Kapitel~5), Implementierung (Kapitel~6) und Evaluation (Kapitel~7) aufgegriffen und in Kapitel~9 zusammenführend beantwortet.
 
 \subsection{Abgrenzung des Untersuchungsgegenstands}
 
-TODO: Abgrenzung beschreiben — Hyper-V als implementierte Zielplattform, Proxmox VE nur als konzeptioneller Vergleich, Prototyp-Charakter, keine Produktionsskalierung.
+Die Arbeit implementiert das Portal vollständig für Microsoft Hyper-V als primäre Zielplattform der Siemens-Infrastruktur. Proxmox VE dient ausschließlich der konzeptionellen Einordnung und dem architektonischen Vergleich; eine produktive Zweitimplementierung ist nicht Bestandteil der Arbeit. Ebenso wird kein Multi-Hypervisor-Betrieb zur Laufzeit umgesetzt: Die Austauschbarkeit der Hypervisor-Anbindung wird konzeptionell und über eine konfigurationsgetriebene Provider-Auswahl nachgewiesen, nicht als produktive Mehrfachanbindung.
+
+Der Funktionsumfang beschränkt sich auf den Lebenszyklus bestehender VMs (Starten, Stoppen, Zurücksetzen, Snapshots, Statusabfrage). Das Erstellen oder Löschen von VMs verändert die Hypervisor-Infrastruktur grundlegend und ist nicht Teil der Self-Service-Idee laut Themenstellung. Auf das Active Directory greift das Portal ausschließlich lesend zu; es bleibt alleinige Quelle der Wahrheit für Benutzer und Gruppen.
+
+Das entwickelte System hat Prototyp-Charakter: Die Entwicklung und der Test erfolgen in einer lokalen Testumgebung, die die Produktionsbedingungen nachbildet. Produktionsskalierung, Hochverfügbarkeit, mandantenfähiger Betrieb über mehrere Organisationen hinweg sowie eine verbrauchsbasierte Abrechnung sind nicht Gegenstand dieser Arbeit; der Weg zur Produktionsreife wird in Kapitel~8 skizziert.
 
 \subsection{Aufbau der Arbeit}
 
-TODO: Kapitelübersicht schreiben, sobald die Struktur final ist.
+Die Arbeit gliedert sich in neun Kapitel. Nach dieser Einleitung legt Kapitel~2 die theoretischen Grundlagen: Virtualisierung und Hypervisor-Konzepte, Self-Service-Architekturen, Authentifizierung und Autorisierung, Sicherheitskonzepte für Web-APIs sowie Schichtenarchitekturen und Abstraktionsprinzipien. Kapitel~3 ordnet die Arbeit in den Stand der Technik ein, vergleicht bestehende Ansätze zur VM-Verwaltung und leitet daraus die Forschungslücke ab.
+
+Kapitel~4 beschreibt das methodische Vorgehen und die Anforderungsanalyse mit Lastenheft, Pflichtenheft und den Bewertungskriterien. Kapitel~5 entwickelt darauf aufbauend die Konzeption: das 4-Schichten-Modell, die Hypervisor-Abstraktion, das Sicherheitskonzept und die Technologieentscheidungen. Kapitel~6 dokumentiert die Implementierung der drei Teilprojekte (API, Fachlogik, Frontend) einschließlich Hypervisor-Anbindung, Fehlerbehandlung und Deployment-Modell.
+
+Kapitel~7 evaluiert das System anhand der Kriterien Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit, wobei letztere über einen konzeptionellen Vergleich von Hyper-V und Proxmox VE untersucht wird. Kapitel~8 diskutiert die Ergebnisse, benennt Grenzen der Implementierung und skizziert den Weg zur Produktionsreife. Kapitel~9 fasst die Erkenntnisse zusammen, beantwortet die Forschungsfrage und gibt einen Ausblick.
 
 \newpage
 % ================================
@@ -258,25 +281,45 @@ TODO: Kapitelübersicht schreiben, sobald die Struktur final ist.
 % ================================
 \section{Theoretische Grundlagen}
 
+% TODO: Quellen für Kapitel 2 in literatur.bib ergänzen und per \parencite einbinden.
+
 \subsection{Virtualisierung und Hypervisor-Konzepte}
 
-TODO: Grundlagen der Virtualisierung, Typ-1-/Typ-2-Hypervisor, Microsoft Hyper-V und Proxmox VE vorstellen.
+Virtualisierung bezeichnet die Bereitstellung mehrerer logisch voneinander isolierter Rechnerumgebungen auf gemeinsamer physischer Hardware. Die zentrale Komponente ist der Hypervisor (auch Virtual Machine Monitor), der die Hardware-Ressourcen — Prozessor, Arbeitsspeicher, Datenträger, Netzwerk — zwischen den virtuellen Maschinen aufteilt und deren Isolation gewährleistet. Klassisch werden zwei Bauformen unterschieden: Typ-1-Hypervisoren (Bare-Metal) laufen direkt auf der Hardware und verwalten die Gastsysteme ohne zwischengeschaltetes Betriebssystem; Typ-2-Hypervisoren laufen als Anwendung innerhalb eines Wirtsbetriebssystems. Typ-1-Hypervisoren erreichen durch den direkten Hardwarezugriff eine höhere Leistung und Isolation und dominieren daher im Rechenzentrums- und Unternehmenseinsatz, während Typ-2-Lösungen vor allem für Entwicklungs- und Desktopszenarien verwendet werden.
+
+Microsoft Hyper-V, die in dieser Arbeit implementierte Zielplattform, ist ein Typ-1-Hypervisor, obwohl er als Windows-Server-Rolle installiert wird: Bei Aktivierung der Rolle schiebt sich der Hypervisor unter das installierte Windows, das fortan selbst als privilegierte erste Partition — die sogenannte Root- oder Parent-Partition — auf dem Hypervisor läuft. Die Root-Partition verwaltet die Gerätetreiber und stellt den Kind-Partitionen (den eigentlichen Gast-VMs) Virtualisierungsdienste bereit. Für die Automatisierung stellt Hyper-V ein PowerShell-Modul mit Cmdlets wie \texttt{Get-VM}, \texttt{Start-VM} oder \texttt{Checkpoint-VM} bereit, das die offiziell unterstützte Verwaltungsschnittstelle darstellt und in dieser Arbeit als Anbindungsweg dient.
+
+Als Vergleichsplattform für die Plattformunabhängigkeitsbetrachtung dient Proxmox VE, eine quelloffene, auf Debian GNU/Linux basierende Virtualisierungsplattform. Proxmox VE kombiniert zwei Virtualisierungstechniken: vollvirtualisierte Maschinen auf Basis von KVM (Kernel-based Virtual Machine) sowie leichtgewichtige Linux-Container auf Basis von LXC. Die Verwaltung erfolgt über eine integrierte Weboberfläche sowie eine dokumentierte REST-API, über die sämtliche VM-Operationen programmatisch ausgelöst werden können. Damit unterscheiden sich Hyper-V und Proxmox VE nicht nur im Unterbau, sondern insbesondere in ihrer Automatisierungsschnittstelle — PowerShell-Cmdlets einerseits, HTTP-basierte REST-API andererseits —, was sie zu einem geeigneten Gegensatzpaar für die Untersuchung einer Hypervisor-Abstraktion macht.
 
 \subsection{Self-Service-Architekturen in Unternehmens-IT}
 
-TODO: Konzept und Nutzen von Self-Service-Portalen in der Unternehmens-IT einordnen.
+Unter IT-Self-Service versteht man die Bereitstellung von IT-Leistungen über eine Oberfläche, mit der Endanwender definierte Aufgaben eigenständig ausführen, die andernfalls ein manuelles Eingreifen der IT-Abteilung erfordern würden. Der Ansatz ist in Rahmenwerken des IT-Service-Managements etabliert: Wiederkehrende, gut standardisierbare Anfragen werden aus dem Ticket-basierten Prozess herausgelöst und als Self-Service-Angebot automatisiert. Für die Organisation ergeben sich zwei Effekte — die Durchlaufzeit für den Anwender sinkt von Stunden oder Tagen auf Sekunden, und die IT-Administration wird von Routineaufgaben entlastet.
+
+Self-Service verschiebt jedoch die Kontrolle vom Menschen in das System: Wo zuvor ein Administrator jede Anfrage implizit auf Plausibilität und Berechtigung prüfte, muss das Self-Service-System diese Prüfung explizit und verlässlich selbst leisten. Eine Self-Service-Architektur besteht daher im Kern immer aus drei Elementen: einer für Fachanwender bedienbaren Oberfläche, einer Automatisierungsschicht, die die eigentliche Leistung erbringt, und einer Berechtigungsschicht, die den Handlungsspielraum jedes Benutzers präzise begrenzt. Im Kontext dieser Arbeit heißt das: Die Berechtigungslogik — wer welche VM sehen und steuern darf — ist kein Beiwerk, sondern konstitutiver Bestandteil des Portals und bestimmt maßgeblich dessen Sicherheitsbewertung.
 
 \subsection{Authentifizierung und Autorisierung}
 
-TODO: Active Directory, LDAP/LDAPS und rollenbasierte Zugriffskontrolle (RBAC) erläutern.
+Authentifizierung (Nachweis der Identität) und Autorisierung (Prüfung der Berechtigungen) sind getrennte Konzepte, die in Unternehmensumgebungen typischerweise an einen zentralen Verzeichnisdienst gekoppelt werden. In Microsoft-geprägten Infrastrukturen ist dies das Active Directory (AD): ein hierarchischer Verzeichnisdienst, der Benutzerkonten, Gruppen und Ressourcen einer Domäne verwaltet und als führendes System für Identitäten dient. Anwendungen, die AD-Konten nutzen, vermeiden eine parallele Benutzerverwaltung mit eigenen Passwörtern — ein wesentlicher Sicherheits- und Wartbarkeitsgewinn, da Kontosperrungen, Passwortrichtlinien und Gruppenzuordnungen zentral greifen.
+
+Der standardisierte Zugriff auf Verzeichnisdienste erfolgt über das Lightweight Directory Access Protocol (LDAP), dessen Protokolloperationen in RFC~4511 definiert sind. Für die Authentifizierung ist die Bind-Operation zentral: Der Client meldet sich mit einem Benutzernamen (etwa im UPN-Format \texttt{benutzer@domäne}) und einem Passwort am Verzeichnis an; gelingt der Bind, sind die Zugangsdaten gültig. Da beim einfachen Bind das Passwort übertragen wird, fordern die Sicherheitsbetrachtungen in RFC~4513 eine Absicherung der Verbindung — in der Praxis durch LDAP über TLS (LDAPS, Port~636) anstelle des unverschlüsselten LDAP (Port~389). Neben der Authentifizierung liefert das Verzeichnis auch die Grundlage der Autorisierung: Über das Attribut \texttt{memberOf} lässt sich die Gruppenmitgliedschaft eines Benutzers abfragen.
+
+Role-Based Access Control (RBAC) entkoppelt Berechtigungen von einzelnen Benutzern: Rechte werden Rollen zugewiesen, Benutzer erhalten Rollen. Das reduziert die Komplexität der Rechteverwaltung erheblich und macht sie auditierbar — statt für jeden Benutzer einzelne Rechte zu pflegen, genügt die Zuordnung zu wenigen, fachlich definierten Rollen. In AD-Umgebungen werden Rollen idiomatisch auf Sicherheitsgruppen abgebildet: Die Mitgliedschaft in einer Gruppe entspricht der Innehabung einer Rolle. Dieses Muster nutzt auch die vorliegende Arbeit; ergänzend ist eine ressourcenbezogene Prüfung erforderlich, denn die Rolle allein beantwortet nicht, \emph{welche} konkrete VM ein Benutzer steuern darf — hierfür braucht es eine Zuordnung von Ressourcen zu Benutzern (Ownership-Prüfung).
 
 \subsection{Sicherheitskonzepte für Web-APIs}
 
-TODO: JWT, httpOnly-Cookies, XSS/CSRF und relevante OWASP-Grundlagen darstellen.
+Moderne Single-Page-Anwendungen kommunizieren mit dem Backend über eine HTTP-basierte Web-API. Da HTTP zustandslos ist, muss der authentifizierte Zustand über einen Sitzungsnachweis transportiert werden. Ein verbreitetes Format hierfür ist das JSON Web Token (JWT): eine kompakte, aus drei Base64-kodierten Teilen (Header, Payload, Signatur) bestehende Datenstruktur. Der Payload enthält Ansprüche (Claims) wie Benutzername, Rolle und Ablaufzeitpunkt; die Signatur — etwa mit HMAC-SHA256 über ein serverseitiges Geheimnis — stellt sicher, dass das Token nicht unbemerkt verändert werden kann. Ein JWT ist damit selbstbeschreibend und serverseitig zustandslos validierbar; es schützt jedoch nicht sich selbst vor Diebstahl: Wer das Token besitzt, besitzt die Sitzung.
+
+Entscheidend ist deshalb die Frage, wo der Client das Token speichert. Die Ablage in \texttt{localStorage} oder im JavaScript-Zustand ist für Skripte der Seite lesbar — gelingt einem Angreifer eine Cross-Site-Scripting-Attacke (XSS), also das Einschleusen eigenen JavaScripts in den Seitenkontext, kann er das Token exfiltrieren und die Sitzung übernehmen. Cookies mit dem Attribut \texttt{httpOnly} sind dagegen für JavaScript grundsätzlich unzugänglich und werden vom Browser automatisch mitgesendet; ergänzt um \texttt{Secure} (Übertragung nur über HTTPS) entziehen sie das Token dem Zugriff clientseitigen Codes. Die Kehrseite des automatischen Mitsendens ist Cross-Site Request Forgery (CSRF): Eine fremde Seite könnte den Browser veranlassen, authentifizierte Anfragen abzusetzen. Dem begegnet das Cookie-Attribut \texttt{SameSite} — in der strikten Ausprägung (\texttt{Strict}) sendet der Browser das Cookie ausschließlich bei Anfragen, die von derselben Site ausgehen, womit klassische CSRF-Angriffe unterbunden werden.
+
+Einen übergeordneten Ordnungsrahmen liefern die Veröffentlichungen des Open Web Application Security Project (OWASP), insbesondere die OWASP Top~10 der kritischsten Sicherheitsrisiken für Webanwendungen. Für die vorliegende Arbeit sind vor allem die Kategorien fehlerhafte Zugriffskontrolle (Broken Access Control), Fehler in Identifikation und Authentifizierung sowie Sicherheitsfehlkonfiguration relevant; sie strukturieren sowohl die Konzeption des Sicherheitskonzepts (Kapitel~5) als auch dessen Evaluation (Kapitel~7).
 
 \subsection{Schichtenarchitekturen und Abstraktionsprinzipien}
 
-TODO: Schichtenarchitekturen, Dependency Inversion und Interface-basierte Abstraktion als Grundlage der Plattformunabhängigkeit erläutern.
+Schichtenarchitekturen strukturieren ein Softwaresystem in übereinanderliegende Ebenen mit klar definierten Verantwortlichkeiten, bei denen jede Schicht nur die Dienste der darunterliegenden nutzt. Der Gewinn liegt in der Trennung der Belange (Separation of Concerns): Präsentation, Schnittstelle, Fachlogik und Infrastrukturzugriff lassen sich unabhängig voneinander entwickeln, testen und austauschen. Für die vorliegende Arbeit ist insbesondere die Frage relevant, wie die Fachlogik von einer konkreten Infrastrukturtechnologie — dem Hypervisor — entkoppelt wird.
+
+Die theoretische Grundlage dafür liefert das Dependency-Inversion-Prinzip: Module hoher Ebenen sollen nicht von Modulen niedriger Ebenen abhängen, sondern beide von Abstraktionen. Übertragen auf das VM-Portal bedeutet das: Die Fachlogik kennt nicht den Hyper-V-spezifischen Code, sondern ausschließlich eine Schnittstelle, die die fachlich notwendigen Operationen beschreibt (VM auflisten, starten, stoppen, zurücksetzen, Snapshot erstellen). Die konkrete Hypervisor-Anbindung implementiert diese Schnittstelle und wird zur austauschbaren Einzelheit. Ergänzend fordert das Interface-Segregation-Prinzip, Schnittstellen klein und aufgabenbezogen zu halten: Eine Abstraktion, die nur die tatsächlich benötigten Operationen umfasst, ist von jeder Plattform leichter zu erfüllen als eine breite Schnittstelle, die hypervisorspezifische Sonderfunktionen durchreicht.
+
+Praktisch umgesetzt wird die Inversion über Dependency Injection: Ein Kompositionspunkt (Composition Root) entscheidet zentral, welche konkrete Implementierung einer Schnittstelle zur Laufzeit eingesetzt wird, und injiziert sie in die abhängigen Komponenten. Wird diese Entscheidung zusätzlich aus der Konfiguration gelesen, lässt sich die Implementierung ohne Codeänderung austauschen — genau dieses Zusammenspiel aus Schnittstellenabstraktion, Dependency Injection und konfigurationsgetriebener Auswahl bildet die theoretische Basis der in Kapitel~5 entworfenen Hypervisor-Abstraktion \texttt{IVirtualizationProvider}.
 
 \newpage
 % ================================
@@ -284,21 +327,59 @@ TODO: Schichtenarchitekturen, Dependency Inversion und Interface-basierte Abstra
 % ================================
 \section{Stand der Technik und Abgrenzung}
 
-\subsection{Ansätze zur VM-Verwaltung und -Steuerung im Überblick}
+% TODO: Quellen für Kapitel 3 (Produktdokumentationen, ggf. Vergleichsliteratur) in literatur.bib ergänzen.
 
-TODO: Überblick über bestehende Ansätze — Hersteller-native Tools (Hyper-V-Manager, Proxmox-Weboberfläche), zentrale Verwaltungsplattformen (z.\,B. SCVMM, vCenter), Cloud-/IaaS-Self-Service (z.\,B. Azure, OpenStack), Infrastructure-as-Code (z.\,B. Terraform, Ansible) sowie programmatische Schnittstellen (PowerShell, REST-APIs).
+\subsection{Ansätze zur VM-Verwaltung und -Steuerung im Überblick}
+\label{sec:stand-ueberblick}
+
+Werkzeuge zur Verwaltung und Steuerung virtueller Maschinen existieren in großer Zahl; sie lassen sich für die Einordnung dieser Arbeit in fünf Kategorien gliedern, die sich in Zielgruppe, Reichweite und Automatisierungsgrad deutlich unterscheiden.
+
+\paragraph{Hersteller-native Tools.} Jeder Hypervisor bringt eine eigene Verwaltungsoberfläche mit: der Hyper-V-Manager unter Windows, der VMware vSphere Client sowie die Weboberfläche von Proxmox VE. Diese Werkzeuge decken den vollen Funktionsumfang der jeweiligen Plattform ab, richten sich jedoch an Administratoren mit weitreichenden Rechten auf dem Host. Ein Self-Service-Gedanke fehlt: Es gibt keinen auf einzelne Endnutzer zugeschnittenen Sichtbarkeits-Scope, der einem Mitarbeitenden nur „seine" VMs zeigt und alle übrigen verbirgt. Wer den Hyper-V-Manager bedienen kann, kann grundsätzlich alle VMs des Hosts sehen und verändern. Die Proxmox-Weboberfläche bietet zwar eine rollenbasierte Rechteverwaltung, bleibt aber Proxmox-spezifisch und sieht keine Integration in unternehmensweite Active-Directory-Strukturen im Sinne des hier verfolgten Ansatzes vor.
+
+\paragraph{Zentrale Verwaltungsplattformen.} Produkte wie Microsoft System Center Virtual Machine Manager (SCVMM) oder VMware vCenter bündeln die Verwaltung mehrerer Hosts und Cluster unter einer Oberfläche. Sie adressieren die Skalierungsprobleme großer Virtualisierungslandschaften — Kapazitätsplanung, Migration, Vorlagenverwaltung —, bleiben aber Werkzeuge für Administratoren mehrerer Hosts, nicht für Endnutzer-Self-Service. SCVMM bietet mit ergänzenden Komponenten zwar Self-Service-Funktionen, verursacht jedoch erheblichen Lizenz- und Infrastrukturaufwand und ist bei Siemens im betrachteten Umfeld nicht im Einsatz.
+
+\paragraph{Cloud-/IaaS-Self-Service.} Cloud-Management-Plattformen wie OpenStack Horizon, VMware Aria Automation oder Morpheus stellen Endnutzern Kataloge und Dashboards bereit, über die sie Infrastruktur eigenständig anfordern und steuern. Diese Kategorie kommt dem Anwendungsfall der vorliegenden Arbeit konzeptionell am nächsten: mandantenfähige Sichtbarkeits-Scopes, rollenbasierte Rechte, Self-Service-Bedienung. Für eine einzelne Hyper-V-Umgebung sind diese Plattformen jedoch überdimensioniert: OpenStack Horizon setzt eine vollständige OpenStack-Umgebung voraus, deren Aufbau im Hyper-V-Kontext nicht verhältnismäßig wäre; kommerzielle Produkte wie Aria Automation oder Morpheus verursachen Lizenzkosten und einen Funktionsumfang, der den tatsächlichen Bedarf des Anwendungsfalls erheblich übersteigt.
+
+\paragraph{Infrastructure-as-Code.} Werkzeuge wie Terraform (mit Providern für Hyper-V und Proxmox) oder Ansible beschreiben Infrastruktur deklarativ in Konfigurationsdateien und stellen sie automatisiert bereit. Sie sind mächtig für die Provisionierung und reproduzierbare Verwaltung von Infrastruktur, richten sich jedoch an Administratoren und Entwickler, die Konfigurationssprachen beherrschen. Ein interaktives Endnutzer-Frontend, über das ein Fachanwender ohne IT-Hintergrund seine VM per Knopfdruck startet, ist nicht Bestandteil dieses Paradigmas.
+
+\paragraph{Programmatische Schnittstellen.} Die unterste Ebene bilden die Automatisierungsschnittstellen der Hypervisoren selbst: die PowerShell-Cmdlets des Hyper-V-Moduls, native REST-APIs wie die von Proxmox VE sowie Abstraktionsbibliotheken wie libvirt, die eine einheitliche API über mehrere — vor allem Linux-basierte — Virtualisierungslösungen legen. Diese Kategorie ist der direkte Vergleichspunkt zur in dieser Arbeit entworfenen \texttt{IVirtualizationProvider}-Abstraktion: Auch sie ist eine programmatische Schnittstelle über Hypervisor-Funktionen. Bemerkenswert ist, dass libvirt als etablierteste herstellerübergreifende Abstraktion Hyper-V nicht direkt unterstützt — für den hier vorliegenden Hyper-V-zentrierten Anwendungsfall stand somit keine fertige Abstraktionsschicht zur Verfügung, auf der ein Portal hätte aufsetzen können. Programmatische Schnittstellen liefern zudem per se kein Portal: Authentifizierung gegen das AD, Benutzer-Scope und Oberfläche müssen in jedem Fall darüber gebaut werden.
 
 \subsection{Vergleich der Ansätze}
+\label{sec:stand-vergleich}
 
-TODO: Ansätze anhand von Plattformunabhängigkeit, Selbstbedienungsgrad und Integrationsaufwand vergleichen (Tabelle).
+Tabelle~\ref{tab:stand-vergleich} stellt die fünf Kategorien anhand der für diese Arbeit maßgeblichen Kriterien gegenüber: Plattformunabhängigkeit (funktioniert der Ansatz über mehrere Hypervisoren hinweg?), Selbstbedienungsgrad (können Endnutzer ohne IT-Fachwissen eigenständig agieren?), Integrationsaufwand (welcher Aufwand entsteht für Einführung und Betrieb im konkreten Umfeld?) und Zielgruppe.
+
+\begin{table}[H]
+\centering
+\caption[Vergleich der Ansätze zur VM-Verwaltung]{Vergleich der Ansätze zur VM-Verwaltung und -Steuerung anhand der Kriterien dieser Arbeit.}
+\label{tab:stand-vergleich}
+\small
+\begin{tabular}{p{3.6cm}p{2.6cm}p{2.6cm}p{2.7cm}p{2.4cm}}
+\toprule
+\textbf{Ansatz} & \textbf{Plattform-\newline unabhängigkeit} & \textbf{Selbst-\newline bedienungsgrad} & \textbf{Integrations-\newline aufwand} & \textbf{Zielgruppe} \\
+\midrule
+Hersteller-native Tools (Hyper-V-Manager, vSphere Client, Proxmox-Web-UI) & Keine (je ein Hypervisor) & Keiner (kein Nutzer-Scope) & Gering (mitgeliefert) & Administratoren \\
+\addlinespace
+Zentrale Verwaltungsplattformen (SCVMM, vCenter) & Gering (Hersteller-Ökosystem) & Gering bis mittel (Zusatzkomponenten) & Hoch (Lizenz, Infrastruktur) & Administratoren \\
+\addlinespace
+Cloud-/IaaS-Self-Service (OpenStack Horizon, Aria Automation, Morpheus) & Mittel bis hoch (Multi-Cloud) & Hoch & Sehr hoch (Plattformaufbau, Lizenzen) & Endnutzer und Administratoren \\
+\addlinespace
+Infrastructure-as-Code (Terraform, Ansible) & Hoch (Provider-Modell) & Keiner (kein interaktives Frontend) & Mittel (Tooling, Know-how) & Administratoren, Entwickler \\
+\addlinespace
+Programmatische Schnittstellen (PowerShell, REST-APIs, libvirt) & Je Schnittstelle; libvirt ohne direkte Hyper-V-Unterstützung & Keiner (Bausteine, kein Portal) & Mittel (Eigenentwicklung nötig) & Entwickler \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Der Vergleich zeigt ein strukturelles Muster: Ansätze mit hohem Selbstbedienungsgrad (Cloud-Plattformen) erkaufen diesen mit sehr hohem Integrationsaufwand und eigener Plattform-Bindung, während leichtgewichtige Ansätze (native Tools, programmatische Schnittstellen) keinen Endnutzer-Self-Service bieten. Kein betrachteter Ansatz vereint gleichzeitig einen hohen Selbstbedienungsgrad für Endnutzer, geringen Integrationsaufwand in eine bestehende einzelne Hyper-V-Umgebung und ein plattformunabhängiges Architekturprinzip.
 
 \subsection{Forschungslücke}
 
-TODO: Forschungslücke herausarbeiten — leichtgewichtiges, plattformunabhängiges Self-Service-Portal mit unternehmensintegrierter Authentifizierung.
+Aus dem Vergleich ergibt sich die Forschungslücke dieser Arbeit: Es fehlt eine leichtgewichtige, herstellerunabhängige Self-Service-Schicht für einzelne Endnutzer, die sich in eine bestehende Unternehmens-Infrastruktur — Active-Directory-Authentifizierung, rollenbasierte Autorisierung, ein vorhandener Hyper-V-Host — einfügt, ohne zusätzliche kommerzielle Lizenzierung auskommt und deren Architekturprinzip nicht an eine einzelne Virtualisierungsplattform gebunden ist. Die betrachteten Lösungen adressieren jeweils Teilaspekte dieser Kombination, jedoch keine deckt sie vollständig ab. Die vorliegende Arbeit schließt diese Lücke durch die Konzeption eines plattformunabhängigen Architekturmusters mit exemplarischer Hyper-V-Implementierung; der wissenschaftliche Beitrag liegt in der Herausarbeitung, welche Architekturentscheidungen dabei plattformspezifisch und welche verallgemeinerbar sind.
 
 \subsection{Abgrenzung}
 
-TODO: Beschreiben, was diese Arbeit nicht leistet (z.\,B. VM-Provisionierung, Multi-Host-Verwaltung, Abrechnung, Produktionshärtung).
+Um den Rahmen der Arbeit einzuhalten, werden folgende Aspekte bewusst nicht geleistet. Erstens keine VM-Provisionierung: Das Erstellen und Löschen virtueller Maschinen verändert die Hypervisor-Infrastruktur grundlegend und ist nicht Teil der Self-Service-Idee laut Themenstellung; das Portal steuert ausschließlich den Lebenszyklus bereits zugewiesener VMs. Zweitens keine Multi-Host-Verwaltung: Das System bindet einen einzelnen Hyper-V-Host an; Cluster-Szenarien, Host-übergreifende Migration und ein Multi-Hypervisor-Betrieb zur Laufzeit sind ausgeschlossen — die Plattformunabhängigkeit wird konzeptionell nachgewiesen, nicht als produktive Mehrfachanbindung. Drittens keine Abrechnung: Verbrauchserfassung, Kontingente oder Kostenverrechnung, wie sie Cloud-Plattformen bieten, sind nicht Gegenstand des Anwendungsfalls. Viertens keine Produktionshärtung: Die Implementierung erfolgt als Prototyp in einer Testumgebung; Aspekte wie Hochverfügbarkeit, Lastverteilung, Secret-Management und formale Sicherheitsfreigabe werden in Kapitel~8 als Weg zur Produktionsreife diskutiert, aber nicht umgesetzt. Ebenso wird auf eine Detailevaluation bestehender Frameworks als Lösungsweg verzichtet: Die in Abschnitt~\ref{sec:stand-ueberblick} eingeordneten Werkzeuge werden nicht als Basis verwendet, sondern es wird eine eigene, schlanke Architektur konzipiert.
 
 \newpage
 % ================================
@@ -307,20 +388,218 @@ TODO: Beschreiben, was diese Arbeit nicht leistet (z.\,B. VM-Provisionierung, Mu
 \section{Methodik und Anforderungsanalyse}
 
 \subsection{Vorgehen und Forschungsdesign}
+\label{sec:vorgehen}
 
-TODO: Methodisches Vorgehen beschreiben (konstruktiv-gestaltender Ansatz, iterative Meilensteine, Testumgebung).
+Die Arbeit folgt einem konstruktiv-gestaltenden Forschungsansatz: Die Forschungsfrage wird nicht durch Beobachtung eines bestehenden Systems beantwortet, sondern durch den Entwurf, die Implementierung und die anschließende Bewertung eines Artefakts — des VM-Portals. Der Erkenntnisgewinn entsteht dabei auf zwei Ebenen: praktisch durch den Nachweis, dass das konzipierte Architekturmuster in einer realen Unternehmensumgebung tragfähig ist, und konzeptionell durch die Analyse, welche Entwurfsentscheidungen plattformspezifisch und welche verallgemeinerbar sind.
+
+Der Bearbeitungszeitraum von zwölf Wochen (02.06.2026 bis 25.08.2026) ist in sieben Phasen mit definierten Meilensteinen (M1–M7) gegliedert. Die iterative Struktur stellt sicher, dass nach jeder Phase ein überprüfbares Zwischenergebnis vorliegt und Risiken — etwa die Stabilität der verschachtelten Virtualisierung in der Testumgebung — früh sichtbar werden. Tabelle~\ref{tab:meilensteine} zeigt die Meilensteine im Überblick; die Phasen 4 und 5 laufen bewusst parallel, da Hypervisor-Anbindung und Frontend-Entwicklung weitgehend unabhängig voneinander umsetzbar sind.
+
+\begin{table}[H]
+\centering
+\caption[Meilensteine des Projektplans]{Meilensteine des Projektplans (Bearbeitungszeitraum 02.06.2026–25.08.2026).}
+\label{tab:meilensteine}
+\small
+\begin{tabular}{lp{2.4cm}p{10.2cm}}
+\toprule
+\textbf{MS} & \textbf{Termin} & \textbf{Definition} \\
+\midrule
+M1 & Ende Woche 2  & Entwicklungsumgebung vollständig eingerichtet und getestet. \\
+M2 & Ende Woche 3  & REST-API- und Backend-Grundgerüst lauffähig, erste Endpunkte erreichbar. \\
+M3 & Ende Woche 5  & Login über AD funktionsfähig, Token-basierte Sitzung abgesichert. \\
+M4 & Ende Woche 7  & Hypervisor-Abstraktion definiert; VM kann über die Hyper-V-Implementierung gestartet, gestoppt und abgefragt werden. \\
+M5 & Ende Woche 8  & Frontend vollständig an die REST-API angebunden, alle Kernfunktionen nutzbar; Zwischenstand mit dem DHBW-Betreuer. \\
+M6 & Ende Woche 10 & End-to-End-Test erfolgreich, Sicherheitsprüfung abgeschlossen. \\
+M7 & Ende Woche 12 & Migrationskonzept dokumentiert, Proxmox-Vergleich ausgearbeitet, schriftliche Arbeit fertiggestellt. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Die Entwicklung erfolgt vollständig in einer lokalen Testumgebung, die die Produktionsbedingungen nachbildet: Auf dem Entwicklungsrechner (Ubuntu) läuft ein Windows Server 2022 als KVM-Gast, der zugleich als verschachtelter Hyper-V-Host und als Domänencontroller einer Test-Active-Directory-Domäne (\texttt{testumgebung.local}) dient. Testbenutzer und Test-VMs bilden das Zuordnungsszenario der Produktionsumgebung nach. Die Konfiguration (Hostnamen, Verbindungsdaten) wird ausschließlich über externe Konfigurationsdateien gesteuert, damit die spätere Migration in die Siemens-Produktivumgebung ohne Codeänderung möglich ist.
+
+Die Anforderungen wurden zu Projektbeginn gemeinsam mit dem betrieblichen Betreuer erhoben und in zwei Dokumenten festgehalten: einem Lastenheft aus Auftraggebersicht (Abschnitt~\ref{sec:lastenheft}) und einem Pflichtenheft mit prüfbaren Einzelanforderungen aus Auftragnehmersicht (Abschnitt~\ref{sec:pflichtenheft}). Die Anforderungen sind nach MoSCoW priorisiert (Must, Should, Could) und dienen in Kapitel~7 als Referenz für die Evaluation.
 
 \subsection{Lastenheft}
+\label{sec:lastenheft}
 
-TODO: Anforderungen aus Auftraggebersicht (Lastenheft) dokumentieren.
+Das Lastenheft beschreibt aus Sicht des Auftraggebers — vertreten durch den betrieblichen Betreuer —, was mit dem Projekt erreicht werden soll. Es enthält ausschließlich Anforderungen, keine technischen Lösungswege.
+
+\subsubsection{Projektgegenstand und Ausgangssituation}
+
+Gegenstand des Projekts ist die Konzeption eines plattformunabhängigen Architekturmusters für ein webbasiertes Self-Service-Portal sowie dessen exemplarische Implementierung für eine bestehende Hyper-V-Umgebung, über die Mitarbeitende ihre virtuellen Maschinen eigenständig verwalten können, ohne direkten Zugriff auf Administratorrechte zu benötigen. In der aktuellen Unternehmensumgebung werden VMs ausschließlich durch IT-Administratoren verwaltet; jede Aktion erfordert eine manuelle Anfrage an die IT-Abteilung, was zu Verzögerungen führt und Administratorressourcen für Routineaufgaben bindet. Ziel ist eine sichere Self-Service-Lösung, die diese Abhängigkeit auflöst, ohne die bestehenden Sicherheitsstandards zu beeinträchtigen.
+
+\subsubsection{Anforderungen aus Kundensicht}
+
+Aus Sicht des Auftraggebers muss das System folgende Funktionen bereitstellen:
+
+\begin{itemize}
+  \item Anmeldung über bestehende Unternehmens-Zugangsdaten (Active Directory),
+  \item Übersicht der dem Mitarbeitenden zugewiesenen virtuellen Maschinen,
+  \item Starten, Beenden und Zurücksetzen einer zugewiesenen VM,
+  \item Abfrage des aktuellen Betriebsstatus einer VM,
+  \item Erstellen und Verwalten von Snapshots, sofern der Benutzer hierzu berechtigt ist,
+  \item Einschränkung einzelner Aktionen auf Basis von Benutzerrollen (z.\,B. kein Ausschalten erlaubt),
+  \item keine Sichtbarkeit von VMs, die einem Benutzer nicht zugewiesen sind.
+\end{itemize}
+
+Nicht-funktional fordert der Auftraggeber: Die Lösung muss den unternehmensinternen Sicherheitsrichtlinien entsprechen; die Kommunikation darf zu keinem Zeitpunkt unverschlüsselt erfolgen; die Bedienung muss ohne IT-Fachwissen möglich sein; die Lösung muss sich in die bestehende Microsoft-/Active-Directory-Infrastruktur einfügen; die Entwicklung erfolgt zunächst in einer lokalen Testumgebung, wobei eine spätere Migration in die Produktivumgebung ohne grundlegende Änderungen möglich sein muss; und die zugrunde liegende Architektur soll konzeptionell so gestaltet sein, dass sie nicht ausschließlich für eine Virtualisierungsplattform gültig ist. Organisatorisch sind darüber hinaus die Zuständigkeit für Betrieb und Wartung nach Projektabschluss, eine formale Sicherheitsfreigabe vor Inbetriebnahme, ein definierter Prozess zur Zuordnung von VMs zu Benutzern sowie die Einhaltung betrieblicher Datenschutzvorgaben bei der Protokollierung zu klären (vgl. Tabelle~\ref{tab:oa}).
+
+\subsubsection{Randbedingungen und Abnahmekriterien}
+
+Der betriebliche Betreuer hat verbindliche Randbedingungen vorgegeben, die Tabelle~\ref{tab:randbedingungen} zusammenfasst.
+
+\begin{table}[H]
+\centering
+\caption[Randbedingungen des Auftraggebers]{Vorgaben des betrieblichen Betreuers für die Umsetzung.}
+\label{tab:randbedingungen}
+\small
+\begin{tabular}{p{4.2cm}p{10.6cm}}
+\toprule
+\textbf{Bereich} & \textbf{Vorgabe} \\
+\midrule
+Frontend-Technologie & React \\
+Backend-Umgebung & Microsoft-Ökosystem (kein Python/Django) \\
+Webserver & Internet Information Services (IIS) \\
+Netzwerk & Bestehender Reverse Proxy übernimmt HTTPS-Terminierung in Produktion \\
+Verzeichnisdienst & Bestehende Active-Directory-Domäne, keine strukturellen Änderungen \\
+Entwicklungsstrategie & Lokale Entwicklung und Test vor Produktionsmigration \\
+Primäre Zielplattform & Hyper-V (Siemens-Infrastruktur); plattformunabhängiges Konzept wird in der Arbeit diskutiert \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Das Projekt gilt aus Kundensicht als erfolgreich abgeschlossen, wenn sich ein Testbenutzer über seine AD-Zugangsdaten erfolgreich anmelden kann, ausschließlich ihm zugewiesene VMs sichtbar und steuerbar sind, Start-, Stopp- und Statusfunktionen nachweislich funktionieren, die Kommunikation durchgängig verschlüsselt erfolgt, ein Sicherheitskonzept vorliegt, das die Authentifizierungs- und Berechtigungslogik nachvollziehbar begründet, und die Architektur nachvollziehbar als plattformunabhängig konzipiert ist und ihre Übertragbarkeit argumentativ diskutiert wird.
 
 \subsection{Pflichtenheft}
+\label{sec:pflichtenheft}
 
-TODO: Umsetzungsverpflichtungen (Pflichtenheft) aus dem Lastenheft ableiten.
+Das Pflichtenheft konkretisiert die Anforderungen des Lastenhefts aus Auftragnehmersicht in prüfbare Einzelanforderungen. Jede Anforderung erhält eine eindeutige Kennung (FA für funktionale, NFA für nicht-funktionale, OA für organisatorische Anforderungen), ein Akzeptanz- bzw. Messkriterium und eine MoSCoW-Priorität. Die Tabellen~\ref{tab:fa} bis~\ref{tab:oa} geben die Anforderungen wieder; sie dienen in Kapitel~7 als Prüfreferenz.
+
+\begin{footnotesize}
+\begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+\caption[Funktionale Anforderungen (FA)]{Funktionale Anforderungen an das Self-Service-VM-Portal.}
+\label{tab:fa}\\
+\toprule
+\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium} & \textbf{Priorität} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium} & \textbf{Priorität} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+FA-01 & Der Benutzer meldet sich über seine bestehenden Active-Directory-Zugangsdaten am Portal an. & Login mit gültigen AD-Credentials führt zu autorisierter Sitzung; ungültige Credentials werden abgelehnt. & Must \\
+\addlinespace
+FA-02 & Die Kommunikation mit dem LDAP-Verzeichnis erfolgt verschlüsselt (LDAPS). & Keine Übertragung von Zugangsdaten im Klartext (Verifikation per Netzwerk-Trace). & Must \\
+\addlinespace
+FA-03 & Das System ordnet jedem Benutzer anhand seiner AD-Gruppenmitgliedschaft eine Rolle zu. & Benutzer ohne passende AD-Gruppe erhalten keinen Zugriff auf VM-Funktionen. & Must \\
+\addlinespace
+FA-04 & Ein Benutzer sieht ausschließlich die ihm zugewiesenen VMs in der Übersicht. & VM-Übersicht zeigt für Testbenutzer A nur VMs aus dessen Profil, nicht die von Benutzer B. & Must \\
+\addlinespace
+FA-05 & Der Benutzer kann eine ihm zugewiesene VM starten. & Klick auf „Start" führt zu Statuswechsel der VM von „Aus" zu „Läuft" innerhalb definierter Zeit. & Must \\
+\addlinespace
+FA-06 & Der Benutzer kann eine ihm zugewiesene VM beenden (herunterfahren). & Klick auf „Stopp" führt zu Statuswechsel der VM von „Läuft" zu „Aus". & Must \\
+\addlinespace
+FA-07 & Der Benutzer kann eine ihm zugewiesene VM zurücksetzen (Reset/Restart). & Klick auf „Reset" führt zu Neustart der VM. & Should \\
+\addlinespace
+FA-08 & Der Benutzer kann den aktuellen Status seiner VM(s) abrufen (an/aus/im Übergang). & Statusanzeige aktualisiert sich nach jeder Aktion innerhalb definierter Zeit (z.\,B. 5~Sek.). & Must \\
+\addlinespace
+FA-09 & Der Benutzer kann (falls berechtigt) einen Snapshot seiner VM erstellen. & Snapshot wird auf dem Hyper-V-Host erzeugt und ist im Hyper-V-Manager sichtbar. & Should \\
+\addlinespace
+FA-10 & Der Benutzer kann (falls berechtigt) einen vorhandenen Snapshot wiederherstellen. & Auswahl eines Snapshots stellt den entsprechenden VM-Zustand wieder her. & Could \\
+\addlinespace
+FA-11 & Administratoren können einzelne VM-Aktionen pro Benutzer oder Rolle einschränken. & Eine als „kein Ausschalten" konfigurierte Rolle kann den Stopp-Button nicht erfolgreich auslösen. & Must \\
+\addlinespace
+FA-12 & Jede VM-Aktion (Start, Stopp, Snapshot) wird mit Benutzer, Zeitstempel und Ergebnis protokolliert. & Log-Einträge sind nach Aktion auffindbar und enthalten Benutzer-ID, Zeit, Aktion, Erfolg/Fehler. & Should \\
+\addlinespace
+FA-13 & Bei nicht erreichbarem Hyper-V-Host erhält der Benutzer eine verständliche Fehlermeldung. & Simulierter Verbindungsabbruch zeigt Fehlermeldung statt technischer Exception. & Should \\
+\end{longtable}
+\end{footnotesize}
+
+\begin{footnotesize}
+\begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+\caption[Nicht-funktionale Anforderungen (NFA)]{Nicht-funktionale Anforderungen an das Self-Service-VM-Portal.}
+\label{tab:nfa}\\
+\toprule
+\textbf{ID} & \textbf{Beschreibung} & \textbf{Messkriterium} & \textbf{Priorität} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Beschreibung} & \textbf{Messkriterium} & \textbf{Priorität} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+NFA-01 & Sämtliche Kommunikation (Frontend\,$\leftrightarrow$\,Backend, Backend\,$\leftrightarrow$\,AD, Backend\,$\leftrightarrow$\,Hyper-V) erfolgt verschlüsselt. & Netzwerk-Trace zeigt ausschließlich TLS-verschlüsselten Verkehr. & Must \\
+\addlinespace
+NFA-02 & Authentifizierungstoken werden so gespeichert, dass clientseitiges JavaScript keinen Lesezugriff hat. & Token ist nicht über \texttt{document.cookie} oder \texttt{localStorage} im Browser auslesbar (httpOnly). & Must \\
+\addlinespace
+NFA-03 & Das Backend folgt dem Prinzip der minimalen Rechte (Least Privilege) gegenüber AD und Hyper-V. & Service-Accounts besitzen ausschließlich die für den Betrieb nötigen Lese-/Steuerrechte, keine Admin-Rechte. & Must \\
+\addlinespace
+NFA-04 & Das Portal ist ohne IT-Fachwissen bedienbar. & Usability-Test mit fachfremder Testperson: Kernfunktionen ohne Anleitung auffindbar. & Should \\
+\addlinespace
+NFA-05 & Die VM-Übersicht lädt den aktuellen Status aller zugewiesenen VMs in akzeptabler Zeit. & Ladezeit unter definiertem Schwellwert (z.\,B. $<$\,3~Sek.) bei bis zu $N$ VMs pro Benutzer. & Should \\
+\addlinespace
+NFA-06 & Das System erkennt den Verbindungsstatus zum Hyper-V-Host und meldet Ausfälle. & Bei Host-Ausfall erscheint im Frontend ein klarer Hinweis statt eines undefinierten Fehlerzustands. & Could \\
+\addlinespace
+NFA-07 & Frontend und Backend sind als getrennte Komponenten mit klar definierter REST-Schnittstelle aufgebaut. & Frontend und Backend lassen sich unabhängig voneinander deployen und testen. & Should \\
+\addlinespace
+NFA-08 & Die Anwendung wird zunächst lokal entwickelt und ist ohne Codeänderung in die Produktionsumgebung migrierbar. & Konfiguration (Hostnamen, Zertifikate, Verbindungsstrings) erfolgt ausschließlich über externe Konfigurationsdateien. & Must \\
+\addlinespace
+NFA-09 & Das Sicherheitskonzept orientiert sich an anerkannten Normen und Standards. & Nachvollziehbarer Bezug zu ISO/IEC~27001, RFC~4511, RFC~4513 im Sicherheitskonzept dokumentiert. & Must \\
+\addlinespace
+NFA-10 & Fehlerhafte Zugriffsversuche werden erkennbar protokolliert. & Mehrere fehlgeschlagene Login-Versuche sind im Log nachvollziehbar (Zeitpunkt, Benutzer, IP). & Could \\
+\end{longtable}
+\end{footnotesize}
+
+\begin{footnotesize}
+\begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+\caption[Organisatorische Anforderungen (OA)]{Organisatorische Anforderungen an das Projektumfeld.}
+\label{tab:oa}\\
+\toprule
+\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium / Nachweis} & \textbf{Priorität} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium / Nachweis} & \textbf{Priorität} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+OA-01 & Es ist festgelegt, wer nach Projektende für Betrieb und Wartung des Portals zuständig ist. & Schriftliche Benennung einer verantwortlichen Stelle im Abschlussbericht. & Must \\
+\addlinespace
+OA-02 & Die Inbetriebnahme in der Produktivumgebung erfordert eine formale Freigabe durch die IT-Sicherheit. & Dokumentierte Freigabe (z.\,B. Sicherheitsabnahme) liegt vor Produktivbetrieb vor. & Must \\
+\addlinespace
+OA-03 & Mitarbeitende erhalten eine kurze Einweisung oder Dokumentation zur Nutzung des Portals. & Eine Kurzanleitung (max. 1--2 Seiten) liegt bei Projektabschluss vor. & Should \\
+\addlinespace
+OA-04 & Es ist geklärt, wer festlegt, welcher Mitarbeitende welche VM zugewiesen bekommt. & Dokumentierter Prozess: Wer beantragt, wer genehmigt, wer pflegt die Zuordnung ein. & Must \\
+\addlinespace
+OA-05 & Änderungen am Portal nach Projektabschluss folgen einem definierten Änderungsprozess. & Verweis auf bestehenden Siemens-internen Change-Prozess oder einfache Übergaberegelung dokumentiert. & Could \\
+\addlinespace
+OA-06 & Bei technischen Problemen mit dem Portal existiert ein klarer Ansprechpartner / Eskalationsweg. & Eskalationsweg ist in der Kurzanleitung oder im Abschlussbericht benannt. & Should \\
+\addlinespace
+OA-07 & Die Speicherung von Protokolldaten entspricht den betrieblichen Datenschutzvorgaben. & Rücksprache mit Datenschutzbeauftragtem oder Verweis auf bestehende Richtlinie dokumentiert. & Must \\
+\addlinespace
+OA-08 & Für die Entwicklung stehen die notwendigen Testressourcen rechtzeitig zur Verfügung. & Lokale Entwicklungsumgebung ist bis Ende Phase 1 (Woche 2) nutzbar. & Must \\
+\addlinespace
+OA-09 & Es ist ein regelmäßiger Abstimmungstermin mit dem betrieblichen und dem DHBW-Betreuer etabliert. & Mindestens monatlicher Termin vereinbart; Zwischenstand Ende Juli eingeplant. & Must \\
+\addlinespace
+OA-10 & Es ist definiert, wie und durch wen die fachliche Abnahme des Portals erfolgt. & Abnahmekriterien aus dem Lastenheft werden gemeinsam mit dem betrieblichen Betreuer geprüft und bestätigt. & Must \\
+\end{longtable}
+\end{footnotesize}
+
+Eine Planungsentscheidung des ursprünglichen Pflichtenhefts wurde im Projektverlauf revidiert: Für die Hyper-V-Anbindung war zunächst PowerShell-Remoting über WinRM (HTTPS) vorgesehen. Da die Anwendung im gewählten Deployment-Modell direkt auf dem Hyper-V-Host läuft, wurde die Anbindung stattdessen als lokale PowerShell-Ausführung umgesetzt; die Begründung dieser Entscheidung erfolgt in Abschnitt~\ref{sec:technologieentscheidungen}, die Auswirkungen auf ein verteiltes Deployment werden in Kapitel~8 diskutiert.
 
 \subsection{Bewertungskriterien}
+\label{sec:bewertungskriterien}
 
-TODO: Bewertungskriterien Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit definieren und operationalisieren.
+Die Forschungsfrage benennt drei Bewertungsdimensionen, die für die Evaluation in Kapitel~7 wie folgt operationalisiert werden.
+
+\paragraph{Sicherheit.} Bewertet wird, ob das implementierte System die sicherheitsbezogenen Anforderungen (FA-01 bis FA-04, NFA-01 bis NFA-03, NFA-09, NFA-10) nachweisbar erfüllt. Prüfgrundlage sind testfallbasierte Positiv- und Negativszenarien (gültiger/ungültiger Login, Zugriff auf fremde VMs, Zugriff ohne Token), die Analyse der Token-Speicherung im Browser sowie die Einordnung der Architekturentscheidungen anhand der OWASP-Top-10-Kategorien.
+
+\paragraph{Benutzerfreundlichkeit.} Bewertet wird, ob das Portal ohne IT-Fachwissen bedienbar ist (NFA-04) und Statusinformationen zeitnah darstellt (FA-08, NFA-05). Prüfgrundlage ist ein aufgabenbasierter Usability-Test mit fachfremden Testpersonen, ergänzt um die Beurteilung der Fehlerkommunikation (FA-13): Erscheinen bei Infrastrukturfehlern verständliche Meldungen statt technischer Fehlausgaben?
+
+\paragraph{Plattformunabhängigkeit.} Bewertet wird, wie weitgehend die Fachlogik vom konkreten Hypervisor entkoppelt ist (NFA-08, Randbedingung „plattformunabhängiges Konzept"). Prüfgrundlage ist ein konzeptioneller Vergleich: Für jede Operation der Hypervisor-Abstraktion wird untersucht, ob und wie sie sich auf Proxmox VE abbilden ließe, und welcher Implementierungsaufwand für einen entsprechenden Provider entstünde — ohne dass Änderungen an API, Fachlogik oder Frontend erforderlich würden.
 
 \newpage
 % ================================
@@ -329,20 +608,80 @@ TODO: Bewertungskriterien Sicherheit, Benutzerfreundlichkeit und Plattformunabh�
 \section{Konzeption und Architektur}
 
 \subsection{Systemarchitektur}
+\label{sec:systemarchitektur}
 
-TODO: 4-Schichten-Modell vorstellen (Präsentation/Frontend, API, Fachlogik/Core, Hypervisor) inkl. Architekturabbildung.
+Das System wird in vier logische Schichten unterteilt. Im Vergleich zu einer klassischen Drei-Schichten-Architektur wird die REST-API als eigenständige Schicht zwischen Frontend und Fachlogik geführt. Diese Trennung ist die zentrale Voraussetzung für die angestrebte Plattformunabhängigkeit: Die REST-API bleibt unabhängig davon stabil, welcher Hypervisor in der darunterliegenden Fachlogik angebunden ist — Frontend und API müssen bei einem Plattformwechsel nicht verändert werden. Abbildung~\ref{fig:architektur} zeigt den Aufbau.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  schicht/.style={draw, rectangle, minimum width=11.5cm, minimum height=1.15cm, align=center, font=\small},
+  infra/.style={draw, rectangle, minimum width=5.5cm, minimum height=1.15cm, align=center, font=\small},
+  pfeil/.style={-{Stealth}, thick},
+  node distance=0.55cm
+]
+\node[schicht, fill=gray!8] (gui) {\textbf{Schicht 1 — Präsentation:} \texttt{VmPortal.Frontend}\\React-SPA (Login, VM-Übersicht, VM-Detail)};
+\node[schicht, fill=gray!8, below=of gui] (api) {\textbf{Schicht 2 — REST-API:} \texttt{VmPortal.Api}\\Controller, Authentifizierung, Middleware, Composition Root};
+\node[schicht, fill=gray!8, below=of api] (core) {\textbf{Schicht 3 — Fachlogik:} \texttt{VmPortal.Core}\\Services, Modelle, Schnittstellen (\texttt{IVirtualizationProvider})};
+\node[infra, fill=gray!16, below=1.1cm of core.south west, anchor=north west] (hyperv) {\textbf{Schicht 4 — Infrastruktur}\\Hyper-V-Host (PowerShell)};
+\node[infra, fill=gray!16, below=1.1cm of core.south east, anchor=north east] (ad) {\textbf{Schicht 4 — Infrastruktur}\\Active Directory (LDAP)};
+\draw[pfeil] (gui) -- node[right, font=\footnotesize] {HTTPS / JSON, httpOnly-Cookie} (api);
+\draw[pfeil] (api) -- node[right, font=\footnotesize] {Methodenaufrufe über Schnittstellen} (core);
+\draw[pfeil] (core.south -| hyperv.north) -- (hyperv.north);
+\draw[pfeil] (core.south -| ad.north) -- (ad.north);
+\end{tikzpicture}
+\caption[4-Schichten-Architektur des VM-Portals]{Die 4-Schichten-Architektur des VM-Portals. Die REST-API ist bewusst als eigene Schicht ausgeführt; die Fachlogik greift auf die Infrastruktur ausschließlich über Schnittstellen zu.}
+\label{fig:architektur}
+\end{figure}
+
+Schicht~1 ist eine browserbasierte Single-Page-Anwendung in React mit den Ansichten Login, VM-Übersicht und VM-Detail; sie kommuniziert ausschließlich über HTTPS mit der REST-API. Schicht~2 (\texttt{VmPortal.Api}) ist die eigenständige Schnittstellenschicht: Sie nimmt Anfragen entgegen, prüft die Authentifizierung, validiert Eingaben und liefert einheitliche Antwortformate; zugleich ist sie als Composition Root für die Verdrahtung der Dienste zuständig. Schicht~3 (\texttt{VmPortal.Core}) enthält die Fachlogik: Dienste für Authentifizierung und Token-Erstellung, die Datenmodelle sowie die Hypervisor-Abstraktionsschicht, die unterschiedliche Virtualisierungsplattformen über eine einheitliche interne Schnittstelle anspricht. Schicht~4 ist die bestehende, nicht veränderte Infrastruktur: der Hyper-V-Host als primäre Zielplattform sowie das Active Directory mit Benutzern und Gruppen.
 
 \subsection{Hypervisor-Abstraktion}
+\label{sec:hypervisor-abstraktion}
 
-TODO: \texttt{IVirtualizationProvider} als zentrale Abstraktion beschreiben — Schnittstellenentwurf, Austauschbarkeit der Provider, Bedeutung für die Forschungsfrage.
+Kern der Plattformunabhängigkeit ist die Schnittstelle \texttt{IVirtualizationProvider} in \texttt{VmPortal.Core}. Sie beschreibt genau die fachlich notwendigen Operationen des Portals — nicht mehr und nicht weniger:
+
+\begin{lstlisting}[language={[Sharp]C}, caption={Die zentrale Hypervisor-Abstraktion \texttt{IVirtualizationProvider}}, label={lst:provider}]
+public interface IVirtualizationProvider
+{
+    Task<IEnumerable<VirtualMachine>> GetVmsAsync();
+    Task<VirtualMachine?> GetVmByIdAsync(string id);
+    Task StartVmAsync(string id);
+    Task StopVmAsync(string id);
+    Task ResetVmAsync(string id);
+    Task CreateSnapshotAsync(string id, string snapshotName);
+}
+\end{lstlisting}
+
+Die Schnittstelle folgt bewusst dem Interface-Segregation-Prinzip: Sie enthält ausschließlich Operationen, die jede relevante Virtualisierungsplattform anbieten kann (Auflisten, Statusabfrage, Starten, Stoppen, Zurücksetzen, Snapshot). Hypervisorspezifische Sonderfunktionen werden nicht durchgereicht, da jede zusätzliche Operation die Hürde für eine alternative Implementierung erhöhen würde. Das zugehörige Datenmodell \texttt{VirtualMachine} ist ebenso plattformneutral gehalten: Kennung, Name, Status (\texttt{Running}, \texttt{Stopped}, \texttt{Paused}, \texttt{Unknown}) und der zugeordnete Benutzer.
+
+Gegen diese Schnittstelle existieren zwei Implementierungen. Der \texttt{HyperVProvider} bindet Microsoft Hyper-V über die PowerShell-Cmdlets an und ist die produktive Implementierung (Abschnitt~\ref{sec:impl-hyperv}). Der \texttt{DummyVirtualizationProvider} hält zwei Test-VMs im Arbeitsspeicher und dient der Entwicklung unter Linux sowie automatisierbaren Tests — er belegt zugleich praktisch, dass API und Frontend ohne jede Änderung mit einem völlig anderen „Hypervisor" funktionieren. Ein \texttt{ProxmoxProvider} wäre als dritte Implementierung über die Proxmox-REST-API denkbar; er würde dieselbe Schnittstelle erfüllen, ohne dass API-Schicht oder Frontend angepasst werden müssten. Diese Austauschbarkeit ist der technische Kern der in der Forschungsfrage formulierten Plattformunabhängigkeit: Die Beantwortung der ersten Teilfrage — welche Architekturschicht die Plattformanbindung abstrahieren muss — lautet damit: eine schmale, fachlich motivierte Schnittstelle innerhalb der Fachlogikschicht, deren konkrete Implementierung erst im Composition Root der API-Schicht ausgewählt wird.
 
 \subsection{Sicherheitskonzept}
+\label{sec:sicherheitskonzept}
 
-TODO: Sicherheitskonzept darstellen — LDAPS-Authentifizierung gegen AD, JWT im httpOnly-Cookie, RBAC aus AD-Gruppen, Least-Privilege-Prinzip.
+Das Sicherheitskonzept folgt dem Prinzip der minimalen Rechtevergabe und setzt die in Kapitel~2 dargestellten Mechanismen durchgängig um; es orientiert sich an ISO/IEC~27001 sowie den OWASP-Empfehlungen.
+
+\paragraph{Authentifizierung gegen das Active Directory.} Die Anmeldung erfolgt ausschließlich mit bestehenden AD-Konten über einen LDAP-Bind; das Portal führt keine eigene Passwortverwaltung. Konzeptionell ist die Kommunikation mit dem Verzeichnis verschlüsselt vorgesehen (LDAPS, Port~636, gemäß RFC~4513); in der Testumgebung wird aus pragmatischen Gründen — der Domänencontroller der Test-Domäne verfügt über keine Zertifikatsinfrastruktur — zunächst unverschlüsseltes LDAP auf Port~389 verwendet. Die Umstellung ist eine reine Konfigurationsänderung (Host, Port, TLS-Flag) und für die Produktivumgebung verbindlich (FA-02, NFA-01).
+
+\paragraph{Sitzungsverwaltung mit JWT im httpOnly-Cookie.} Nach erfolgreichem Bind stellt das Backend ein JWT aus, signiert mit HMAC-SHA256 über ein serverseitiges Geheimnis. Das Token enthält als Claims den Benutzernamen und die Rolle sowie eine Gültigkeit von acht Stunden. Es wird nicht an den JavaScript-Code des Frontends übergeben, sondern als Cookie mit den Attributen \texttt{httpOnly}, \texttt{Secure} und \texttt{SameSite=Strict} gesetzt: \texttt{httpOnly} entzieht das Token clientseitigem Skriptzugriff (XSS-Härtung, NFA-02), \texttt{Secure} bindet es an HTTPS, \texttt{SameSite=Strict} unterbindet das Mitsenden bei seitenübergreifenden Anfragen (CSRF-Härtung). Die API validiert bei jeder Anfrage Signatur, Aussteller, Adressat und Ablaufzeit des Tokens aus dem Cookie.
+
+\paragraph{Rollenbasierte Autorisierung aus AD-Gruppen.} Die Rolle eines Benutzers wird nicht im Portal gepflegt, sondern bei der Anmeldung aus der AD-Gruppenmitgliedschaft abgeleitet: Mitglieder der Gruppe \texttt{VM-Portal-Benutzer} erhalten die Rolle \texttt{VMUser}. Das AD bleibt damit alleinige Quelle der Wahrheit für Berechtigungen (dritte Teilfrage); ein Entzug der Gruppenmitgliedschaft entzieht spätestens nach Ablauf des Tokens den Portalzugriff. Alle Endpunkte außer dem Login sind global mit einer Autorisierungspflicht versehen — ohne gültiges Token liefert die API durchgängig den Status~401.
+
+\paragraph{Ressourcenbezogene Zugriffskontrolle.} Die Rolle allein genügt nicht: Zusätzlich prüft die API bei jeder VM-Operation, ob die angefragte VM dem angemeldeten Benutzer zugewiesen ist. Die VM-Übersicht filtert serverseitig auf die eigenen VMs (FA-04); Aktionen auf fremde VMs werden mit Status~403 abgelehnt, nicht existierende VMs mit Status~404. Die Prüfung erfolgt bewusst im Backend — eine rein clientseitige Ausblendung fremder VMs wäre wirkungslos gegen direkt an die API gerichtete Anfragen (Broken Access Control, OWASP).
+
+\paragraph{Least Privilege und Fehlersemantik.} Das Portal greift auf das AD ausschließlich lesend zu und benötigt auf dem Hypervisor nur die Rechte zur Steuerung der VMs. Infrastrukturfehler (Hyper-V nicht erreichbar) werden von fachlichen Fehlern (keine Berechtigung, VM unbekannt) getrennt: Erstere übersetzt eine Middleware in einen sprechenden Status~502 mit verständlicher Meldung (FA-13), Letztere behalten ihre Semantik (403/404). Interne Ausnahmedetails verlassen das Backend nicht.
 
 \subsection{Technologieentscheidungen und Begründung}
+\label{sec:technologieentscheidungen}
 
-TODO: Technologiewahl begründen (ASP.NET Core 8, React/Vite, PowerShell-Anbindung statt nativer Hyper-V-API, Konfigurationsgetriebene Provider-Auswahl).
+\paragraph{ASP.NET Core 8 für API und Fachlogik.} Die Backend-Umgebung ist durch den Auftraggeber auf das Microsoft-Ökosystem festgelegt (kein Python/Django, vgl. Tabelle~\ref{tab:randbedingungen}). ASP.NET Core 8 erfüllt diese Vorgabe und bietet darüber hinaus genau die benötigten Bausteine: eine ausgereifte Middleware-Pipeline für Authentifizierung und Fehlerbehandlung, einen integrierten Dependency-Injection-Container für die konfigurationsgetriebene Provider-Auswahl und plattformübergreifende Entwicklung — der Build läuft unter Ubuntu wie unter Windows Server, was die im Vorgehen (Abschnitt~\ref{sec:vorgehen}) verankerte lokale Entwicklung ermöglicht.
+
+\paragraph{React mit Vite für das Frontend.} React ist durch den Auftraggeber vorgegeben. Als Build-Werkzeug wird Vite eingesetzt; die Umsetzung erfolgt bewusst in einfachem JavaScript ohne TypeScript: Für den überschaubaren Umfang der SPA (drei Ansichten, eine API-Schicht) stünde der zusätzliche Typisierungs- und Konfigurationsaufwand in keinem Verhältnis zum Nutzen. Der Vite-Entwicklungsserver leitet API-Anfragen per Proxy an das Backend weiter, sodass Frontend und API in der Entwicklung unter derselben Origin erscheinen und das Cookie-basierte Sitzungsmodell unverändert funktioniert.
+
+\paragraph{Lokale PowerShell-Ausführung statt WinRM-Remoting.} Die Hyper-V-Cmdlets sind die offiziell unterstützte, stabile Automatisierungsschnittstelle für Hyper-V. Ursprünglich war ihre Ausführung per PowerShell-Remoting über WinRM vorgesehen; da die Anwendung im gewählten Deployment-Modell jedoch direkt auf dem Hyper-V-Host läuft, werden die Cmdlets lokal in einem eingebetteten PowerShell-Runspace ausgeführt. Das vermeidet die WinRM-Zugriffs- und Zertifikatsproblematik vollständig und benötigt keinerlei Netzwerk-Zugangsdaten für die Hypervisor-Anbindung — es existiert schlicht keine zusätzliche Netzwerkstrecke, die abgesichert werden müsste (NFA-01, NFA-03). Die Entscheidung ist im Provider gekapselt: Ein späterer Remote-Modus über WinRM wäre eine alternative Implementierung derselben Schnittstelle (vgl. Kapitel~8).
+
+\paragraph{Konfigurationsgetriebene Provider-Auswahl.} Welche \texttt{IVirtualizationProvider}-Implementierung aktiv ist, entscheidet der Konfigurationsschlüssel \texttt{Virtualization:Provider} (\texttt{HyperV} oder \texttt{Dummy}) in den \texttt{appsettings}-Dateien. Derselbe Code läuft damit in der Linux-Entwicklungsumgebung mit dem Dummy-Provider und auf dem Windows-Server mit der Hyper-V-Anbindung — die Austauschbarkeit der Plattformanbindung wird so nicht nur behauptet, sondern im täglichen Entwicklungsprozess praktisch belegt (NFA-08).
 
 \newpage
 % ================================
@@ -351,28 +690,149 @@ TODO: Technologiewahl begründen (ASP.NET Core 8, React/Vite, PowerShell-Anbindu
 \section{Implementierung}
 
 \subsection{Projektstruktur}
+\label{sec:projektstruktur}
 
-TODO: Aufbau der Solution beschreiben — VmPortal.Api, VmPortal.Core, VmPortal.Frontend und deren Verantwortlichkeiten.
+Die Lösung ist als .NET-Solution mit zwei C\#-Projekten und einem separaten Frontend-Projekt organisiert; die Zuordnung der Verzeichnisse zu den Architekturschichten aus Abschnitt~\ref{sec:systemarchitektur} ist unmittelbar ablesbar:
+
+\begin{lstlisting}[caption={Projektstruktur der VmPortal-Solution}, label={lst:struktur}]
+VmPortal.Core/                 Fachlogik (Schicht 3)
+  Interfaces/     IVirtualizationProvider, IAuthService, ITokenService
+  Models/         VirtualMachine, VmStatus
+  Services/       HyperVProvider, DummyVirtualizationProvider,
+                  LdapAuthService, JwtTokenService, VirtualizationException
+  Configuration/  LdapSettings, JwtSettings
+VmPortal.Api/                  REST-API (Schicht 2)
+  Controllers/    AuthController, VmController
+  Middleware/     VirtualizationExceptionMiddleware
+  Constants/      AuthConstants
+  wwwroot/        gebautes React-Frontend (generiert)
+  Program.cs      Composition Root (DI, Auth, CORS, Provider-Auswahl)
+VmPortal.Frontend/             Praesentation (Schicht 1)
+  src/api/        client (Axios), vmApi
+  src/pages/      Login, VmList, VmDetail
+  src/components/ Header
+  vite.config.js  Dev-Proxy /api -> API
+\end{lstlisting}
+
+\texttt{VmPortal.Core} ist eine reine Klassenbibliothek ohne Web-Abhängigkeiten: Sie definiert die Schnittstellen (\texttt{IVirtualizationProvider}, \texttt{IAuthService}, \texttt{ITokenService}), die Modelle und die Dienste. \texttt{VmPortal.Api} referenziert \texttt{Core}, enthält die Controller und die Middleware und verdrahtet in \texttt{Program.cs} als Composition Root alle Dienste über den Dependency-Injection-Container. \texttt{VmPortal.Frontend} ist ein eigenständiges Vite-Projekt, dessen Produktions-Build in das \texttt{wwwroot}-Verzeichnis der API kopiert wird (Abschnitt~\ref{sec:deployment}). Die Abhängigkeitsrichtung ist strikt: Das Frontend kennt nur die REST-API, die API kennt nur die Schnittstellen des Core, der Core kennt keine der äußeren Schichten.
 
 \subsection{Authentifizierung und Autorisierung}
+\label{sec:impl-auth}
 
-TODO: LDAP-Authentifizierung, JWT-Erstellung und -Validierung, Cookie-Handling und RBAC-Durchsetzung im Controller erläutern.
+Die Anmeldung setzt der \texttt{LdapAuthService} um. Er öffnet eine LDAP-Verbindung zum Domänencontroller (Bibliothek \texttt{Novell.Directory.Ldap}), führt einen Bind mit dem Benutzernamen im UPN-Format (\texttt{benutzer@testumgebung.local}) und dem eingegebenen Passwort aus und delegiert die Passwortprüfung damit vollständig an das Active Directory. Nach erfolgreichem Bind fragt der Dienst über eine LDAP-Suche das Attribut \texttt{memberOf} des Benutzerobjekts ab: Ist der Benutzer Mitglied der Gruppe \texttt{VM-Portal-Benutzer}, erhält er die Rolle \texttt{VMUser}, andernfalls die Basisrolle \texttt{User}. Die Rolle wird ausschließlich aus dem AD abgeleitet und nirgends im Portal gespeichert.
+
+Der \texttt{JwtTokenService} erstellt daraufhin das Sitzungstoken: ein JWT mit den Claims für Benutzername und Rolle, signiert mit HMAC-SHA256 über das konfigurierte Geheimnis, gültig für acht Stunden. Der \texttt{AuthController} setzt das Token als Cookie mit \texttt{HttpOnly}, \texttt{Secure} und \texttt{SameSite=Strict}; der Logout-Endpunkt löscht das Cookie serverseitig.
+
+Auf der Validierungsseite nutzt die API die JWT-Bearer-Middleware von ASP.NET Core, die standardmäßig den \texttt{Authorization}-Header auswertet. Da das Token hier im Cookie transportiert wird, wird der Token-Bezug im \texttt{OnMessageReceived}-Ereignis umgelenkt:
+
+\begin{lstlisting}[language={[Sharp]C}, caption={Token-Bezug aus dem httpOnly-Cookie statt aus dem Authorization-Header (\texttt{Program.cs})}, label={lst:cookieauth}]
+options.Events = new JwtBearerEvents
+{
+    OnMessageReceived = context =>
+    {
+        if (context.Request.Cookies.TryGetValue(
+                AuthConstants.TokenCookieName, out var token))
+            context.Token = token;
+        return Task.CompletedTask;
+    }
+};
+\end{lstlisting}
+
+Beide Controller sind klassenweit mit \texttt{[Authorize]} annotiert; einzig der Login-Endpunkt trägt \texttt{[AllowAnonymous]}. Die ressourcenbezogene Zugriffskontrolle ist im \texttt{VmController} zentralisiert: Eine Hilfsmethode \texttt{CheckVmAccessAsync} lädt vor jeder Aktion die VM über den Provider, liefert 404, wenn sie nicht existiert, und 403 (\texttt{Forbid}), wenn ihr zugeordneter Benutzer nicht dem angemeldeten Benutzer entspricht. Die VM-Übersicht filtert serverseitig mit demselben Kriterium, sodass fremde VMs die API nie verlassen.
 
 \subsection{Hypervisor-Anbindung}
+\label{sec:impl-hyperv}
 
-TODO: \texttt{HyperVProvider} (lokale PowerShell-Ausführung) beschreiben, Abgrenzung zu WinRM-Remoting begründen, \texttt{DummyVirtualizationProvider} für die Entwicklung vorstellen.
+Der \texttt{HyperVProvider} implementiert \texttt{IVirtualizationProvider} über lokal ausgeführte PowerShell-Cmdlets: \texttt{Get-VM} für Auflistung und Statusabfrage, \texttt{Start-VM}, \texttt{Stop-VM -Force} und \texttt{Restart-VM -Force} für die Steuerung sowie \texttt{Checkpoint-VM} für Snapshots. Alle Aufrufe laufen durch eine gemeinsame Ausführungsmethode, die den Lebenszyklus der PowerShell-Instanz kapselt:
+
+\begin{lstlisting}[language={[Sharp]C}, caption={Kern der lokalen PowerShell-Ausführung im \texttt{HyperVProvider} (gekürzt)}, label={lst:invoke}]
+runspace = RunspaceFactory.CreateRunspace(
+    InitialSessionState.CreateDefault2());
+runspace.Open();
+
+powerShell = PowerShell.Create();
+powerShell.Runspace = runspace;
+configure(powerShell);
+
+var results = await Task.Run(() => powerShell.Invoke());
+
+if (powerShell.HadErrors)
+{
+    var firstError = powerShell.Streams.Error.FirstOrDefault();
+    throw new VirtualizationException(
+        $"Hyper-V-Befehl fehlgeschlagen: {firstError?.Exception.Message
+            ?? "unbekannter Fehler"}", firstError?.Exception);
+}
+\end{lstlisting}
+
+Der Runspace wird mit \texttt{InitialSessionState.CreateDefault2()} erstellt: Diese Variante lädt nur die Core-Cmdlets aus \texttt{System.Management.Automation} und vermeidet die Abhängigkeit zum Konsolen-Host; das Hyper-V-Modul wird auf dem Windows-Host bei Bedarf automatisch über den \texttt{PSModulePath} nachgeladen. Fehler der PowerShell-Ausführung — vom unbekannten Cmdlet bis zur fehlgeschlagenen VM-Operation — werden einheitlich in eine \texttt{VirtualizationException} übersetzt, die die Middleware der API-Schicht auswertet (Abschnitt~\ref{sec:impl-api}). Jede Operation wird mit dem strukturierten Logging von ASP.NET Core protokolliert.
+
+Die Zuordnung zwischen VMs und Benutzern wird in diesem Entwicklungsstand über das Notizfeld der Hyper-V-VMs gepflegt: Das Feld \texttt{Notes} enthält den AD-Benutzernamen des zugewiesenen Mitarbeiters (z.\,B. \texttt{mugur}) und wird beim Abbilden der PowerShell-Objekte auf das \texttt{VirtualMachine}-Modell in die Eigenschaft \texttt{AssignedUserId} übernommen. Diese pragmatische Lösung hält die Zuordnung beim Hypervisor selbst und kommt ohne zusätzliche Datenhaltung aus; ihre Grenzen und der Übergang zu einer persistenten Zuordnung werden in Kapitel~8 diskutiert.
+
+Der \texttt{DummyVirtualizationProvider} bildet dieselbe Schnittstelle mit einer In-Memory-Liste zweier Test-VMs ab, deren Zuordnung das Szenario der Testumgebung spiegelt. Er ermöglicht die vollständige Entwicklung von API und Frontend unter Linux — wo die Hyper-V-Cmdlets nicht existieren — und dient als Referenzimplementierung dafür, wie schmal eine \texttt{IVirtualizationProvider}-Implementierung ausfallen kann.
 
 \subsection{REST-API und Fehlerbehandlung}
+\label{sec:impl-api}
 
-TODO: Endpunkte des \texttt{VmController}, Fehlerübersetzung über die \texttt{VirtualizationExceptionMiddleware} (502 vs. 403/404) und Logging dokumentieren.
+Die API umfasst sieben Endpunkte (Tabelle~\ref{tab:endpunkte}). Alle VM-Endpunkte erfordern ein gültiges Token; die Kennung der VM wird als Routenparameter übergeben.
+
+\begin{table}[H]
+\centering
+\caption[Endpunkte der REST-API]{Endpunkte der REST-API des VM-Portals.}
+\label{tab:endpunkte}
+\small
+\begin{tabular}{llp{6.6cm}}
+\toprule
+\textbf{Methode} & \textbf{Pfad} & \textbf{Funktion} \\
+\midrule
+POST & \texttt{/api/auth/login} & Anmeldung; setzt bei Erfolg das JWT-Cookie \\
+POST & \texttt{/api/auth/logout} & Abmeldung; löscht das JWT-Cookie \\
+GET  & \texttt{/api/vm} & Liste der dem Benutzer zugewiesenen VMs \\
+POST & \texttt{/api/vm/\{id\}/start} & Startet die VM \\
+POST & \texttt{/api/vm/\{id\}/stop} & Stoppt die VM \\
+POST & \texttt{/api/vm/\{id\}/reset} & Startet die VM neu \\
+POST & \texttt{/api/vm/\{id\}/snapshot} & Erstellt einen Snapshot (Name im Request-Body) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Die Fehlersemantik trennt konsequent drei Fälle. Fachliche Fehler beantwortet der Controller selbst: 401 bei fehlender oder ungültiger Sitzung, 403 beim Zugriff auf eine fremde VM, 404 bei unbekannter VM. Infrastrukturfehler — etwa wenn die Hyper-V-Ausführung fehlschlägt — erreichen den Controller nicht als HTTP-Antwort, sondern als \texttt{VirtualizationException}; die \texttt{VirtualizationExceptionMiddleware} am Anfang der Pipeline fängt sie ab, protokolliert sie und übersetzt sie in einen Status~502 (Bad Gateway) mit einer verständlichen JSON-Meldung. Der Status~502 ist bewusst gewählt: Die API selbst arbeitet korrekt, aber das dahinterliegende System (der Hypervisor) ist nicht verfügbar — ein generischer Status~500 würde diese Unterscheidung verwischen und die Fehlersuche erschweren (FA-13). Alle sicherheits- und infrastrukturrelevanten Ereignisse (Anmeldungen, VM-Aktionen, Fehler) werden über das Logging-Framework protokolliert.
 
 \subsection{Frontend}
+\label{sec:impl-frontend}
 
-TODO: React-SPA beschreiben — Login, VM-Übersicht, VM-Detail, Status-Polling, Axios mit \texttt{withCredentials}, zentraler 401-Interceptor.
+Das Frontend ist eine React-SPA mit drei per React Router verbundenen Ansichten: Der Login-View nimmt Benutzername und Passwort entgegen und navigiert bei Erfolg zur VM-Übersicht; die Übersicht listet die zugewiesenen VMs mit Statusanzeige; der Detail-View bietet die Aktionen Start, Stopp und Neustart, deren Schaltflächen abhängig vom aktuellen VM-Status aktiviert werden, sowie die Snapshot-Erstellung mit frei wählbarem Namen. Der Detail-View aktualisiert den VM-Status durch Polling alle fünf Sekunden, sodass Statusübergänge (etwa das Hochfahren nach einem Start) ohne manuelles Neuladen sichtbar werden (FA-08).
+
+Die gesamte API-Kommunikation läuft über eine zentrale Axios-Instanz mit \texttt{withCredentials}, wodurch der Browser das httpOnly-Cookie automatisch mitsendet. Das Frontend hält zu keinem Zeitpunkt ein Token im Anwendungszustand oder im \texttt{localStorage} — es kommt mit dem Token schlicht nie in Berührung (NFA-02). Die Behandlung abgelaufener Sitzungen ist ebenfalls zentralisiert:
+
+\begin{lstlisting}[caption={Zentrale Axios-Instanz mit 401-Interceptor (\texttt{src/api/client.js})}, label={lst:client}]
+const client = axios.create({
+  baseURL: '/api',
+  withCredentials: true,
+})
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isLoginRequest = error.config?.url?.includes('/auth/login')
+    if (error.response?.status === 401 && !isLoginRequest) {
+      if (window.location.pathname !== '/') {
+        window.location.assign('/')
+      }
+    }
+    return Promise.reject(error)
+  },
+)
+\end{lstlisting}
+
+Antwortet die API mit 401, leitet der Interceptor zur Login-Seite um — keine einzelne Komponente muss Sitzungsablauf selbst behandeln. Fehlermeldungen der API (etwa die 502-Meldung der Middleware) werden in den Views als verständlicher Hinweistext dargestellt.
 
 \subsection{Konfigurierbarkeit und Deployment-Modell}
+\label{sec:deployment}
 
-TODO: Provider-Auswahl per Konfiguration, appsettings-Struktur, Auslieferung des Frontends aus \texttt{wwwroot} und Deployment auf dem Hyper-V-Host darstellen.
+Sämtliche umgebungsspezifischen Werte liegen in den \texttt{appsettings}-Dateien (Anhang~\ref{app:appsettings}): die LDAP-Verbindung (Host, Port, Base-DN), die JWT-Parameter (Geheimnis, Aussteller, Adressat, Gültigkeit), die erlaubten CORS-Origins und der Provider-Schlüssel. Die Umgebungen unterscheiden sich allein durch Konfiguration: \texttt{appsettings.Development.json} setzt \texttt{Virtualization:Provider} auf \texttt{Dummy} (Linux-Entwicklung), die Basiskonfiguration für den Produktivbetrieb auf \texttt{HyperV}. Die Auswahl trifft \texttt{Program.cs} beim Start anhand dieses Schlüssels und registriert die entsprechende Implementierung im DI-Container — eine Codeänderung ist für den Umgebungswechsel nicht erforderlich (NFA-08).
+
+Im Entwicklungsbetrieb laufen Frontend (Vite-Dev-Server, Port~5173) und API getrennt; der Dev-Server leitet \texttt{/api}-Anfragen per Proxy an die API auf dem Windows-Server weiter, und die API erlaubt den Dev-Server-Origin über eine CORS-Richtlinie mit \texttt{AllowCredentials}, damit das Cookie übertragen wird. Im Produktivbetrieb entfällt diese Trennung: Der Frontend-Build (\texttt{npm run build}) wird in das \texttt{wwwroot}-Verzeichnis der API kopiert, die die statischen Dateien selbst ausliefert. Ein SPA-Fallback (\texttt{MapFallbackToFile}) beantwortet alle Nicht-API-Routen mit der \texttt{index.html}, damit das clientseitige Routing auch bei direktem Aufruf einer Unterroute funktioniert. Frontend und API laufen damit unter derselben Origin auf dem Hyper-V-Host; in der Zielumgebung übernimmt der bestehende Reverse Proxy die HTTPS-Terminierung (vgl. Tabelle~\ref{tab:randbedingungen}).
 
 \newpage
 % ================================
@@ -382,19 +842,33 @@ TODO: Provider-Auswahl per Konfiguration, appsettings-Struktur, Auslieferung des
 
 \subsection{Evaluationskonzept}
 
-TODO: Evaluationskonzept und Vorgehen je Kriterium beschreiben.
+Die Evaluation folgt den in Abschnitt~\ref{sec:bewertungskriterien} operationalisierten Kriterien und nutzt das Pflichtenheft (Abschnitt~\ref{sec:pflichtenheft}) als Prüfreferenz: Für jede relevante Anforderung wird der Erfüllungsgrad festgestellt und begründet. Die drei Dimensionen werden mit unterschiedlichen Methoden untersucht — die Sicherheit testfallbasiert am laufenden System, die Benutzerfreundlichkeit empirisch mit Testpersonen, die Plattformunabhängigkeit analytisch durch einen konzeptionellen Plattformvergleich. Die Evaluation erfolgt in der Testumgebung (Abschnitt~\ref{sec:vorgehen}), deren Aufbau die Produktionsbedingungen nachbildet; Abweichungen zwischen Test- und Produktivumgebung (insbesondere LDAP statt LDAPS und die fehlende HTTPS-Terminierung durch den Reverse Proxy) werden bei der Bewertung explizit ausgewiesen.
 
 \subsection{Sicherheit}
 
-TODO: Sicherheitsevaluation durchführen und dokumentieren (z.\,B. Bedrohungsanalyse, OWASP-orientierte Prüfung, Testfälle für AuthN/AuthZ).
+Die Sicherheitsevaluation ist als testfallbasierte Prüfung der Authentifizierungs- und Autorisierungslogik angelegt, ergänzt um eine architekturbezogene Einordnung anhand der OWASP-Top-10-Kategorien. Vorgesehen sind insbesondere folgende Prüfszenarien:
+
+\begin{itemize}
+  \item \textbf{Authentifizierung:} Login mit gültigen und ungültigen AD-Zugangsdaten (FA-01); Zugriff auf geschützte Endpunkte ohne Token, mit abgelaufenem sowie mit manipuliertem Token (Erwartung: durchgängig 401).
+  \item \textbf{Autorisierung:} Zugriff des Testbenutzers A auf die VM des Testbenutzers B — sowohl über die Oberfläche als auch durch direkt an die API gerichtete Anfragen (Erwartung: 403, keine Sichtbarkeit in der Übersicht; FA-04, FA-03).
+  \item \textbf{Token-Speicherung:} Nachweis im Browser, dass das JWT weder über \texttt{document.cookie} noch über \texttt{localStorage} auslesbar ist (NFA-02), sowie Kontrolle der Cookie-Attribute (\texttt{httpOnly}, \texttt{Secure}, \texttt{SameSite=Strict}).
+  \item \textbf{Transportverschlüsselung:} Netzwerk-Trace der Kommunikationsstrecken mit Einordnung, welche Strecken in der Testumgebung bereits verschlüsselt sind und welche erst in der Produktivumgebung verschlüsselt werden (NFA-01, FA-02).
+  \item \textbf{Fehlersemantik und Protokollierung:} Verhalten bei nicht erreichbarem Hypervisor (Erwartung: 502 mit verständlicher Meldung, FA-13) sowie Nachvollziehbarkeit von Anmeldungen und VM-Aktionen im Log (FA-12, NFA-10).
+\end{itemize}
+
+% TODO: nach Abschluss M7 ergänzen — Durchführung und Ergebnisse der Sicherheitsevaluation.
 
 \subsection{Benutzerfreundlichkeit}
 
-TODO: Usability-Evaluation dokumentieren (z.\,B. aufgabenbasierte Tests, Fragebogen).
+Die Usability-Evaluation ist als aufgabenbasierter Test mit fachfremden Testpersonen angelegt (NFA-04): Die Testpersonen erhalten ohne vorherige Einweisung die Aufgaben, sich anzumelden, den Status ihrer VM festzustellen, die VM zu starten und einen Snapshot zu erstellen. Beobachtet werden Aufgabenerfolg, benötigte Zeit und Stellen, an denen Rückfragen entstehen. Ergänzend wird die Verständlichkeit der Fehlerkommunikation geprüft, indem ein Fehlerfall (nicht erreichbarer Hypervisor) provoziert und die Reaktion der Testpersonen auf die Meldung erfasst wird. Die Statusaktualisierung (Polling-Intervall fünf Sekunden) wird gegen das Akzeptanzkriterium von FA-08 gemessen.
+
+% TODO: nach Abschluss M7 ergänzen — Durchführung und Ergebnisse des Usability-Tests.
 
 \subsection{Plattformunabhängigkeit}
 
-TODO: Konzeptioneller Vergleich Hyper-V vs. Proxmox VE über das gemeinsame Interface — Abbildbarkeit der Operationen, Aufwandsschätzung für einen \texttt{ProxmoxProvider}.
+Die Bewertung der Plattformunabhängigkeit erfolgt als konzeptioneller Vergleich von Hyper-V und Proxmox VE über die gemeinsame Schnittstelle: Für jede der sechs Operationen von \texttt{IVirtualizationProvider} (Listing~\ref{lst:provider}) wird untersucht, auf welchen Aufruf der Proxmox-REST-API sie sich abbilden ließe, welche semantischen Unterschiede dabei bestehen (etwa bei Statusmodell, VM-Identifikation und Snapshot-Verhalten) und wie die VM-Benutzer-Zuordnung plattformneutral abgebildet werden kann. Darauf aufbauend wird der Implementierungsaufwand eines \texttt{ProxmoxProvider} abgeschätzt und geprüft, ob API-Schicht, Fachlogik und Frontend tatsächlich unverändert blieben. Als praktisches Indiz für die Austauschbarkeit dient zusätzlich der \texttt{DummyVirtualizationProvider}, der im Entwicklungsalltag belegt, dass das Portal vollständig gegen eine alternative Implementierung der Schnittstelle läuft.
+
+% TODO: nach Abschluss M7 ergänzen — Ausarbeitung des Operationen-Mappings (Tabelle Hyper-V-Cmdlet vs. Proxmox-API-Aufruf) und Ergebnis der Aufwandsschätzung.
 
 \newpage
 % ================================
@@ -404,15 +878,33 @@ TODO: Konzeptioneller Vergleich Hyper-V vs. Proxmox VE über das gemeinsame Inte
 
 \subsection{Interpretation der Ergebnisse}
 
-TODO: Evaluationsergebnisse interpretieren und einordnen.
+% TODO: nach Abschluss M7 ergänzen — Interpretation der Evaluationsergebnisse aus Kapitel 7.
 
 \subsection{Grenzen der Implementierung}
 
-TODO: Grenzen benennen (z.\,B. VM-Zuordnung über Notizfeld, fehlende Persistenz, Single-Host-Betrieb).
+Unabhängig von den Evaluationsergebnissen weist der implementierte Stand bekannte, bewusst in Kauf genommene Grenzen auf.
+
+\paragraph{VM-Zuordnung über das Notizfeld.} Die Zuordnung von VMs zu Benutzern wird im Hyper-V-Notizfeld gepflegt (Abschnitt~\ref{sec:impl-hyperv}). Das ist für den Prototyp pragmatisch — die Zuordnung liegt beim Hypervisor, es braucht keine zusätzliche Datenhaltung —, hat aber strukturelle Schwächen: Das Feld ist untypisiert und für beliebige Notizen gedacht, die Zuordnung ist nicht historisiert, mehrfache Zuweisungen oder Metadaten (etwa erlaubte Aktionen pro Benutzer) lassen sich nicht sauber abbilden, und jeder mit Hyper-V-Manager-Zugriff kann sie unbemerkt ändern. Damit ist auch die granulare Rechtevergabe aus FA-11 nur grob umgesetzt: Das System kennt die Rolle aus der AD-Gruppe und die Besitzprüfung pro VM, aber keine aktionsbezogenen Einzelrechte (etwa „darf starten, aber nicht stoppen").
+
+\paragraph{Fehlende Persistenz.} Das Portal besitzt keine eigene Datenbank. Neben der VM-Zuordnung betrifft das vor allem die Protokollierung: Aktionen werden in das Anwendungslog geschrieben (FA-12), aber nicht als strukturierter, abfragbarer und revisionssicherer Audit-Trail persistiert. Auch die Snapshot-Verwaltung bleibt dadurch einseitig — Snapshots können erstellt (FA-09), aber nicht aufgelistet oder wiederhergestellt werden (FA-10, als Could priorisiert und nicht umgesetzt).
+
+\paragraph{Single-Host-Betrieb und lokales Deployment.} Die Anwendung läuft direkt auf dem Hyper-V-Host und bindet genau diesen einen Host an. Das vereinfacht die Sicherheitsarchitektur erheblich (keine Remote-Zugangsdaten, keine WinRM-Strecke), koppelt das Portal aber an den Host: Mehrere Hosts, Cluster oder ein vom Hypervisor getrennter Anwendungsserver erfordern den im Pflichtenheft ursprünglich vorgesehenen WinRM-Remote-Modus.
+
+\paragraph{Testumgebungs-Abstriche bei der Verschlüsselung.} In der Testumgebung erfolgt die LDAP-Anbindung unverschlüsselt auf Port~389, da der Test-Domänencontroller keine Zertifikatsinfrastruktur besitzt; die HTTPS-Terminierung vor dem Portal übernimmt in Produktion der bestehende Reverse Proxy. Die Anforderung durchgängiger Verschlüsselung (NFA-01, FA-02) ist damit konzeptionell adressiert, im Teststand aber nicht vollständig nachweisbar. Zudem liegen Secrets — insbesondere das JWT-Signaturgeheimnis — derzeit in \texttt{appsettings.json} statt in einem Secret-Store.
 
 \subsection{Weg zur Produktionsreife}
 
-TODO: Notwendige Schritte zur Produktionsreife skizzieren (Persistenz, Secret-Management, Audit-Log, Härtung, Hochverfügbarkeit).
+Aus den Grenzen ergibt sich ein klarer Fahrplan für den Übergang in den Produktivbetrieb.
+
+\begin{itemize}
+  \item \textbf{LDAPS aktivieren:} Umstellung der AD-Anbindung auf LDAP über TLS (Port~636) gegen den produktiven Domänencontroller — im Code vorbereitet, erforderlich ist allein die Konfiguration samt Zertifikatsvertrauen (FA-02, NFA-01).
+  \item \textbf{Persistente Zuordnung und Audit-Trail:} Einführung einer Datenbank für die VM-Benutzer-Zuordnung (Ablösung des Notizfelds) und für ein revisionssicheres Audit-Log aller Anmeldungen und VM-Aktionen mit Benutzer, Zeitstempel und Ergebnis (FA-12, NFA-10, OA-07).
+  \item \textbf{Granulare RBAC mit Rollenvererbung:} Erweiterung des Rollenmodells über die binäre Gruppenmitgliedschaft hinaus — mehrere AD-Gruppen für abgestufte Rollen, aktionsbezogene Rechte pro Rolle oder Benutzer (FA-11) und eine Rollenvererbung, bei der spezialisierte Rollen die Rechte der Basisrolle einschließen.
+  \item \textbf{Secrets-Management:} Auslagerung des JWT-Geheimnisses und aller Verbindungsdaten aus \texttt{appsettings.json} in Umgebungsvariablen oder einen Secret-Store, samt Rotationskonzept.
+  \item \textbf{WinRM-Remote-Modus:} Eine zweite Hyper-V-Implementierung der Schnittstelle, die die Cmdlets per PowerShell-Remoting über WinRM (HTTPS) ausführt, entkoppelt das Deployment vom Host und öffnet den Weg zu Multi-Host-Szenarien — als weiterer \texttt{IVirtualizationProvider}, ohne Änderung an API oder Frontend.
+  \item \textbf{Strukturiertes Logging und Health-Check:} Strukturierte, maschinell auswertbare Logausgabe für das Security-Monitoring sowie ein Health-Check-Endpoint, der die Erreichbarkeit von AD und Hypervisor prüft und dem Betrieb (OA-01, OA-06) eine Überwachungsgrundlage gibt (NFA-06).
+  \item \textbf{Formale Freigabe:} Sicherheitsabnahme durch die IT-Sicherheit vor Inbetriebnahme sowie Klärung der organisatorischen Anforderungen aus Tabelle~\ref{tab:oa} (Betriebsverantwortung, Zuordnungsprozess, Change-Management).
+\end{itemize}
 
 \newpage
 % ================================
@@ -422,15 +914,19 @@ TODO: Notwendige Schritte zur Produktionsreife skizzieren (Persistenz, Secret-Ma
 
 \subsection{Zusammenfassung der Erkenntnisse}
 
-TODO: Wesentliche Erkenntnisse der Arbeit zusammenfassen.
+% TODO: nach Abschluss M7 ergänzen — Zusammenfassung der wesentlichen Erkenntnisse.
 
 \subsection{Beantwortung der Forschungsfrage}
 
-TODO: Forschungsfrage aus Abschnitt~\ref{sec:forschungsfrage} anhand der Ergebnisse beantworten.
+% TODO: nach Abschluss M7 ergänzen — Beantwortung der Forschungsfrage aus Abschnitt \ref{sec:forschungsfrage} anhand der Evaluationsergebnisse.
 
 \subsection{Ausblick}
 
-TODO: Ausblick geben (z.\,B. ProxmoxProvider-Implementierung, Datenbank-Persistenz, Erweiterung des Funktionsumfangs).
+Die Arbeit eröffnet mehrere Anknüpfungspunkte. Der naheliegendste ist die tatsächliche Implementierung des \texttt{ProxmoxProvider}: Der in Kapitel~7 konzeptionell geführte Plattformvergleich ließe sich damit empirisch validieren — die Schnittstelle, das Konfigurationsmodell und die Trennung der Schichten sind dafür vorbereitet, sodass sich der Aufwand auf die Anbindung der Proxmox-REST-API konzentrieren würde. Ein solcher Zweitprovider würde die zentrale Architekturthese der Arbeit dem härtesten Test unterziehen: dass API, Fachlogik und Frontend bei einem Plattformwechsel unverändert bleiben.
+
+Zweitens die in Kapitel~8 skizzierte Persistenzschicht: Eine Datenbank für VM-Zuordnung und Audit-Trail würde nicht nur die dokumentierten Grenzen des Notizfeld-Ansatzes beheben, sondern auch neue Funktionen tragen — historisierte Zuordnungen, aktionsbezogene Einzelrechte (FA-11 in voller Granularität) und die Snapshot-Verwaltung einschließlich Wiederherstellung (FA-10).
+
+Drittens die Erweiterung des Funktionsumfangs über den bewusst eng gefassten Scope hinaus: eine kontrollierte VM-Provisionierung (Erstellen aus freigegebenen Vorlagen mit Genehmigungsworkflow), die Anbindung mehrerer Hosts über den WinRM-Remote-Modus sowie ein Ausbau der Statusabfrage vom Polling zu einer Push-basierten Aktualisierung. Schließlich bietet sich eine Vertiefung der Authentifizierung an — etwa Single Sign-on über Kerberos oder OpenID Connect —, die den Anmeldeschritt für Domänenbenutzer vollständig entfallen ließe, ohne das Sicherheitsmodell des Portals zu verändern.
 
 % ======================================
 % ANHANG
@@ -442,28 +938,71 @@ TODO: Ausblick geben (z.\,B. ProxmoxProvider-Implementierung, Datenbank-Persiste
 \section{Konfigurationsparameter}
 \label{app:config}
 
-TODO: Vollständige Übersicht der Konfigurationsparameter (LDAP, JWT, Provider-Auswahl) ergänzen.
+Sämtliche umgebungsspezifischen Parameter des Portals werden über die \texttt{appsettings}-Dateien konfiguriert und beim Start typsicher an die Konfigurationsklassen \texttt{LdapSettings} und \texttt{JwtSettings} (\texttt{VmPortal.Core/Configuration}) gebunden; fehlen die Abschnitte \texttt{Jwt} oder \texttt{Ldap}, verweigert die Anwendung den Start mit einer sprechenden Fehlermeldung. Tabelle~\ref{tab:configparams} listet alle Parameter.
+
+\begin{table}[H]
+\centering
+\caption[Konfigurationsparameter des VM-Portals]{Konfigurationsparameter des VM-Portals mit Standardwerten.}
+\label{tab:configparams}
+\small
+\begin{tabular}{llp{6.4cm}l}
+\toprule
+\textbf{Abschnitt} & \textbf{Parameter} & \textbf{Bedeutung} & \textbf{Standard} \\
+\midrule
+\texttt{Ldap} & \texttt{Host} & Hostname/IP des Domänencontrollers & — \\
+\texttt{Ldap} & \texttt{Port} & LDAP-Port (389; für LDAPS 636) & \texttt{389} \\
+\texttt{Ldap} & \texttt{BaseDn} & Basis-DN der AD-Domäne für die Suche & — \\
+\addlinespace
+\texttt{Jwt} & \texttt{Secret} & Signaturgeheimnis (HMAC-SHA256) & — \\
+\texttt{Jwt} & \texttt{Issuer} & Aussteller-Claim des Tokens & — \\
+\texttt{Jwt} & \texttt{Audience} & Adressat-Claim des Tokens & — \\
+\texttt{Jwt} & \texttt{ExpiryHours} & Token-Gültigkeit in Stunden & \texttt{8} \\
+\addlinespace
+\texttt{Virtualization} & \texttt{Provider} & Provider-Auswahl: \texttt{HyperV} oder \texttt{Dummy} & \texttt{Dummy} \\
+\addlinespace
+\texttt{Cors} & \texttt{AllowedOrigins} & Erlaubte Origins für den Dev-Server & leer \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Auszug der appsettings.json-Struktur}
 \label{app:appsettings}
 
-TODO: Auszug finalisieren und mit der tatsächlichen Konfiguration abgleichen (ohne Secrets).
+Die Basiskonfiguration (\texttt{appsettings.json}) enthält die Produktiveinstellung mit Hyper-V-Provider; das Signaturgeheimnis ist hier redigiert und wird auf dem Weg zur Produktionsreife in einen Secret-Store ausgelagert (vgl. Kapitel~8). Die Entwicklungskonfiguration überschreibt lediglich den Provider.
 
-\begin{lstlisting}[language=json, caption={Struktur der appsettings.json (Auszug, ohne Secrets)}, label={lst:appsettings}]
+\begin{lstlisting}[language=json, caption={Struktur der appsettings.json (Secret redigiert)}, label={lst:appsettings}]
 {
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "Ldap": {
+    "Host": "192.168.122.196",
+    "Port": 389,
+    "BaseDn": "DC=testumgebung,DC=local"
+  },
   "Virtualization": {
     "Provider": "HyperV"
   },
-  "Ldap": {
-    "Server": "...",
-    "Port": 389,
-    "BaseDn": "...",
-    "UserGroup": "..."
+  "Cors": {
+    "AllowedOrigins": [ "http://localhost:5173" ]
   },
   "Jwt": {
-    "Issuer": "...",
-    "Audience": "...",
+    "Secret": "<redigiert>",
+    "Issuer": "VmPortal.Api",
+    "Audience": "VmPortal.Client",
     "ExpiryHours": 8
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={appsettings.Development.json — Umschaltung auf den Dummy-Provider}, label={lst:appsettingsdev}]
+{
+  "Virtualization": {
+    "Provider": "Dummy"
   }
 }
 \end{lstlisting}
