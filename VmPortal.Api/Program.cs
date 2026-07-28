@@ -27,11 +27,15 @@ builder.Services.AddCors(options =>
         .AllowAnyMethod());
 });
 
+var testVmRoles = builder.Configuration.GetSection("TestVmRoles").Get<TestVmRolesSettings>()
+    ?? new TestVmRolesSettings();
+
 builder.Services.AddControllers();
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(ldapSettings);
+builder.Services.AddSingleton(testVmRoles);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
-builder.Services.AddScoped<IAuthService, LdapAuthService>();
+RegisterAuthService(builder);
 RegisterVirtualizationProvider(builder);
 
 builder.Services
@@ -81,6 +85,22 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// Wählt den Auth-Dienst anhand der Konfiguration aus: "Ldap" (Default) authentifiziert
+// gegen das AD, "Dummy" simuliert Testbenutzer und VM-Rollen aus "TestVmRoles" —
+// analog zur Provider-Auswahl bei der Virtualisierung.
+static void RegisterAuthService(WebApplicationBuilder builder)
+{
+    var provider = builder.Configuration["Auth:Provider"] ?? "Ldap";
+
+    if (string.Equals(provider, "Dummy", StringComparison.OrdinalIgnoreCase))
+    {
+        builder.Services.AddScoped<IAuthService, DummyAuthService>();
+        return;
+    }
+
+    builder.Services.AddScoped<IAuthService, LdapAuthService>();
+}
 
 // Wählt die konkrete Hypervisor-Implementierung anhand der Konfiguration aus.
 // So lässt sich der Portal-Kern ohne Codeänderung gegen einen anderen Provider betreiben
