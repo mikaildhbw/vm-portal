@@ -1,0 +1,478 @@
+\documentclass[12pt]{article}
+
+% ---- Sprache & Schrift ----
+\usepackage[ngerman]{babel}
+\usepackage{fontspec}
+\setmainfont{Arial}
+
+% ---- Mathematik ----
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ---- Grafik & Layout ----
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+% ---- TikZ ----
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,shapes.multipart,arrows.meta,positioning,calc,fit,backgrounds,decorations.pathreplacing}
+
+% ---- Zeilenabstand ----
+\usepackage{setspace}
+\setstretch{1.3}
+
+% Seitenränder
+\oddsidemargin=0mm
+\evensidemargin=0mm
+\textwidth=159mm
+\topmargin=-18mm
+\headsep=10mm
+\textheight=251mm
+
+% ---- Hyperlinks ----
+\usepackage[hidelinks]{hyperref}
+\usepackage{tocbibind}
+
+% ---- Literatur: Harvard (Author-Year) ----
+\usepackage[
+    backend=biber,
+    style=authoryear,
+    sorting=nyt,
+    maxcitenames=2,
+    maxbibnames=99,
+    giveninits=true,
+    doi=false,
+    isbn=false,
+    url=true
+]{biblatex}
+\addbibresource{literatur.bib}
+
+% Kopfzeilen-Warnung beheben
+\setlength{\headheight}{15pt}
+
+% ---- Listen, Code, Farben ----
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+
+% ---- Trennstrich-Makro ----
+\usepackage{hyphenat}
+
+% ---- Kopf-/Fußzeile ----
+\usepackage[headsepline,automark]{scrlayer-scrpage}
+\clearpairofpagestyles
+\ohead{\includegraphics[height=10mm]{dhbw-mannheim.jpg}}
+\cfoot{\pagemark}
+\pagestyle{scrheadings}
+
+% ---- Listings-Style ----
+\lstdefinestyle{myStyle}{
+  backgroundcolor=\color{gray!5},
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  rulecolor=\color{black!40},
+  keywordstyle=\color{blue!70}\bfseries,
+  commentstyle=\color{green!50!black},
+  stringstyle=\color{red!70},
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  tabsize=4,
+  showstringspaces=false
+}
+\lstset{style=myStyle, captionpos=b}
+
+% ---- JSON als Listing-Sprache (für appsettings-Auszüge) ----
+\lstdefinelanguage{json}{
+  morestring=[b]",
+  morecomment=[l]{//},
+  literate=
+    {:}{{{\color{black}{:}}}}{1}
+    {,}{{{\color{black}{,}}}}{1}
+}
+
+\makeindex
+
+% ---- Titel ----
+\title{%
+  \includegraphics[width=30pt,height=50pt]{space.jpg}\quad
+  \includegraphics[width=150pt,height=80pt]{dhbw-mannheim.jpg}
+}
+
+\begin{document}
+
+% ======================================
+% TITELSEITE
+% ======================================
+\begin{titlepage}
+\includegraphics[width=100pt,height=50pt]{space.jpg}\quad
+\includegraphics[width=150pt,height=80pt]{dhbw-mannheim.jpg}
+
+\begin{center}
+  {\textsf{\large Duale Hochschule Baden-W\"urttemberg Mannheim}}\\[4em]
+  {\textsf{\textbf{\large Bachelorarbeit}}}\\[6mm]
+  {\textsf{\textbf{\Large Konzeption und Implementierung eines plattformunabhängigen Self-Service-Portals für virtuelle Maschinen}}}\\[1.5cm]
+  {\textsf{\textbf{\large Studiengang Informatik}}}\\[6mm]
+  {\textsf{\textbf{Studienrichtung Angewandte Informatik}}}\vspace{5em}
+
+  \begin{minipage}{\textwidth}
+    \begin{tabbing}
+    Wissenschaftliche(r) Betreuer(in): \hspace{0.85cm}\=\kill
+    Verfasser(in): \> Mikail Ugur \\[1.5mm]
+    Matrikelnummer: \> 8333435 \\[1.5mm]
+    Kurs: \> TINF23AI2 \\[1.5mm]
+    Duale Partnerfirma: \> Siemens AG \\[1.5mm]
+    Studiengangsleiter: \> Prof.\ Dr.\ Holger Hofmann \\[1.5mm]
+    Studienbetreuer: \> Prof.\ Dr.\ Harald Kornmayer \\[1.5mm]
+    Betrieblicher Betreuer: \> Hans-J\"urgen Burath \\[1.5mm]
+    \end{tabbing}
+  \end{minipage}
+\end{center}
+\end{titlepage}
+
+% ======================================
+% VORLAUF (römische Zählung)
+% ======================================
+\pagenumbering{Roman}
+\begin{center}
+
+\section*{Erklärung der Eigenleistung}
+\addcontentsline{toc}{section}{Erklärung der Eigenleistung}
+
+\end{center}
+
+\noindent Ich versichere hiermit, dass ich die vorliegende Bachelorarbeit selbstständig mit KI-Unterstützung verfasst und keine anderen als die angegebenen Quellen und Hilfsmittel verwendet habe. Alle Stellen, die wörtlich oder sinngemäß aus veröffentlichten und nicht veröffentlichten Schriften entnommen wurden, sind als solche kenntlich gemacht. Die Arbeit ist in gleicher oder ähnlicher Form noch nicht als Prüfungsarbeit eingereicht worden.
+KI-basierte Werkzeuge wurden unterstützend zur sprachlichen Überarbeitung (Grammatik, Rechtschreibung und Schreibstil), zur Strukturierung einzelner Textpassagen sowie zur Recherche und Identifikation relevanter Quellen eingesetzt. Die inhaltliche Konzeption, die fachlichen Aussagen sowie die Auswahl, Bewertung und Einordnung aller verwendeten Quellen wurden eigenständig vorgenommen. Sämtliche mit KI-Unterstützung erstellten oder überarbeiteten Textstellen wurden von mir inhaltlich geprüft, verifiziert und verantwortet.
+
+\vspace{2cm}
+\noindent Mannheim, \underline{\hspace{4cm}} \hfill \underline{\hspace{5cm}}\\
+\hspace*{4.5cm} Datum \hfill (Unterschrift)
+
+\newpage
+
+% (II) Aufgabenstellung
+\section*{Aufgabenstellung}
+\addcontentsline{toc}{section}{Aufgabenstellung}
+
+Die Aufgabenstellung dieser Bachelorarbeit besteht in der Konzeption und Implementierung eines sicheren Self-Service-Portals für virtuelle Maschinen im Unternehmensumfeld der Siemens AG. Mitarbeitende sollen ihnen zugewiesene virtuelle Maschinen auf einem Microsoft-Hyper-V-Host eigenständig einsehen und steuern können (Starten, Stoppen, Neustarten, Snapshots), ohne administrativen Zugriff auf den Hypervisor zu benötigen. Im Fokus stehen dabei die Analyse der Anforderungen an ein solches Portal, der Entwurf einer geeigneten Schichtenarchitektur sowie die Umsetzung eines durchgängigen Sicherheitskonzepts: Die Authentifizierung erfolgt gegen das bestehende Active Directory per LDAP, die Autorisierung rollenbasiert (RBAC) auf Grundlage von AD-Gruppenmitgliedschaften, die Absicherung der Web-API über JSON Web Tokens in httpOnly-Cookies.
+
+Ein weiterer Schwerpunkt liegt auf der Plattformunabhängigkeit des Portal-Kerns: Über eine zentrale Hypervisor-Abstraktion (\texttt{IVirtualizationProvider}) wird die Fachlogik vollständig vom konkreten Virtualisierer entkoppelt, sodass neben der implementierten Hyper-V-Anbindung weitere Plattformen wie Proxmox VE über dieselbe Schnittstelle angebunden werden könnten. Die Übertragbarkeit auf Proxmox VE wird im Rahmen dieser Arbeit konzeptionell untersucht, jedoch nicht implementiert. Abschließend wird das entwickelte System anhand der Kriterien Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit evaluiert.
+
+\newpage
+
+% (III) Abstract
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+
+\noindent\textbf{Deutsch:} % TODO: Abstract final ausformulieren.
+Diese Bachelorarbeit untersucht, wie ein sicheres Self-Service-Portal für virtuelle Maschinen konzipiert, implementiert und hinsichtlich Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit bewertet wird. [TODO: Zusammenfassung von Vorgehen, Architektur (Schichtenmodell, \texttt{IVirtualizationProvider}), Sicherheitskonzept (LDAP/AD, JWT, RBAC), Implementierung (ASP.NET Core, React) und zentralen Evaluationsergebnissen ergänzen.]
+
+\vspace{1em}
+\noindent\textbf{English:} % TODO: Finalize abstract.
+This bachelor thesis investigates how a secure self-service portal for virtual machines is designed, implemented, and evaluated with regard to security, usability, and platform independence. [TODO: Summarize approach, architecture (layered model, \texttt{IVirtualizationProvider}), security concept (LDAP/AD, JWT, RBAC), implementation (ASP.NET Core, React), and key evaluation results.]
+
+\newpage
+
+% (IV) Inhaltsverzeichnis
+\tableofcontents
+\clearpage
+
+% (V) Abkürzungsverzeichnis
+\section*{Abkürzungsverzeichnis}
+\addcontentsline{toc}{section}{Abkürzungsverzeichnis}
+% TODO: Abkürzungsverzeichnis im Laufe der Arbeit vervollständigen.
+\begin{description}[labelwidth=3cm, leftmargin=4cm]
+  \item[AD]    Active Directory
+  \item[API]   Application Programming Interface
+  \item[CORS]  Cross-Origin Resource Sharing
+  \item[HTTP]  Hypertext Transfer Protocol
+  \item[HTTPS] Hypertext Transfer Protocol Secure
+  \item[IaC]   Infrastructure as Code
+  \item[JSON]  JavaScript Object Notation
+  \item[JWT]   JSON Web Token
+  \item[LDAP]  Lightweight Directory Access Protocol
+  \item[LDAPS] LDAP over SSL/TLS
+  \item[RBAC]  Role-Based Access Control
+  \item[REST]  Representational State Transfer
+  \item[SPA]   Single-Page Application
+  \item[VM]    Virtuelle Maschine
+  \item[XSS]   Cross-Site Scripting
+\end{description}
+
+% (VI) Tabellenverzeichnis
+\listoftables
+\clearpage
+
+% (VII) Abbildungsverzeichnis
+\listoffigures
+\clearpage
+
+% ======================================
+% HAUPTTEIL (arabische Zählung)
+% ======================================
+\pagenumbering{arabic}
+\pagestyle{scrheadings}
+
+% ================================
+% 1 EINLEITUNG
+% ================================
+\section{Einleitung}
+
+\subsection{Problemstellung und Motivation}
+
+TODO: Problemstellung beschreiben — manuelle VM-Verwaltung durch Administratoren als Engpass, Bedarf an Self-Service für Mitarbeitende, Sicherheitsanforderungen im Unternehmensumfeld (Siemens AG).
+
+\subsection{Zielsetzung der Arbeit}
+
+TODO: Zielsetzung formulieren — Konzeption und Implementierung eines sicheren, plattformunabhängigen Self-Service-Portals (VmPortal) mit Hyper-V-Anbindung und Evaluation.
+
+\subsection{Forschungsfrage und Teilfragen}
+\label{sec:forschungsfrage}
+
+Vor dem Hintergrund der beschriebenen Zielsetzung ergibt sich folgende zentrale Forschungsfrage:
+
+\begin{quote}
+\textit{Wie wird ein sicheres Self-Service-Portal für virtuelle Maschinen konzipiert, implementiert und hinsichtlich Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit bewertet?}
+\end{quote}
+
+TODO: Teilfragen ableiten (z.\,B. Sicherheitskonzept, Hypervisor-Abstraktion, Bewertungskriterien) und operationalisieren.
+
+\subsection{Abgrenzung des Untersuchungsgegenstands}
+
+TODO: Abgrenzung beschreiben — Hyper-V als implementierte Zielplattform, Proxmox VE nur als konzeptioneller Vergleich, Prototyp-Charakter, keine Produktionsskalierung.
+
+\subsection{Aufbau der Arbeit}
+
+TODO: Kapitelübersicht schreiben, sobald die Struktur final ist.
+
+\newpage
+% ================================
+% 2 THEORETISCHE GRUNDLAGEN
+% ================================
+\section{Theoretische Grundlagen}
+
+\subsection{Virtualisierung und Hypervisor-Konzepte}
+
+TODO: Grundlagen der Virtualisierung, Typ-1-/Typ-2-Hypervisor, Microsoft Hyper-V und Proxmox VE vorstellen.
+
+\subsection{Self-Service-Architekturen in Unternehmens-IT}
+
+TODO: Konzept und Nutzen von Self-Service-Portalen in der Unternehmens-IT einordnen.
+
+\subsection{Authentifizierung und Autorisierung}
+
+TODO: Active Directory, LDAP/LDAPS und rollenbasierte Zugriffskontrolle (RBAC) erläutern.
+
+\subsection{Sicherheitskonzepte für Web-APIs}
+
+TODO: JWT, httpOnly-Cookies, XSS/CSRF und relevante OWASP-Grundlagen darstellen.
+
+\subsection{Schichtenarchitekturen und Abstraktionsprinzipien}
+
+TODO: Schichtenarchitekturen, Dependency Inversion und Interface-basierte Abstraktion als Grundlage der Plattformunabhängigkeit erläutern.
+
+\newpage
+% ================================
+% 3 STAND DER TECHNIK UND ABGRENZUNG
+% ================================
+\section{Stand der Technik und Abgrenzung}
+
+\subsection{Ansätze zur VM-Verwaltung und -Steuerung im Überblick}
+
+TODO: Überblick über bestehende Ansätze — Hersteller-native Tools (Hyper-V-Manager, Proxmox-Weboberfläche), zentrale Verwaltungsplattformen (z.\,B. SCVMM, vCenter), Cloud-/IaaS-Self-Service (z.\,B. Azure, OpenStack), Infrastructure-as-Code (z.\,B. Terraform, Ansible) sowie programmatische Schnittstellen (PowerShell, REST-APIs).
+
+\subsection{Vergleich der Ansätze}
+
+TODO: Ansätze anhand von Plattformunabhängigkeit, Selbstbedienungsgrad und Integrationsaufwand vergleichen (Tabelle).
+
+\subsection{Forschungslücke}
+
+TODO: Forschungslücke herausarbeiten — leichtgewichtiges, plattformunabhängiges Self-Service-Portal mit unternehmensintegrierter Authentifizierung.
+
+\subsection{Abgrenzung}
+
+TODO: Beschreiben, was diese Arbeit nicht leistet (z.\,B. VM-Provisionierung, Multi-Host-Verwaltung, Abrechnung, Produktionshärtung).
+
+\newpage
+% ================================
+% 4 METHODIK / ANFORDERUNGSANALYSE
+% ================================
+\section{Methodik und Anforderungsanalyse}
+
+\subsection{Vorgehen und Forschungsdesign}
+
+TODO: Methodisches Vorgehen beschreiben (konstruktiv-gestaltender Ansatz, iterative Meilensteine, Testumgebung).
+
+\subsection{Lastenheft}
+
+TODO: Anforderungen aus Auftraggebersicht (Lastenheft) dokumentieren.
+
+\subsection{Pflichtenheft}
+
+TODO: Umsetzungsverpflichtungen (Pflichtenheft) aus dem Lastenheft ableiten.
+
+\subsection{Bewertungskriterien}
+
+TODO: Bewertungskriterien Sicherheit, Benutzerfreundlichkeit und Plattformunabhängigkeit definieren und operationalisieren.
+
+\newpage
+% ================================
+% 5 KONZEPTION UND ARCHITEKTUR
+% ================================
+\section{Konzeption und Architektur}
+
+\subsection{Systemarchitektur}
+
+TODO: 4-Schichten-Modell vorstellen (Präsentation/Frontend, API, Fachlogik/Core, Hypervisor) inkl. Architekturabbildung.
+
+\subsection{Hypervisor-Abstraktion}
+
+TODO: \texttt{IVirtualizationProvider} als zentrale Abstraktion beschreiben — Schnittstellenentwurf, Austauschbarkeit der Provider, Bedeutung für die Forschungsfrage.
+
+\subsection{Sicherheitskonzept}
+
+TODO: Sicherheitskonzept darstellen — LDAPS-Authentifizierung gegen AD, JWT im httpOnly-Cookie, RBAC aus AD-Gruppen, Least-Privilege-Prinzip.
+
+\subsection{Technologieentscheidungen und Begründung}
+
+TODO: Technologiewahl begründen (ASP.NET Core 8, React/Vite, PowerShell-Anbindung statt nativer Hyper-V-API, Konfigurationsgetriebene Provider-Auswahl).
+
+\newpage
+% ================================
+% 6 IMPLEMENTIERUNG
+% ================================
+\section{Implementierung}
+
+\subsection{Projektstruktur}
+
+TODO: Aufbau der Solution beschreiben — VmPortal.Api, VmPortal.Core, VmPortal.Frontend und deren Verantwortlichkeiten.
+
+\subsection{Authentifizierung und Autorisierung}
+
+TODO: LDAP-Authentifizierung, JWT-Erstellung und -Validierung, Cookie-Handling und RBAC-Durchsetzung im Controller erläutern.
+
+\subsection{Hypervisor-Anbindung}
+
+TODO: \texttt{HyperVProvider} (lokale PowerShell-Ausführung) beschreiben, Abgrenzung zu WinRM-Remoting begründen, \texttt{DummyVirtualizationProvider} für die Entwicklung vorstellen.
+
+\subsection{REST-API und Fehlerbehandlung}
+
+TODO: Endpunkte des \texttt{VmController}, Fehlerübersetzung über die \texttt{VirtualizationExceptionMiddleware} (502 vs. 403/404) und Logging dokumentieren.
+
+\subsection{Frontend}
+
+TODO: React-SPA beschreiben — Login, VM-Übersicht, VM-Detail, Status-Polling, Axios mit \texttt{withCredentials}, zentraler 401-Interceptor.
+
+\subsection{Konfigurierbarkeit und Deployment-Modell}
+
+TODO: Provider-Auswahl per Konfiguration, appsettings-Struktur, Auslieferung des Frontends aus \texttt{wwwroot} und Deployment auf dem Hyper-V-Host darstellen.
+
+\newpage
+% ================================
+% 7 EVALUATION
+% ================================
+\section{Evaluation}
+
+\subsection{Evaluationskonzept}
+
+TODO: Evaluationskonzept und Vorgehen je Kriterium beschreiben.
+
+\subsection{Sicherheit}
+
+TODO: Sicherheitsevaluation durchführen und dokumentieren (z.\,B. Bedrohungsanalyse, OWASP-orientierte Prüfung, Testfälle für AuthN/AuthZ).
+
+\subsection{Benutzerfreundlichkeit}
+
+TODO: Usability-Evaluation dokumentieren (z.\,B. aufgabenbasierte Tests, Fragebogen).
+
+\subsection{Plattformunabhängigkeit}
+
+TODO: Konzeptioneller Vergleich Hyper-V vs. Proxmox VE über das gemeinsame Interface — Abbildbarkeit der Operationen, Aufwandsschätzung für einen \texttt{ProxmoxProvider}.
+
+\newpage
+% ================================
+% 8 DISKUSSION
+% ================================
+\section{Diskussion}
+
+\subsection{Interpretation der Ergebnisse}
+
+TODO: Evaluationsergebnisse interpretieren und einordnen.
+
+\subsection{Grenzen der Implementierung}
+
+TODO: Grenzen benennen (z.\,B. VM-Zuordnung über Notizfeld, fehlende Persistenz, Single-Host-Betrieb).
+
+\subsection{Weg zur Produktionsreife}
+
+TODO: Notwendige Schritte zur Produktionsreife skizzieren (Persistenz, Secret-Management, Audit-Log, Härtung, Hochverfügbarkeit).
+
+\newpage
+% ================================
+% 9 FAZIT UND AUSBLICK
+% ================================
+\section{Fazit und Ausblick}
+
+\subsection{Zusammenfassung der Erkenntnisse}
+
+TODO: Wesentliche Erkenntnisse der Arbeit zusammenfassen.
+
+\subsection{Beantwortung der Forschungsfrage}
+
+TODO: Forschungsfrage aus Abschnitt~\ref{sec:forschungsfrage} anhand der Ergebnisse beantworten.
+
+\subsection{Ausblick}
+
+TODO: Ausblick geben (z.\,B. ProxmoxProvider-Implementierung, Datenbank-Persistenz, Erweiterung des Funktionsumfangs).
+
+% ======================================
+% ANHANG
+% ======================================
+\appendix
+\clearpage
+\pagenumbering{Alph}
+
+\section{Konfigurationsparameter}
+\label{app:config}
+
+TODO: Vollständige Übersicht der Konfigurationsparameter (LDAP, JWT, Provider-Auswahl) ergänzen.
+
+\section{Auszug der appsettings.json-Struktur}
+\label{app:appsettings}
+
+TODO: Auszug finalisieren und mit der tatsächlichen Konfiguration abgleichen (ohne Secrets).
+
+\begin{lstlisting}[language=json, caption={Struktur der appsettings.json (Auszug, ohne Secrets)}, label={lst:appsettings}]
+{
+  "Virtualization": {
+    "Provider": "HyperV"
+  },
+  "Ldap": {
+    "Server": "...",
+    "Port": 389,
+    "BaseDn": "...",
+    "UserGroup": "..."
+  },
+  "Jwt": {
+    "Issuer": "...",
+    "Audience": "...",
+    "ExpiryHours": 8
+  }
+}
+\end{lstlisting}
+
+% ======================================
+% LITERATUR
+% ======================================
+\clearpage
+\printbibliography[heading=bibintoc]
+\clearpage
+
+\end{document}
