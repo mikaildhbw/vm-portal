@@ -390,9 +390,9 @@ Um den Rahmen der Arbeit einzuhalten, werden folgende Aspekte bewusst nicht gele
 \subsection{Vorgehen und Forschungsdesign}
 \label{sec:vorgehen}
 
-Die Arbeit folgt einem konstruktiv-gestaltenden Forschungsansatz: Die Forschungsfrage wird nicht durch Beobachtung eines bestehenden Systems beantwortet, sondern durch den Entwurf, die Implementierung und die anschließende Bewertung eines Artefakts — des VM-Portals. Der Erkenntnisgewinn entsteht dabei auf zwei Ebenen: praktisch durch den Nachweis, dass das konzipierte Architekturmuster in einer realen Unternehmensumgebung tragfähig ist, und konzeptionell durch die Analyse, welche Entwurfsentscheidungen plattformspezifisch und welche verallgemeinerbar sind.
+Die Arbeit folgt einem konstruktiv-gestaltenden Forschungsansatz: Die Forschungsfrage wird nicht durch Beobachtung eines bestehenden Systems beantwortet, sondern durch den Entwurf, die Implementierung und die anschließende Bewertung eines Artefakts, des VM-Portals. Der Erkenntnisgewinn entsteht dabei auf zwei Ebenen: praktisch durch den Nachweis, dass das konzipierte Architekturmuster in einer realen Unternehmensumgebung tragfähig ist, und konzeptionell durch die Analyse, welche Entwurfsentscheidungen plattformspezifisch und welche verallgemeinerbar sind.
 
-Der Bearbeitungszeitraum von zwölf Wochen (02.06.2026 bis 25.08.2026) ist in sieben Phasen mit definierten Meilensteinen (M1–M7) gegliedert. Die iterative Struktur stellt sicher, dass nach jeder Phase ein überprüfbares Zwischenergebnis vorliegt und Risiken — etwa die Stabilität der verschachtelten Virtualisierung in der Testumgebung — früh sichtbar werden. Tabelle~\ref{tab:meilensteine} zeigt die Meilensteine im Überblick; die Phasen 4 und 5 laufen bewusst parallel, da Hypervisor-Anbindung und Frontend-Entwicklung weitgehend unabhängig voneinander umsetzbar sind.
+Der Bearbeitungszeitraum von zwölf Wochen (02.06.2026 bis 25.08.2026) ist in sieben Phasen mit definierten Meilensteinen (M1–M7) gegliedert. Die iterative Struktur stellt sicher, dass nach jeder Phase ein überprüfbares Zwischenergebnis vorliegt und Risiken, etwa die Stabilität der verschachtelten Virtualisierung in der Testumgebung, früh sichtbar werden. Tabelle~\ref{tab:meilensteine} zeigt die Meilensteine im Überblick; die Phasen 4 und 5 laufen bewusst parallel, da Hypervisor-Anbindung und Frontend-Entwicklung weitgehend unabhängig voneinander umsetzbar sind.
 
 \begin{table}[H]
 \centering
@@ -421,7 +421,7 @@ Die Anforderungen wurden zu Projektbeginn gemeinsam mit dem betrieblichen Betreu
 \subsection{Lastenheft}
 \label{sec:lastenheft}
 
-Das Lastenheft beschreibt aus Sicht des Auftraggebers — vertreten durch den betrieblichen Betreuer —, was mit dem Projekt erreicht werden soll. Es enthält ausschließlich Anforderungen, keine technischen Lösungswege.
+Das Lastenheft beschreibt aus Sicht des Auftraggebers, vertreten durch den betrieblichen Betreuer, was mit dem Projekt erreicht werden soll. Es enthält ausschließlich Anforderungen, keine technischen Lösungswege.
 
 \subsubsection{Projektgegenstand und Ausgangssituation}
 
@@ -599,7 +599,7 @@ Die Forschungsfrage benennt drei Bewertungsdimensionen, die für die Evaluation 
 
 \paragraph{Benutzerfreundlichkeit.} Bewertet wird, ob das Portal ohne IT-Fachwissen bedienbar ist (NFA-04) und Statusinformationen zeitnah darstellt (FA-08, NFA-05). Prüfgrundlage ist ein aufgabenbasierter Usability-Test mit fachfremden Testpersonen, ergänzt um die Beurteilung der Fehlerkommunikation (FA-13): Erscheinen bei Infrastrukturfehlern verständliche Meldungen statt technischer Fehlausgaben?
 
-\paragraph{Plattformunabhängigkeit.} Bewertet wird, wie weitgehend die Fachlogik vom konkreten Hypervisor entkoppelt ist (NFA-08, Randbedingung „plattformunabhängiges Konzept"). Prüfgrundlage ist ein konzeptioneller Vergleich: Für jede Operation der Hypervisor-Abstraktion wird untersucht, ob und wie sie sich auf Proxmox VE abbilden ließe, und welcher Implementierungsaufwand für einen entsprechenden Provider entstünde — ohne dass Änderungen an API, Fachlogik oder Frontend erforderlich würden.
+\paragraph{Plattformunabhängigkeit.} Bewertet wird, wie weitgehend die Fachlogik vom konkreten Hypervisor entkoppelt ist (NFA-08, Randbedingung „plattformunabhängiges Konzept"). Prüfgrundlage ist ein konzeptioneller Vergleich: Für jede Operation der Hypervisor-Abstraktion wird untersucht, ob und wie sie sich auf Proxmox VE abbilden ließe, und welcher Implementierungsaufwand für einen entsprechenden Provider entstünde, ohne dass Änderungen an API, Fachlogik oder Frontend erforderlich würden.
 
 \newpage
 % ================================
