@@ -1,0 +1,197 @@
+@startuml klassendiagramm_core
+!pragma layout smetana
+title Klassendiagramm der Fachlogikschicht (VmPortal.Core)
+
+skinparam backgroundColor white
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #F2F2F2
+  BorderColor #444444
+  ArrowColor #444444
+}
+skinparam stereotypeCBackgroundColor #FFD54F
+
+package "Interfaces" {
+  interface IVirtualizationProvider <<abstraction>> {
+    + GetVmsAsync()
+    + GetVmByIdAsync(id)
+    + StartVmAsync(id)
+    + StopVmAsync(id)
+    + ResetVmAsync(id)
+    + CreateSnapshotAsync(id, name)
+    + GetMeteringAsync(id)
+    + PauseVmAsync(id)
+    + ResumeVmAsync(id)
+    + SaveStateAsync(id)
+    + ApplySnapshotAsync(id, name)
+    + DeleteSnapshotAsync(id, name)
+    + GetConsoleConnectionAsync(id)
+    + ResizeRamAsync(id, ramMb)
+    + ResizeCpuAsync(id, cpuCount)
+    + AttachNetworkAdapterAsync(id, switchName)
+    + ResizeVhdAsync(id, sizeGb)
+    + CompactVhdAsync(id)
+    + ExportVmAsync(id, path)
+    + ImportVmAsync(path)
+    + CloneVmAsync(id, newName)
+    + LiveMigrateVmAsync(id, targetHost)
+  }
+
+  interface IAuthService {
+    + LoginAsync(username, password) : AuthResult
+    + ValidateTokenAsync(token) : bool
+  }
+
+  interface ITokenService {
+    + GenerateToken(username, role, vmRoles) : string
+    + ValidateToken(token) : bool
+  }
+}
+
+package "Implementierungen" {
+  class HyperVProvider {
+    - _logger : ILogger
+    + GetVmsAsync()
+    + StartVmAsync(id)
+    + ...()
+    - InvokeAsync(configure)
+    - MapVm(psObject)
+  }
+
+  class DummyVirtualizationProvider {
+    - _vms : List<VirtualMachine>
+  }
+
+  class LdapAuthService {
+    - _ldapHost : string
+    - _ldapPort : int
+    - _baseDn : string
+    - _tokenService : ITokenService
+    + LoginAsync(username, password)
+    - ExtractVmRoles(groupNames)
+  }
+
+  class DummyAuthService {
+    - _tokenService : ITokenService
+    - _testVmRoles : TestVmRolesSettings
+    + LoginAsync(username, password)
+  }
+
+  class JwtTokenService {
+    - _settings : JwtSettings
+    + GenerateToken(username, role, vmRoles)
+    + ValidateToken(token)
+  }
+}
+
+package "Modelle" {
+  class VirtualMachine {
+    + Id : string
+    + Name : string
+    + Status : VmStatus
+    + AssignedUserId : string
+  }
+
+  enum VmStatus {
+    Running
+    Stopped
+    Paused
+    Unknown
+  }
+
+  enum VmAction {
+    ViewStatus
+    Start / Stop
+    Pause / Resume
+    Reset
+    SnapshotCreate / Apply / Delete
+    ResizeRam / ResizeCpu
+    Export / Import / Clone
+    ... (22 Werte gesamt)
+  }
+
+  enum VmRole {
+    Viewer = 0
+    Operator = 1
+    PowerUser = 2
+    Admin = 3
+    FullAdmin = 4
+  }
+
+  class VmMeteringData <<record>> {
+    + AvgCpu : string
+    + AvgRam : string
+    + TotalDisk : string
+  }
+
+  class AuthResult <<record>> {
+    + Success : bool
+    + Token : string?
+    + ErrorMessage : string?
+  }
+}
+
+package "Konfiguration" {
+  class JwtSettings {
+    + Secret : string
+    + Issuer : string
+    + Audience : string
+    + ExpiryHours : int
+  }
+
+  class LdapSettings {
+    + Host : string
+    + Port : int
+    + BaseDn : string
+  }
+
+  class TestVmRolesSettings {
+    + Users : Dictionary<string, Dictionary<string,string>>
+  }
+}
+
+package "Sonstiges" {
+  class RolePermissions <<static>> {
+    - MinimumRoles : Dictionary<VmAction, VmRole>
+    + {static} MinimumRoleFor(action) : VmRole
+    + {static} IsAllowed(role, action) : bool
+  }
+
+  class VmRoleClaims <<static>> {
+    + {static} ClaimType : string
+    + {static} Serialize(vmRoles) : string
+    + {static} Deserialize(claimValues) : IReadOnlyDictionary<string,VmRole>
+  }
+
+  class VirtualizationException <<exception>> {
+    + VirtualizationException(message, innerException)
+  }
+}
+
+' Realisierungen (Interface-Implementierung)
+HyperVProvider ..|> IVirtualizationProvider
+DummyVirtualizationProvider ..|> IVirtualizationProvider
+LdapAuthService ..|> IAuthService
+DummyAuthService ..|> IAuthService
+JwtTokenService ..|> ITokenService
+
+' Abhaengigkeiten ueber Konstruktor-Injektion
+LdapAuthService ..> ITokenService : verwendet
+DummyAuthService ..> ITokenService : verwendet
+DummyAuthService ..> TestVmRolesSettings : verwendet
+LdapAuthService ..> LdapSettings : verwendet
+JwtTokenService ..> JwtSettings : verwendet
+
+' Assoziationen zu Modellklassen
+IVirtualizationProvider ..> VirtualMachine : liefert
+IVirtualizationProvider ..> VmMeteringData : liefert
+IAuthService ..> AuthResult : liefert
+ITokenService ..> VmRole : verwendet
+VirtualMachine *-- VmStatus
+DummyVirtualizationProvider o-- "2" VirtualMachine
+HyperVProvider ..> VirtualizationException : wirft
+RolePermissions ..> VmAction : verwendet
+RolePermissions ..> VmRole : verwendet
+VmRoleClaims ..> VmRole : verwendet
+
+@enduml

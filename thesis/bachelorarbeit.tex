@@ -730,7 +730,14 @@ VmPortal.Frontend/             Praesentation (Schicht 1)
   vite.config.js  Dev-Proxy /api -> API
 \end{lstlisting}
 
-\texttt{VmPortal.Core} ist eine reine Klassenbibliothek ohne Web-Abhängigkeiten: Sie definiert die Schnittstellen (\texttt{IVirtualizationProvider}, \texttt{IAuthService}, \texttt{ITokenService}), die Modelle und die Dienste. \texttt{VmPortal.Api} referenziert \texttt{Core}, enthält die Controller und die Middleware und verdrahtet in \texttt{Program.cs} als Composition Root alle Dienste über den Dependency-Injection-Container. \texttt{VmPortal.Frontend} ist ein eigenständiges Vite-Projekt, dessen Produktions-Build in das \texttt{wwwroot}-Verzeichnis der API kopiert wird (Abschnitt~\ref{sec:deployment}). Die Abhängigkeitsrichtung ist strikt: Das Frontend kennt nur die REST-API, die API kennt nur die Schnittstellen des Core, der Core kennt keine der äußeren Schichten.
+\texttt{VmPortal.Core} ist eine reine Klassenbibliothek ohne Web-Abhängigkeiten: Sie definiert die Schnittstellen (\texttt{IVirtualizationProvider}, \texttt{IAuthService}, \texttt{ITokenService}), die Modelle und die Dienste. \texttt{VmPortal.Api} referenziert \texttt{Core}, enthält die Controller und die Middleware und verdrahtet in \texttt{Program.cs} als Composition Root alle Dienste über den Dependency-Injection-Container. \texttt{VmPortal.Frontend} ist ein eigenständiges Vite-Projekt, dessen Produktions-Build in das \texttt{wwwroot}-Verzeichnis der API kopiert wird (Abschnitt~\ref{sec:deployment}). Die Abhängigkeitsrichtung ist strikt: Das Frontend kennt nur die REST-API, die API kennt nur die Schnittstellen des Core, der Core kennt keine der äußeren Schichten. Abbildung~\ref{fig:klassendiagramm-core} zeigt die Klassen des Core-Projekts und ihre Beziehungen im Detail.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{diagrams/rendered/klassendiagramm_core.pdf}
+\caption[Klassendiagramm der Fachlogikschicht]{Klassendiagramm von \texttt{VmPortal.Core}: Schnittstellen, ihre Implementierungen, Modelle, Konfigurationsklassen sowie die Hilfsklassen für Rollenprüfung und Fehlerbehandlung.}
+\label{fig:klassendiagramm-core}
+\end{figure}
 
 \subsection{Authentifizierung und Autorisierung}
 \label{sec:impl-auth}
