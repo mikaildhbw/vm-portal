@@ -1,0 +1,93 @@
+@startuml er_diagramm_autorisierung
+!pragma layout smetana
+title SOLL-KONZEPT (noch nicht implementiert):\ngeplantes datenbankgestütztes Autorisierungsmodell
+
+skinparam backgroundColor white
+skinparam entity {
+  BackgroundColor #FFF3CD
+  BorderColor #B8860B
+}
+skinparam note {
+  BackgroundColor #FFF3CD
+  BorderColor #B8860B
+}
+
+note as N1
+  Dieses Diagramm zeigt ausschließlich das mit dem Betreuer
+  besprochene ZIELMODELL für eine spätere, persistente
+  Autorisierungsschicht. Es ist zum Stand dieser Arbeit
+  NICHT UMGESETZT — das Portal hält aktuell keine eigene
+  Datenbank (vgl. Kapitel 8, "Fehlende Persistenz" und
+  "Weg zur Produktionsreife").
+end note
+
+entity "VirtualServers" as VirtualServers {
+  * id : PK
+  --
+  address : string
+  platform : string <<neu>>
+}
+
+entity "VirtualMachines" as VirtualMachines {
+  * id : PK
+  --
+  srvId : FK -> VirtualServers.id
+  grpId : FK -> VirtualMachineGroups.id
+  name : string
+}
+
+entity "VirtualMachineGroups" as VirtualMachineGroups {
+  * id : PK
+  --
+  grpName : string
+}
+
+entity "UserGroups" as UserGroups {
+  * id : PK
+  --
+  name : string
+}
+
+entity "Role" as Role {
+  * id : PK
+  --
+  name : string
+  level : int <<neu>>
+}
+
+entity "VMActions" as VMActions {
+  * id : PK
+  --
+  name : string
+}
+
+entity "RoleActions" as RoleActions {
+  * id : PK
+  --
+  roleId : FK -> Role.id
+  actionId : FK -> VMActions.id
+  ..
+  UNIQUE(roleId, actionId)
+}
+
+entity "GroupPermissions" as GroupPermissions {
+  * id : PK
+  --
+  vmGrpId : FK -> VirtualMachineGroups.id
+  usrGrpId : FK -> UserGroups.id
+  roleIdStart : FK -> Role.id
+  ..
+  UNIQUE(vmGrpId, usrGrpId)
+}
+
+VirtualServers ||--o{ VirtualMachines : "hostet"
+VirtualMachineGroups ||--o{ VirtualMachines : "enthält"
+
+Role ||--o{ RoleActions : "erlaubt"
+VMActions ||--o{ RoleActions : "ist erlaubt in"
+
+VirtualMachineGroups ||--o{ GroupPermissions : "wird berechtigt für"
+UserGroups ||--o{ GroupPermissions : "erhält Berechtigung auf"
+Role ||--o{ GroupPermissions : "als Startrolle"
+
+@enduml

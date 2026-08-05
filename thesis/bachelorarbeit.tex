@@ -704,6 +704,15 @@ Abbildung~\ref{fig:sequenz-vm-aktion} veranschaulicht diese Autorisierungsprüfu
 
 \paragraph{Least Privilege und Fehlersemantik.} Das Portal greift auf das AD ausschließlich lesend zu und benötigt auf dem Hypervisor nur die Rechte zur Steuerung der VMs. Infrastrukturfehler (Hyper-V nicht erreichbar) werden von fachlichen Fehlern (keine Berechtigung, VM unbekannt) getrennt: Erstere übersetzt eine Middleware in einen sprechenden Status~502 mit verständlicher Meldung (FA-13), Letztere behalten ihre Semantik (403/404). Interne Ausnahmedetails verlassen das Backend nicht.
 
+\paragraph{Geplante Erweiterung: datenbankgestütztes Autorisierungsmodell (Soll-Konzept).} Die vorstehend beschriebene Autorisierung stützt sich vollständig auf AD-Gruppen und den JWT-\texttt{vmroles}-Claim; das Portal besitzt keine eigene Datenbank (vgl. Kapitel~8, „Fehlende Persistenz"). Gemeinsam mit dem betrieblichen Betreuer wurde ein Zielmodell für eine spätere, persistente Autorisierungsschicht skizziert, das die Zuordnung von virtuellen Servern, VM-Gruppen, Benutzergruppen und Rollen tabellarisch abbildet. Abbildung~\ref{fig:er-autorisierung} zeigt dieses Modell als Entity-Relationship-Diagramm. Es ist ausdrücklich als \textbf{Soll-Konzept} zu verstehen: Zum Stand dieser Arbeit ist keine der dargestellten Tabellen implementiert; das Modell dient als Zielbild für die in Kapitel~8 skizzierte Persistenzschicht.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{diagrams/rendered/er_diagramm_autorisierung.pdf}
+\caption[ER-Diagramm des geplanten Autorisierungsmodells (Soll-Konzept, nicht implementiert)]{Geplantes, \textbf{nicht implementiertes} datenbankgestütztes Autorisierungsmodell (Soll-Konzept). Gegenüber der ursprünglichen Betreuervorlage neu ergänzt: das Attribut \texttt{platform} in \texttt{VirtualServers} für die Plattformunabhängigkeit sowie \texttt{level} in \texttt{Role} zur Abbildung der Rollenhierarchie als Daten statt als Code.}
+\label{fig:er-autorisierung}
+\end{figure}
+
 \subsection{Technologieentscheidungen und Begründung}
 \label{sec:technologieentscheidungen}
 
