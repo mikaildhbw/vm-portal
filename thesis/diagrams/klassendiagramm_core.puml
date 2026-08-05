@@ -1,5 +1,4 @@
 @startuml klassendiagramm_core
-!pragma layout smetana
 title Klassendiagramm der Fachlogikschicht (VmPortal.Core)
 
 skinparam backgroundColor white

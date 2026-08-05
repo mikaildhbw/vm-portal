@@ -1,5 +1,4 @@
 @startuml er_diagramm_autorisierung
-!pragma layout smetana
 title SOLL-KONZEPT (noch nicht implementiert):\ngeplantes datenbankgestütztes Autorisierungsmodell
 
 skinparam backgroundColor white

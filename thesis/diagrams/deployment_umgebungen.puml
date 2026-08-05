@@ -1,5 +1,4 @@
 @startuml deployment_umgebungen
-!pragma layout smetana
 title Deploymentdiagramm: Entwicklungs- und Zielumgebung
 
 skinparam backgroundColor white

@@ -1,5 +1,4 @@
 @startuml use_case_rollen
-!pragma layout smetana
 title Use-Cases je VM-Rolle (Rollenhierarchie mit Vererbung)
 left to right direction
 
@@ -54,12 +53,5 @@ Admin -- UC_Resize
 Admin -- UC_Network
 
 FullAdmin -- UC_ExportImport
-
-note bottom of UC_ExportImport
-  Auszug: RolePermissions.cs definiert
-  insgesamt 22 Aktionen (VmAction-Enum);
-  hier sind die in Kapitel 5 diskutierten
-  Kernaktionen je Rollenstufe dargestellt.
-end note
 
 @enduml

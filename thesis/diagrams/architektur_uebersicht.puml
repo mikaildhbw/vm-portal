@@ -1,5 +1,4 @@
 @startuml architektur_uebersicht
-!pragma layout smetana
 title Architekturübersicht: 4-Schichten-Modell mit Hypervisor-Abstraktion
 
 skinparam componentStyle rectangle
