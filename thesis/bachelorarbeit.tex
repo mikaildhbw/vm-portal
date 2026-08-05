@@ -842,7 +842,7 @@ Im Entwicklungsbetrieb laufen Frontend (Vite-Dev-Server, Port~5173) und API getr
 
 \subsection{Evaluationskonzept}
 
-Die Evaluation folgt den in Abschnitt~\ref{sec:bewertungskriterien} operationalisierten Kriterien und nutzt das Pflichtenheft (Abschnitt~\ref{sec:pflichtenheft}) als Prüfreferenz: Für jede relevante Anforderung wird der Erfüllungsgrad festgestellt und begründet. Die drei Dimensionen werden mit unterschiedlichen Methoden untersucht — die Sicherheit testfallbasiert am laufenden System, die Benutzerfreundlichkeit empirisch mit Testpersonen, die Plattformunabhängigkeit analytisch durch einen konzeptionellen Plattformvergleich. Die Evaluation erfolgt in der Testumgebung (Abschnitt~\ref{sec:vorgehen}), deren Aufbau die Produktionsbedingungen nachbildet; Abweichungen zwischen Test- und Produktivumgebung (insbesondere LDAP statt LDAPS und die fehlende HTTPS-Terminierung durch den Reverse Proxy) werden bei der Bewertung explizit ausgewiesen.
+Die Evaluation folgt den in Abschnitt~\ref{sec:bewertungskriterien} operationalisierten Kriterien und nutzt das Pflichtenheft (Abschnitt~\ref{sec:pflichtenheft}) als Prüfreferenz: Für jede relevante Anforderung wird der Erfüllungsgrad festgestellt und begründet. Die drei Dimensionen werden mit unterschiedlichen Methoden untersucht: die Sicherheit testfallbasiert am laufenden System, die Benutzerfreundlichkeit empirisch mit Testpersonen, die Plattformunabhängigkeit analytisch durch einen konzeptionellen Plattformvergleich. Die Evaluation erfolgt in der Testumgebung (Abschnitt~\ref{sec:vorgehen}), deren Aufbau die Produktionsbedingungen nachbildet; Abweichungen zwischen Test- und Produktivumgebung (insbesondere LDAP statt LDAPS und die fehlende HTTPS-Terminierung durch den Reverse Proxy) werden bei der Bewertung explizit ausgewiesen.
 
 \subsection{Sicherheit}
 
@@ -850,7 +850,7 @@ Die Sicherheitsevaluation ist als testfallbasierte Prüfung der Authentifizierun
 
 \begin{itemize}
   \item \textbf{Authentifizierung:} Login mit gültigen und ungültigen AD-Zugangsdaten (FA-01); Zugriff auf geschützte Endpunkte ohne Token, mit abgelaufenem sowie mit manipuliertem Token (Erwartung: durchgängig 401).
-  \item \textbf{Autorisierung:} Zugriff des Testbenutzers A auf die VM des Testbenutzers B — sowohl über die Oberfläche als auch durch direkt an die API gerichtete Anfragen (Erwartung: 403, keine Sichtbarkeit in der Übersicht; FA-04, FA-03).
+  \item \textbf{Autorisierung:} Zugriff des Testbenutzers A auf die VM des Testbenutzers B, sowohl über die Oberfläche als auch durch direkt an die API gerichtete Anfragen (Erwartung: 403, keine Sichtbarkeit in der Übersicht; FA-04, FA-03).
   \item \textbf{Token-Speicherung:} Nachweis im Browser, dass das JWT weder über \texttt{document.cookie} noch über \texttt{localStorage} auslesbar ist (NFA-02), sowie Kontrolle der Cookie-Attribute (\texttt{httpOnly}, \texttt{Secure}, \texttt{SameSite=Strict}).
   \item \textbf{Transportverschlüsselung:} Netzwerk-Trace der Kommunikationsstrecken mit Einordnung, welche Strecken in der Testumgebung bereits verschlüsselt sind und welche erst in der Produktivumgebung verschlüsselt werden (NFA-01, FA-02).
   \item \textbf{Fehlersemantik und Protokollierung:} Verhalten bei nicht erreichbarem Hypervisor (Erwartung: 502 mit verständlicher Meldung, FA-13) sowie Nachvollziehbarkeit von Anmeldungen und VM-Aktionen im Log (FA-12, NFA-10).
