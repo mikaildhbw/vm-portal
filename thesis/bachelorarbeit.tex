@@ -677,6 +677,15 @@ Das Sicherheitskonzept folgt dem Prinzip der minimalen Rechtevergabe und setzt d
 
 \paragraph{Ressourcenbezogene Zugriffskontrolle.} Die Rolle allein genügt nicht: Zusätzlich prüft die API bei jeder VM-Operation, ob die angefragte VM dem angemeldeten Benutzer zugewiesen ist. Die VM-Übersicht filtert serverseitig auf die eigenen VMs (FA-04); Aktionen auf fremde VMs werden mit Status~403 abgelehnt, nicht existierende VMs mit Status~404. Die Prüfung erfolgt bewusst im Backend: Eine rein clientseitige Ausblendung fremder VMs wäre wirkungslos gegen direkt an die API gerichtete Anfragen (Broken Access Control, OWASP).
 
+\paragraph{Hierarchisches Rollenmodell je VM.} Über die im Vorabsatz beschriebene Ownership-Prüfung hinaus ordnet das Portal jeder Benutzer-VM-Zuordnung eine von fünf hierarchischen Rollen zu (\texttt{VmRole}: \texttt{Viewer}, \texttt{Operator}, \texttt{PowerUser}, \texttt{Admin}, \texttt{FullAdmin}), die aus AD-Gruppen des Schemas \texttt{VM-\{VmName\}-\{Rolle\}} abgeleitet und als \texttt{vmroles}-Claim im JWT transportiert wird. Eine statische Zuordnungstabelle (\texttt{RolePermissions}) legt je Aktion (\texttt{VmAction}) die minimal erforderliche Rolle fest; da die Rollen als aufsteigende Werte modelliert sind, genügt ein einfacher Zahlenvergleich, damit eine höhere Rolle automatisch alle Rechte der niedrigeren Rollen einschließt. Abbildung~\ref{fig:use-case-rollen} zeigt die resultierenden Berechtigungen als Use-Case-Diagramm mit der Rollenvererbung als UML-Aktor-Generalisierung.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{diagrams/rendered/use_case_rollen.pdf}
+\caption[Use-Cases je VM-Rolle]{Autorisierbare Aktionen je VM-Rolle. Jeder Anwendungsfall ist an die niedrigste berechtigte Rolle geknüpft; höhere Rollen erben die Rechte über die dargestellte Aktorvererbung.}
+\label{fig:use-case-rollen}
+\end{figure}
+
 \paragraph{Least Privilege und Fehlersemantik.} Das Portal greift auf das AD ausschließlich lesend zu und benötigt auf dem Hypervisor nur die Rechte zur Steuerung der VMs. Infrastrukturfehler (Hyper-V nicht erreichbar) werden von fachlichen Fehlern (keine Berechtigung, VM unbekannt) getrennt: Erstere übersetzt eine Middleware in einen sprechenden Status~502 mit verständlicher Meldung (FA-13), Letztere behalten ihre Semantik (403/404). Interne Ausnahmedetails verlassen das Backend nicht.
 
 \subsection{Technologieentscheidungen und Begründung}
