@@ -1,0 +1,78 @@
+@startuml sequenz_vm_aktion_autorisierung
+title Sequenzdiagramm: VM-Aktion mit Autorisierungsprüfung (Beispiel "Start")
+
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 170
+
+actor Benutzer
+participant "Frontend\n(React-SPA)" as Frontend
+participant "VmController" as VmController
+participant "RolePermissions" as RolePermissions
+participant "HyperVProvider\n(IVirtualizationProvider)" as HyperVProvider
+participant "PowerShell-\nRunspace" as Runspace
+participant "Hyper-V-Host" as HyperV
+
+Benutzer -> Frontend : Klickt "Start" für VM
+Frontend -> VmController : POST /api/vm/{id}/start\n(Cookie: jwt)
+activate VmController
+
+VmController -> HyperVProvider : GetVmByIdAsync(id)
+HyperVProvider -> Runspace : Get-VM -Name id
+Runspace -> HyperV : lokale Ausführung
+HyperV --> Runspace : VM-Objekt oder leer
+Runspace --> HyperVProvider : PSObject
+HyperVProvider --> VmController : VirtualMachine? vm
+
+alt vm == null (unbekannte VM)
+  VmController --> Frontend : 404 Not Found\n{"message": "VM nicht gefunden"}
+  Frontend --> Benutzer : Fehlermeldung anzeigen
+
+else VM gefunden
+
+  VmController -> VmController : vmRoles = GetVmRolesFromToken()\n("vmroles"-Claim aus JWT-Cookie)
+  VmController -> RolePermissions : IsAllowed(role, VmAction.Start)
+  RolePermissions --> VmController : bool
+
+  alt keine Rolle für diese VM ODER Rolle erlaubt "Start" nicht
+    note right of VmController
+      Ein einziger kombinierter Check:
+      vmRoles.TryGetValue(vm.Name, ...) &&
+      RolePermissions.IsAllowed(role, action).
+      Fehlt eine Rollenzuordnung für die VM
+      oder reicht die Rolle nicht aus, liefert
+      AuthorizeVmActionAsync in beiden
+      Fällen Forbid() (403) zurück.
+    end note
+    VmController --> Frontend : 403 Forbidden
+    Frontend --> Benutzer : Fehlermeldung "Keine Berechtigung"
+
+  else Aktion erlaubt
+    VmController -> HyperVProvider : StartVmAsync(id)
+    HyperVProvider -> Runspace : Start-VM -Name id
+    Runspace -> HyperV : lokale Ausführung
+
+    alt PowerShell-Fehler (Hyper-V nicht erreichbar o. ä.)
+      HyperV --> Runspace : Fehler
+      Runspace --> HyperVProvider : PowerShell-Fehlerstream
+      HyperVProvider --> VmController : throw VirtualizationException
+      note right of VmController
+        Wird von VirtualizationExceptionMiddleware
+        (siehe Abschnitt "REST-API und
+        Fehlerbehandlung") in 502
+        Bad Gateway uebersetzt.
+      end note
+      VmController --> Frontend : 502 Bad Gateway
+
+    else Ausführung erfolgreich
+      HyperV --> Runspace : Erfolg
+      Runspace --> HyperVProvider : (keine Fehler)
+      HyperVProvider --> VmController : Task abgeschlossen
+      VmController --> Frontend : 200 OK
+      Frontend --> Benutzer : VM-Status aktualisiert
+    end
+  end
+end
+deactivate VmController
+
+@enduml

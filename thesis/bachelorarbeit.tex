@@ -693,6 +693,15 @@ Das Sicherheitskonzept folgt dem Prinzip der minimalen Rechtevergabe und setzt d
 \label{fig:use-case-rollen}
 \end{figure}
 
+Abbildung~\ref{fig:sequenz-vm-aktion} veranschaulicht diese Autorisierungsprüfung am Beispiel der Aktion „Start": \texttt{VmController} lädt zunächst die VM über den \texttt{IVirtualizationProvider}, prüft anschließend anhand des \texttt{vmroles}-Claims und \texttt{RolePermissions.IsAllowed}, ob die Aktion erlaubt ist, und delegiert erst danach an den Provider.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{diagrams/rendered/sequenz_vm_aktion_autorisierung.pdf}
+\caption[Sequenzdiagramm VM-Aktion mit Autorisierungsprüfung]{Ablauf einer VM-Aktion mit Autorisierungsprüfung am Beispiel „Start": VM-Existenzprüfung (404), kombinierte Rollen- und Aktionsprüfung (403) sowie Ausführung über den Hyper-V-Provider mit Fehlerübersetzung (502).}
+\label{fig:sequenz-vm-aktion}
+\end{figure}
+
 \paragraph{Least Privilege und Fehlersemantik.} Das Portal greift auf das AD ausschließlich lesend zu und benötigt auf dem Hypervisor nur die Rechte zur Steuerung der VMs. Infrastrukturfehler (Hyper-V nicht erreichbar) werden von fachlichen Fehlern (keine Berechtigung, VM unbekannt) getrennt: Erstere übersetzt eine Middleware in einen sprechenden Status~502 mit verständlicher Meldung (FA-13), Letztere behalten ihre Semantik (403/404). Interne Ausnahmedetails verlassen das Backend nicht.
 
 \subsection{Technologieentscheidungen und Begründung}
