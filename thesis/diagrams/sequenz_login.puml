@@ -1,0 +1,49 @@
+@startuml sequenz_login
+title Sequenzdiagramm: Login und Authentifizierung
+
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 160
+
+actor Benutzer
+participant "Frontend\n(React-SPA)" as Frontend
+participant "AuthController" as AuthController
+participant "LdapAuthService\n(IAuthService)" as LdapAuthService
+participant "Active Directory\n(LDAP)" as AD
+participant "JwtTokenService\n(ITokenService)" as JwtTokenService
+participant "Browser\n(Cookie-Speicher)" as Browser
+
+Benutzer -> Frontend : Benutzername + Passwort eingeben
+Frontend -> AuthController : POST /api/auth/login\n{username, password}
+AuthController -> LdapAuthService : LoginAsync(username, password)
+LdapAuthService -> AD : LDAP-Bind\n(benutzer@testumgebung.local, Passwort)
+
+alt Bind erfolgreich (gültige Zugangsdaten)
+  LdapAuthService -> AD : LDAP-Suche (sAMAccountName=username)\nAttribut memberOf
+  AD --> LdapAuthService : Gruppennamen (CN-Liste)
+
+  note right of LdapAuthService
+    Mitglied von "VM-Portal-Benutzer"?
+    -> globale Rolle "VMUser", sonst "User".
+    Gruppen nach Muster
+    "VM-{VmName}-{Viewer|Operator|
+    PowerUser|Admin|FullAdmin}" ->
+    VM-spezifische Rollenzuordnung
+    (vmRoles-Dictionary).
+  end note
+
+  LdapAuthService -> JwtTokenService : GenerateToken(username, role, vmRoles)
+  JwtTokenService --> LdapAuthService : JWT\n(Claims: sub, name, role, jti,\n"vmroles"-JSON-Claim)
+  LdapAuthService --> AuthController : AuthResult(Success=true, Token, null)
+  AuthController -> Browser : Set-Cookie: jwt=<JWT>\n(HttpOnly, Secure, SameSite=Strict, 8h)
+  AuthController --> Frontend : 200 OK {"message": "Login erfolgreich"}
+  Frontend --> Benutzer : Weiterleitung zur VM-Übersicht
+
+else Bind fehlgeschlagen (ungültige Zugangsdaten)
+  AD --> LdapAuthService : LdapException
+  LdapAuthService --> AuthController : AuthResult(Success=false, null, ErrorMessage)
+  AuthController --> Frontend : 401 Unauthorized\n{"message": "Login fehlgeschlagen: ..."}
+  Frontend --> Benutzer : Fehlermeldung anzeigen
+end
+
+@enduml
