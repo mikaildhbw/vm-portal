@@ -1,0 +1,73 @@
+@startuml architektur_uebersicht
+!pragma layout smetana
+title Architekturübersicht: 4-Schichten-Modell mit Hypervisor-Abstraktion
+
+skinparam componentStyle rectangle
+skinparam backgroundColor white
+skinparam component {
+  BackgroundColor #F2F2F2
+  BorderColor #444444
+  ArrowColor #444444
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #888888
+}
+
+package "Schicht 1 — Präsentation\n(VmPortal.Frontend)" as GUI {
+  [React-SPA\n(Login, VmList, VmDetail)] as ReactSpa
+}
+
+package "Schicht 2 — REST-API\n(VmPortal.Api)" as API {
+  [AuthController] as AuthController
+  [VmController] as VmController
+  [VirtualizationExceptionMiddleware] as Middleware
+}
+
+package "Schicht 3 — Fachlogik\n(VmPortal.Core)" as CORE {
+  interface "IVirtualizationProvider" as IVP #FFD54F
+  interface "IAuthService" as IAuth
+  interface "ITokenService" as IToken
+  [RolePermissions] as RolePerm
+
+  [HyperVProvider] as HyperVProvider
+  [DummyVirtualizationProvider] as DummyProvider
+  [LdapAuthService] as LdapAuthService
+  [DummyAuthService] as DummyAuthService
+  [JwtTokenService] as JwtTokenService
+
+  HyperVProvider .up.|> IVP
+  DummyProvider .up.|> IVP
+  LdapAuthService .up.|> IAuth
+  DummyAuthService .up.|> IAuth
+  JwtTokenService .up.|> IToken
+}
+
+package "Schicht 4 — Infrastruktur" as INFRA {
+  node "Hyper-V-Host\n(lokale PowerShell)" as HyperVHost
+  node "Active Directory\n(LDAP)" as AD
+}
+
+ReactSpa -down-> AuthController : "HTTPS / JSON\nhttpOnly-Cookie"
+ReactSpa -down-> VmController : "HTTPS / JSON\nhttpOnly-Cookie"
+
+AuthController -down-> IAuth : "Methodenaufruf"
+VmController -down-> IVP : "Methodenaufruf"
+VmController .down.> RolePerm : "IsAllowed(role, action)"
+
+HyperVProvider -down-> HyperVHost : "PowerShell-Cmdlets\n(Get-VM, Start-VM, ...)"
+LdapAuthService -down-> AD : "LDAP-Bind,\nmemberOf-Suche"
+
+note bottom of IVP
+  Zentrale Abstraktion für die
+  Plattformunabhängigkeit: Die API-
+  und Präsentationsschicht kennen
+  nur diese Schnittstelle, nicht den
+  konkreten Hypervisor. Ein
+  ProxmoxProvider wäre eine
+  weitere Implementierung, ohne
+  dass API oder Frontend sich
+  ändern müssten.
+end note
+
+@enduml

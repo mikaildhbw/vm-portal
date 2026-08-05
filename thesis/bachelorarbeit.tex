@@ -639,7 +639,14 @@ Schicht~1 ist eine browserbasierte Single-Page-Anwendung in React mit den Ansich
 \subsection{Hypervisor-Abstraktion}
 \label{sec:hypervisor-abstraktion}
 
-Kern der Plattformunabhängigkeit ist die Schnittstelle \texttt{IVirtualizationProvider} in \texttt{VmPortal.Core}. Sie beschreibt genau die fachlich notwendigen Operationen des Portals, nicht mehr und nicht weniger:
+Kern der Plattformunabhängigkeit ist die Schnittstelle \texttt{IVirtualizationProvider} in \texttt{VmPortal.Core}. Abbildung~\ref{fig:architektur-komponenten} zeigt die Komponentensicht der vier Schichten und hebt diese Abstraktion visuell hervor: API- und Präsentationsschicht kennen ausschließlich die Schnittstelle, nie eine konkrete Hypervisor- oder Auth-Implementierung. Sie beschreibt genau die fachlich notwendigen Operationen des Portals, nicht mehr und nicht weniger:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{diagrams/rendered/architektur_uebersicht.pdf}
+\caption[Komponentensicht mit hervorgehobener Hypervisor-Abstraktion]{Komponentensicht der 4-Schichten-Architektur. Die Schnittstelle \texttt{IVirtualizationProvider} ist hervorgehoben, da sie den technischen Kern der in der Forschungsfrage formulierten Plattformunabhängigkeit bildet.}
+\label{fig:architektur-komponenten}
+\end{figure}
 
 \begin{lstlisting}[language={[Sharp]C}, caption={Die zentrale Hypervisor-Abstraktion \texttt{IVirtualizationProvider}}, label={lst:provider}]
 public interface IVirtualizationProvider

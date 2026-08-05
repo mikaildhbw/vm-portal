@@ -16,3 +16,6 @@
 *.synctex.gz
 *.toc
 *.xdv
+
+# PlantUML-Werkzeug (per README neu heruntergeladen statt versioniert)
+tools/*.jar
