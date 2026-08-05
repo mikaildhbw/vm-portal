@@ -1,0 +1,61 @@
+@startuml deployment_umgebungen
+!pragma layout smetana
+title Deploymentdiagramm: Entwicklungs- und Zielumgebung
+
+skinparam backgroundColor white
+skinparam node {
+  BackgroundColor #F2F2F2
+  BorderColor #444444
+}
+skinparam database {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam artifact {
+  BackgroundColor #FFF3CD
+  BorderColor #B8860B
+}
+
+package "Entwicklungsumgebung (aktueller Ist-Zustand)" #F8F8F8 {
+  node "Lenovo ThinkPad X13 Gen 4\n(Ubuntu 24.04 LTS, KVM-Host)" as DevHost {
+    node "Windows Server 2022\n(KVM-Gast)" as DevVM {
+      artifact "VmPortal.Api + Core\n(Backend, lokal ausgeführt)" as DevBackend
+      node "verschachtelter Hyper-V-Host\n(Test-VMs: VM-Mikail, VM-Burath)" as DevHyperV
+      database "Active Directory\n(Testdomäne\ntestumgebung.local)" as DevAD
+    }
+  }
+  DevBackend -[#444444]-> DevHyperV : lokale PowerShell\n(kein WinRM)
+  DevBackend -[#444444]-> DevAD : LDAP (Port 389)
+}
+
+package "Zielumgebung — Siemens-Produktion (Migrationsziel)" #F8F8F8 {
+  node "Siemens-Firmennetz" as SiemensNet {
+    node "Reverse Proxy\n(HTTPS-Terminierung)" as ReverseProxy
+    node "Anwendungsserver\n(Backend: VmPortal.Api + Core)" as ProdBackend
+    node "Hyper-V-Host" as ProdHyperV
+    database "Domain Controller\narchiv.mhm.siemens.com\n(AGLP-Gruppenstruktur)" as ProdAD
+  }
+
+  actor "Mitarbeitende" as User
+
+  User -[#444444]-> ReverseProxy : HTTPS
+  ReverseProxy -[#444444]-> ProdBackend : HTTP (intern)
+  ProdBackend -[#B8860B]-> ProdHyperV : PowerShell **über WinRM**\n(HTTPS)
+  ProdBackend -[#444444]-> ProdAD : LDAPS (Port 636)
+}
+
+note bottom of ProdHyperV
+  Getrennter Anwendungs- und Hyper-V-Host
+  setzt den in Kapitel 8 skizzierten
+  WinRM-Remote-Modus voraus (geplante
+  Erweiterung, siehe "Weg zur Produktions-
+  reife"). Der aktuelle HyperVProvider führt
+  PowerShell ausschließlich lokal aus
+  (vgl. Entwicklungsumgebung oben) und
+  setzt daher voraus, dass Backend und
+  Hyper-V-Host auf demselben Host laufen.
+end note
+
+DevHost -[hidden]-> SiemensNet
+
+@enduml

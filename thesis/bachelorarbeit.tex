@@ -954,6 +954,15 @@ Aus den Grenzen ergibt sich ein klarer Fahrplan für den Übergang in den Produk
   \item \textbf{Formale Freigabe:} Sicherheitsabnahme durch die IT-Sicherheit vor Inbetriebnahme sowie Klärung der organisatorischen Anforderungen aus Tabelle~\ref{tab:oa} (Betriebsverantwortung, Zuordnungsprozess, Change-Management).
 \end{itemize}
 
+Abbildung~\ref{fig:deployment-umgebungen} stellt der aktuellen Entwicklungsumgebung die geplante Zielumgebung bei Siemens gegenüber. Der dort dargestellte getrennte Anwendungs- und Hyper-V-Host setzt den oben beschriebenen WinRM-Remote-Modus voraus: Der aktuelle \texttt{HyperVProvider} führt PowerShell ausschließlich lokal aus und erfordert daher, dass Backend und Hyper-V-Host auf demselben System laufen.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{diagrams/rendered/deployment_umgebungen.pdf}
+\caption[Deploymentdiagramm: Entwicklungs- und Zielumgebung]{Gegenüberstellung von Entwicklungsumgebung (verschachtelte Virtualisierung auf einem einzelnen Laptop) und geplanter Zielumgebung im Siemens-Firmennetz. Die räumliche Trennung von Anwendungs- und Hyper-V-Host in der Zielumgebung ist ein Migrationsziel und setzt den noch nicht implementierten WinRM-Remote-Modus voraus.}
+\label{fig:deployment-umgebungen}
+\end{figure}
+
 \newpage
 % ================================
 % 9 FAZIT UND AUSBLICK
