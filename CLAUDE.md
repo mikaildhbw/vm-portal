@@ -17,17 +17,27 @@ Drei Projekte, klare Schichtentrennung:
 
 ```
 VmPortal.Core/
-  Interfaces/     IVirtualizationProvider, IAuthService, ITokenService
-  Models/         VirtualMachine, VmStatus
+  Interfaces/     IVirtualizationProvider, IAuthService, ITokenService,
+                  IDbAuthorizationService
+  Models/         VirtualMachine, VmStatus, VmRole, VmAction
   Services/       HyperVProvider, DummyVirtualizationProvider,
-                  LdapAuthService, JwtTokenService, VirtualizationException
-  Configuration/  LdapSettings, JwtSettings
+                  LdapAuthService, DummyAuthService, JwtTokenService,
+                  RolePermissions, VmRoleClaims, AdGroupClaims,
+                  DbAuthorizationService, VirtualizationException
+  Configuration/  LdapSettings, JwtSettings, AuthorizationSettings,
+                  TestVmRolesSettings, TestAdGroupsSettings
+  Data/           VmPortalDbContext, AuthorizationSeedData, Entities/,
+                  Migrations/ (SQLite-Autorisierungsschicht, siehe
+                  docs/authorization.md)
 VmPortal.Api/
   Controllers/    AuthController, VmController
+  Controllers/Admin/ RolesController, PermissionsController,
+                  VmGroupsController, ServersController (FullAdmin-only)
   Middleware/     VirtualizationExceptionMiddleware
   Constants/      AuthConstants
   wwwroot/        gebautes React-Frontend (generiert, nicht versioniert)
-  Program.cs      Composition Root (DI, Auth, CORS, Static/SPA, Provider-Auswahl)
+  Program.cs      Composition Root (DI, Auth, CORS, Static/SPA, Provider-Auswahl,
+                  DbContext-Registrierung)
 VmPortal.Frontend/
   src/api/        client (Axios, withCredentials, 401-Interceptor), vmApi
   src/pages/      Login, VmList, VmDetail
@@ -52,6 +62,13 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project VmPortal.Api  # Dummy-Pr
 ASPNETCORE_ENVIRONMENT=Production  dotnet run --project VmPortal.Api  # Hyper-V-Provider
 ```
 Provider-Auswahl über `Virtualization:Provider` (`HyperV` | `Dummy`) in `appsettings.*.json`.
+
+Die SQLite-Autorisierungs-DB (`vmportal.db`, nicht versioniert) muss vor dem ersten Start
+per Migration angelegt werden — läuft **nicht** automatisch beim App-Start:
+```bash
+dotnet ef database update --project VmPortal.Core --startup-project VmPortal.Api
+```
+Details, Schema und Seed-Daten: [`docs/authorization.md`](docs/authorization.md).
 
 Frontend:
 ```bash
@@ -83,11 +100,29 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   401-Interceptor, kein Auth-Token im Frontend-State/localStorage; kantiges Siemens-Design.
   Backend: CORS für den Vite-Dev-Server (`AllowCredentials`), Auslieferung des Builds aus
   `wwwroot` und SPA-Fallback (`MapFallbackToFile`).
+- **M6 (Teil 1 — Autorisierungsschicht):** SQLite/EF Core als persistente
+  Autorisierungsschicht neben AD (Hybrid: AD authentifiziert, SQLite autorisiert). RBAC mit
+  fünf System-Rollen und frei erstellbaren Custom-Rollen über eine Rolle×Aktion-Matrix
+  (`Roles`, `VMActions`, `RoleActions`), Rechtevergabe je AD-Gruppe × VM-Gruppe
+  (`GroupPermissions`, Union aller zutreffenden Rollen statt „höchste Rolle gewinnt“),
+  Bootstrap-FullAdmin über eine konfigurierbare AD-Gruppe. Admin-REST-Endpunkte
+  (`/api/admin/roles|permissions|vm-groups|servers`) für Rollen-/Zuordnungsverwaltung.
+- **M6 (Teil 2 — Umstellung `VmController`):** `VmController` prüft VM-Autorisierung jetzt
+  ausschließlich über `DbAuthorizationService` (AD-Gruppen aus dem `adgroups`-Claim); die
+  alte `vmroles`-Claim-Prüfung (`RolePermissions.IsAllowed` direkt im Controller) wurde
+  entfernt. Der `vmroles`-Claim selbst wird unverändert weiter erzeugt (aktuell ohne
+  Konsumenten, reserviert für mögliche Frontend-Anzeige). Verweigerungsgründe sind in den
+  Logs unterscheidbar: „nicht authentifiziert“, „DB-Autorisierung verweigert (VM ohne
+  Gruppe)“, „DB-Autorisierung verweigert (keine passende GroupPermission)“. Details:
+  [`docs/authorization.md`](docs/authorization.md).
 
 ## Was noch kommt (Phase 6–7)
-- **Phase 6 — Persistenz:** Datenbank (z. B. PostgreSQL/EF Core) für die persistente
-  Zuordnung VM ↔ Benutzer sowie Audit-Log. Secrets aus `appsettings.json` in
-  Umgebungsvariablen/Secret-Store auslagern.
+- **Phase 6 — Rest:** Audit-Log (wer hat wann welche VM-Aktion ausgeführt); Secrets aus
+  `appsettings.json` in Umgebungsvariablen/Secret-Store auslagern; `deploy.ps1` (existiert
+  noch nicht) um den `dotnet ef database update`-Schritt ergänzen; Testumgebung mit
+  vollständigen `GroupPermissions` befüllen (nach der Umstellung auf
+  `DbAuthorizationService` reicht eine leere/unvollständige Zuordnungstabelle nicht mehr
+  aus, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten).
 - **Phase 7 — Evaluation:** Bewertung nach Sicherheit, Benutzerfreundlichkeit und
   Plattformunabhängigkeit; konzeptioneller Vergleich Hyper-V vs. Proxmox über das gemeinsame
   Interface.
@@ -113,6 +148,20 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   Zertifikatsproblematik und benötigt keine Netzwerk-Zugangsdaten. Der Runspace wird mit
   `InitialSessionState.CreateDefault2()` erstellt, damit nur die Core-Cmdlets geladen werden
   und das Hyper-V-Modul bei Bedarf über den PSModulePath nachgeladen wird.
+- **Hybrid-Autorisierung (AD authentifiziert, SQLite autorisiert):** Das AD bleibt alleinige
+  Quelle für „wer ist der Nutzer und in welchen Gruppen ist er" — keine doppelte
+  Benutzerverwaltung. Was eine AD-Gruppe auf welchen VMs darf, ist dagegen ein reines
+  Anwendungskonzept ohne AD-Gegenstück und liegt daher lokal in SQLite/EF Core, verwaltbar
+  über die Admin-UI statt über AD-Gruppenverschachtelung.
+- **RBAC mit expliziten Rolle-Aktion-Mengen statt Level-Vererbung:** Anders als das ältere
+  `VmRole`-Enum (Zahlenvergleich = Vererbung) definiert sich jede Rolle in der neuen Schicht
+  über eine explizite, vollständige Aktionsliste (`RoleActions`). Grund: frei
+  zusammenstellbare Custom-Rollen lassen sich nicht mehr in eine eindeutige Rangfolge
+  bringen. Begründung ausführlich in `docs/authorization.md`.
+- **Union statt „höchste Rolle gewinnt" bei mehreren zutreffenden Rollen:** Hat ein Nutzer
+  über mehrere AD-Gruppen mehrere Rollen auf derselben VM-Gruppe, werden deren Aktionsmengen
+  vereinigt statt nur die „höchste" zu nehmen — bei nicht-hierarchischen Custom-Rollen gibt es
+  keine widerspruchsfreie Alternative dazu.
 
 ## Konventionen und Constraints
 - ASP.NET Core 8, C#. Kein Blazor, kein Django, kein Python.

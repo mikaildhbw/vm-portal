@@ -12,13 +12,26 @@ VmPortal trennt zwei Belange, die vorher beide implizit über AD-Gruppennamen li
   `adgroups` transportiert (`VmPortal.Core.Services.AdGroupClaims`) und gegen die Tabelle
   `UserGroups` gematcht.
 
-Der bisherige `vmroles`-Claim (VM-Name → Rolle, geparst aus AD-Gruppen nach dem Schema
-`VM-{VmName}-{Rolle}`) bleibt unverändert bestehen und wird weiterhin von `VmController`
-genutzt — die neue Schicht ergänzt, ersetzt aber (noch) nicht die bestehende
-VM-Autorisierung in der API. `TestVmRolesSettings`/`DummyAuthService` simulieren
-weiterhin lokal VM-Rollen für diesen alten Pfad; für den neuen DB-Pfad simuliert
-`TestAdGroupsSettings` (Abschnitt `TestAdGroups` in `appsettings.Development.json`)
-AD-Gruppenmitgliedschaften.
+**Update 2026-08-12:** `VmController` nutzt seit dieser Umstellung ausschließlich
+`DbAuthorizationService` (Konstruktor-Injection von `IDbAuthorizationService`) für die
+VM-Autorisierungsentscheidung. Die alte, direkt im Controller ausgeführte Prüfung
+`vmRoles.TryGetValue(...) && RolePermissions.IsAllowed(role, action)` wurde ersatzlos aus
+`VmController` entfernt (nicht nur auskommentiert), ebenso die private Hilfsmethode
+`GetVmRolesFromToken()`.
+
+Der `vmroles`-Claim selbst (VM-Name → Rolle, geparst aus AD-Gruppen nach dem Schema
+`VM-{VmName}-{Rolle}`) wird **weiterhin unverändert erzeugt** — `JwtTokenService`,
+`LdapAuthService`, `VmRoleClaims` und `RolePermissions` sind von dieser Umstellung nicht
+betroffen. Er hat aktuell keinen bekannten Konsumenten mehr (das Frontend liest ihn nicht;
+`VmController` war der einzige), bleibt aber im JWT erhalten für einen möglichen künftigen
+Zweck wie eine reine Anzeige "meine höchste VM-Rolle" im Frontend, ohne dafür erneut das
+Token-Schema ändern zu müssen. `TestVmRolesSettings`/`DummyAuthService` erzeugen ihn
+lokal unverändert weiter (Abschnitt `TestVmRoles` in `appsettings.Development.json`), auch
+wenn er zur Laufzeit nicht mehr ausgewertet wird.
+
+Für die tatsächliche Autorisierung zählt jetzt ausschließlich der `adgroups`-Claim
+(rohe AD-Gruppennamen) gegen die Tabelle `UserGroups`; lokal simuliert über
+`TestAdGroupsSettings` (Abschnitt `TestAdGroups` in `appsettings.Development.json`).
 
 ## Schema
 
@@ -116,6 +129,30 @@ Diese Design-Entscheidung ist der Grund, warum `GroupPermissions` bewusst **nich
 gleichzeitig haben (z. B. eine AD-Gruppe bekommt zwei verschiedene Custom-Rollen auf
 dieselbe VM-Gruppe zugewiesen), was die Admin-UI als Mehrfachauswahl statt Einzelauswahl
 pro Zuordnung abbilden muss.
+
+## Verweigerungsgründe in den Logs unterscheiden
+
+Da `VmController` jetzt ausschließlich `DbAuthorizationService` befragt, muss ein `403`
+nicht mehr zwangsläufig heißen "Nutzer hat wirklich keine Rechte" — es kann in der
+Übergangsphase auch heißen "die GroupPermission dafür wurde in der neuen DB noch nicht
+angelegt". Damit man das beim Debuggen unterscheiden kann, loggen `DbAuthorizationService`
+und `VmController` mit unterschiedlichen, grep-baren Präfixen (jeweils `LogWarning`, außer
+der Authentifizierung):
+
+| Fall | Log-Zeile | Wo |
+| --- | --- | --- |
+| Kein/ungültiges JWT-Cookie | `nicht authentifiziert: {Method} {Path} ({Reason})` | `Program.cs`, `JwtBearerEvents.OnChallenge` |
+| VM in der Autorisierungs-DB unbekannt oder ohne `GroupId` | `DB-Autorisierung verweigert (VM ohne Gruppe): …` | `DbAuthorizationService.GetAllowedActionsAsync` |
+| Keine der AD-Gruppen des Nutzers ist einer `GroupPermission` auf der betroffenen VM-Gruppe zugeordnet (AD-Gruppe ggf. gar nicht als `UserGroup` bekannt, oder bekannt aber ohne passende Zuordnung) | `DB-Autorisierung verweigert (keine passende GroupPermission): …` | `DbAuthorizationService.GetAllowedActionsAsync` |
+| Zuordnung existiert, aber die konkrete Aktion ist nicht in den `RoleActions` der zugewiesenen Rolle(n) enthalten (normale RBAC-Verweigerung, z. B. Operator versucht `SnapshotDelete`) | `403: Nutzer {User} (AD-Gruppen […]) darf Aktion {Action} auf VM {VmName} nicht ausführen` | `VmController.AuthorizeVmActionAsync` (einzige Log-Zeile für diesen Fall — `DbAuthorizationService` loggt hier bewusst nichts, da das erwartetes, alltägliches RBAC-Verhalten ist, kein Konfigurationsproblem) |
+
+Die ersten beiden Fälle sind bewusst als potenzielle Konfigurationslücken markiert (nicht
+als Bug): Direkt nach der Umstellung von `VmController` auf `DbAuthorizationService` ist es
+erwartbar, dass Nutzer, die vorher über den `vmroles`-Claim Zugriff hatten, jetzt `403`
+bekommen, weil für ihre VM(s) noch keine `VirtualMachineGroup`-Zuordnung bzw. keine
+passende `GroupPermission` in der neuen DB existiert. Abhilfe ist ausschließlich
+Admin-Konfiguration (VM-Gruppen anlegen, VMs zuordnen, `GroupPermissions` über
+`/api/admin/*` vergeben) — kein Code-Fix.
 
 ## Migration & Deployment
 

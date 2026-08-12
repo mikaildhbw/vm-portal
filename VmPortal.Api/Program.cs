@@ -70,6 +70,20 @@ builder.Services
                 if (context.Request.Cookies.TryGetValue(AuthConstants.TokenCookieName, out var token))
                     context.Token = token;
                 return Task.CompletedTask;
+            },
+            // Eigenes Log-Signal für "nicht authentifiziert" (401), damit dieser Fall in
+            // den Logs klar von den DB-Autorisierungsverweigerungen (403, siehe
+            // DbAuthorizationService/VmController) unterscheidbar ist.
+            OnChallenge = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Authentication");
+                logger.LogInformation(
+                    "nicht authentifiziert: {Method} {Path} ({Reason})",
+                    context.Request.Method, context.Request.Path,
+                    context.AuthenticateFailure?.Message ?? "kein gültiges JWT-Cookie");
+                return Task.CompletedTask;
             }
         };
     });

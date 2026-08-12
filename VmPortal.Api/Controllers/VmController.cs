@@ -12,30 +12,40 @@ namespace VmPortal.Api.Controllers;
 public class VmController : ControllerBase
 {
     private readonly IVirtualizationProvider _virtualizationProvider;
+    private readonly IDbAuthorizationService _authorizationService;
     private readonly ILogger<VmController> _logger;
 
-    public VmController(IVirtualizationProvider virtualizationProvider, ILogger<VmController> logger)
+    public VmController(
+        IVirtualizationProvider virtualizationProvider,
+        IDbAuthorizationService authorizationService,
+        ILogger<VmController> logger)
     {
         _virtualizationProvider = virtualizationProvider;
+        _authorizationService = authorizationService;
         _logger = logger;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetVms()
     {
-        var vmRoles = GetVmRolesFromToken();
+        var adGroups = AdGroupClaims.FromPrincipal(User);
         var vms = await _virtualizationProvider.GetVmsAsync();
+
+        var visibleVms = new List<VirtualMachine>();
+        foreach (var vm in vms)
+        {
+            if (await _authorizationService.IsAllowedAsync(adGroups, vm.Name, VmAction.ViewStatus))
+                visibleVms.Add(vm);
+        }
 
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug(
-                "GET /api/vm: vmroles-Claims [{RawClaims}] -> geparst [{ParsedRoles}], Provider-VMs [{VmNames}]",
-                string.Join(" | ", User.FindAll(VmRoleClaims.ClaimType).Select(c => c.Value)),
-                string.Join(", ", vmRoles.Select(r => $"{r.Key}={r.Value}")),
+                "GET /api/vm: AD-Gruppen [{AdGroups}] -> sichtbare VMs [{VisibleVmNames}] von Provider-VMs [{AllVmNames}]",
+                string.Join(", ", adGroups),
+                string.Join(", ", visibleVms.Select(vm => vm.Name)),
                 string.Join(", ", vms.Select(vm => vm.Name)));
 
-        return Ok(vms.Where(vm =>
-            vmRoles.TryGetValue(vm.Name, out var role) &&
-            RolePermissions.IsAllowed(role, VmAction.ViewStatus)));
+        return Ok(visibleVms);
     }
 
     [HttpGet("{id}")]
@@ -158,8 +168,10 @@ public class VmController : ControllerBase
     }
 
     /// <summary>
-    /// Autorisiert eine Aktion anhand der VM-Rolle aus dem "vmroles"-Claim des Tokens.
-    /// Ohne Rolle für die betreffende VM gilt eine implizite Nicht-Berechtigung (403).
+    /// Autorisiert eine Aktion über die DB-Autorisierungsschicht (<see cref="IDbAuthorizationService"/>,
+    /// AD-Gruppen aus dem "adgroups"-Claim). Ohne passende GroupPermission bzw. ohne VM-Gruppe
+    /// gilt eine implizite Nicht-Berechtigung (403) - siehe docs/authorization.md für die
+    /// genaue Herleitung und die Log-Unterscheidung der Verweigerungsgründe.
     /// </summary>
     private async Task<(VirtualMachine? Vm, IActionResult? Error)> AuthorizeVmActionAsync(string id, VmAction action)
     {
@@ -167,15 +179,15 @@ public class VmController : ControllerBase
         if (vm is null)
             return (null, NotFound(new { message = "VM nicht gefunden" }));
 
-        var vmRoles = GetVmRolesFromToken();
-        if (!vmRoles.TryGetValue(vm.Name, out var role) || !RolePermissions.IsAllowed(role, action))
+        var adGroups = AdGroupClaims.FromPrincipal(User);
+        if (!await _authorizationService.IsAllowedAsync(adGroups, vm.Name, action))
+        {
+            _logger.LogWarning(
+                "403: Nutzer {User} (AD-Gruppen [{AdGroups}]) darf Aktion {Action} auf VM {VmName} nicht ausführen",
+                User.Identity?.Name, string.Join(", ", adGroups), action, vm.Name);
             return (null, Forbid());
+        }
 
         return (vm, null);
     }
-
-    // FindAll statt FindFirst: Der JWT-Handler zerlegt den JSON-Array-Claim in
-    // einen Claim pro VM-Rollen-Eintrag.
-    private IReadOnlyDictionary<string, VmRole> GetVmRolesFromToken() =>
-        VmRoleClaims.Deserialize(User.FindAll(VmRoleClaims.ClaimType).Select(claim => claim.Value));
 }
