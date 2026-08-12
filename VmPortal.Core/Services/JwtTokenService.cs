@@ -17,7 +17,11 @@ public class JwtTokenService : ITokenService
         _settings = settings;
     }
 
-    public string GenerateToken(string username, string role, IReadOnlyDictionary<string, VmRole>? vmRoles = null)
+    public string GenerateToken(
+        string username,
+        string role,
+        IReadOnlyDictionary<string, VmRole>? vmRoles = null,
+        IReadOnlyCollection<string>? adGroups = null)
     {
         // "role" bleibt als globaler Legacy-Claim erhalten; die VM-spezifische
         // Autorisierung läuft über den "vmroles"-Claim.
@@ -31,6 +35,9 @@ public class JwtTokenService : ITokenService
 
         if (vmRoles is { Count: > 0 })
             claims.Add(new Claim(VmRoleClaims.ClaimType, VmRoleClaims.Serialize(vmRoles), JsonClaimValueTypes.Json));
+
+        if (adGroups is { Count: > 0 })
+            claims.AddRange(adGroups.Select(group => new Claim(AdGroupClaims.ClaimType, group)));
 
         var credentials = new SigningCredentials(CreateSigningKey(), SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(

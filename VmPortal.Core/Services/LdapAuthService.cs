@@ -42,7 +42,7 @@ public class LdapAuthService : IAuthService
             var role = groupNames.Contains("VM-Portal-Benutzer") ? "VMUser" : "User";
             var vmRoles = ExtractVmRoles(groupNames);
 
-            return new AuthResult(true, _tokenService.GenerateToken(username, role, vmRoles), null);
+            return new AuthResult(true, _tokenService.GenerateToken(username, role, vmRoles, groupNames), null);
         }
         catch (LdapException ex)
         {

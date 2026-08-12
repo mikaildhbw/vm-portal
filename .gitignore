@@ -485,3 +485,8 @@ $RECYCLE.BIN/
 
 # Generiertes React-Build-Output (wird aus VmPortal.Frontend/dist kopiert)
 VmPortal.Api/wwwroot/
+
+# Lokale SQLite-Autorisierungsdatenbank (siehe docs/authorization.md) - wird per
+# "dotnet ef database update" erzeugt, nie eingecheckt
+VmPortal.Api/vmportal.db
+

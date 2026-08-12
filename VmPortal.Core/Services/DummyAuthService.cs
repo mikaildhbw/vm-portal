@@ -17,11 +17,13 @@ public class DummyAuthService : IAuthService
 
     private readonly ITokenService _tokenService;
     private readonly TestVmRolesSettings _testVmRoles;
+    private readonly TestAdGroupsSettings _testAdGroups;
 
-    public DummyAuthService(ITokenService tokenService, TestVmRolesSettings testVmRoles)
+    public DummyAuthService(ITokenService tokenService, TestVmRolesSettings testVmRoles, TestAdGroupsSettings testAdGroups)
     {
         _tokenService = tokenService;
         _testVmRoles = testVmRoles;
+        _testAdGroups = testAdGroups;
     }
 
     public Task<AuthResult> LoginAsync(string username, string password)
@@ -29,7 +31,8 @@ public class DummyAuthService : IAuthService
         if (!TestUsers.Contains(username) || password != TestPassword)
             return Task.FromResult(new AuthResult(false, null, "Ungültige Zugangsdaten"));
 
-        var token = _tokenService.GenerateToken(username, "VMUser", ResolveVmRoles(username));
+        var adGroups = _testAdGroups.Users.GetValueOrDefault(username, new List<string>());
+        var token = _tokenService.GenerateToken(username, "VMUser", ResolveVmRoles(username), adGroups);
         return Task.FromResult(new AuthResult(true, token, null));
     }
 

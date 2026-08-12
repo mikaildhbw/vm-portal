@@ -1,9 +1,11 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using VmPortal.Api.Constants;
 using VmPortal.Api.Middleware;
 using VmPortal.Core.Configuration;
+using VmPortal.Core.Data;
 using VmPortal.Core.Interfaces;
 using VmPortal.Core.Services;
 
@@ -29,12 +31,19 @@ builder.Services.AddCors(options =>
 
 var testVmRoles = builder.Configuration.GetSection("TestVmRoles").Get<TestVmRolesSettings>()
     ?? new TestVmRolesSettings();
+var testAdGroups = builder.Configuration.GetSection("TestAdGroups").Get<TestAdGroupsSettings>()
+    ?? new TestAdGroupsSettings();
+var authorizationSettings = builder.Configuration.GetSection("Authorization").Get<AuthorizationSettings>()
+    ?? throw new InvalidOperationException("Abschnitt 'Authorization' fehlt in appsettings.json");
 
 builder.Services.AddControllers();
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(ldapSettings);
 builder.Services.AddSingleton(testVmRoles);
+builder.Services.AddSingleton(testAdGroups);
+builder.Services.AddSingleton(authorizationSettings);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
+RegisterDatabase(builder);
 RegisterAuthService(builder);
 RegisterVirtualizationProvider(builder);
 
@@ -100,6 +109,23 @@ static void RegisterAuthService(WebApplicationBuilder builder)
     }
 
     builder.Services.AddScoped<IAuthService, LdapAuthService>();
+}
+
+// Registriert den SQLite-DbContext für die Autorisierungsschicht und legt das
+// Zielverzeichnis der Datenbankdatei an, falls es noch nicht existiert (relevant für
+// C:\VmPortal\data in Produktion, das beim ersten Deployment nicht existiert).
+static void RegisterDatabase(WebApplicationBuilder builder)
+{
+    var connectionString = builder.Configuration.GetConnectionString("VmPortalDb")
+        ?? throw new InvalidOperationException("ConnectionString 'VmPortalDb' fehlt in appsettings.json");
+
+    var dataSource = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString).DataSource;
+    var directory = Path.GetDirectoryName(Path.GetFullPath(dataSource));
+    if (!string.IsNullOrEmpty(directory))
+        Directory.CreateDirectory(directory);
+
+    builder.Services.AddDbContext<VmPortalDbContext>(options => options.UseSqlite(connectionString));
+    builder.Services.AddScoped<IDbAuthorizationService, DbAuthorizationService>();
 }
 
 // Wählt die konkrete Hypervisor-Implementierung anhand der Konfiguration aus.

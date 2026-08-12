@@ -8,8 +8,8 @@ Bachelorarbeit bei der Siemens AG.
 > Plattformunabhängigkeit bewertet?
 
 Angemeldete Benutzer verwalten über eine REST-API ausschließlich die ihnen zugewiesenen
-virtuellen Maschinen: starten, stoppen, neu starten und Snapshots erstellen. Authentifizierung
-erfolgt gegen Active Directory, die Autorisierung rollenbasiert.
+virtuellen Maschinen: starten, stoppen, Snapshots erstellen, Ressourcen anpassen u. v. m.
+Authentifizierung erfolgt gegen Active Directory, die Autorisierung rollenbasiert (RBAC).
 
 ## Architektur
 
@@ -34,30 +34,91 @@ HTTP-Client → VmController → IVirtualizationProvider ─┬─ HyperVProvide
 
 ## Sicherheit
 
-- **Authentifizierung:** LDAP-Bind gegen Active Directory (`testumgebung.local`).
-- **Token:** JWT (HMAC-SHA256), Claims `username` und `role`, Gültigkeit 8 Stunden.
+- **Authentifizierung:** LDAP-Bind gegen Active Directory (`testumgebung.local`) —
+  `LdapAuthService`. Das Portal prüft nie selbst ein Passwort, sondern bindet sich als der
+  jeweilige Benutzer ans AD.
+- **Token:** JWT (HMAC-SHA256), Claims `username`, `role`, `vmroles` (VM-Name → Rolle, aus
+  AD-Gruppen nach dem Schema `VM-{VmName}-{Rolle}`) und `adgroups` (rohe
+  AD-Gruppennamen), Gültigkeit 8 Stunden.
 - **Transport:** JWT in einem `httpOnly`-Cookie (`SameSite=Strict`, `Secure`) — kein
   `localStorage`, dadurch kein Zugriff durch JavaScript (XSS-Schutz).
 - **Middleware:** Alle Endpunkte außer `/api/auth/login` sind mit `[Authorize]` geschützt.
-- **RBAC:** Ein Benutzer sieht und steuert ausschließlich VMs, die ihm zugewiesen sind;
-  Zugriff auf fremde VMs wird mit `403 Forbidden` beantwortet.
+- **RBAC (`VmController`):** Der `vmroles`-Claim ordnet jeder VM eine Rolle
+  (`Viewer < Operator < PowerUser < Admin < FullAdmin`) zu; `RolePermissions` prüft pro
+  Aktion die Mindestrolle. Ohne Rolle für eine VM: implizite Nicht-Berechtigung, `403
+  Forbidden`.
+- **RBAC (SQLite-Autorisierungsschicht):** Parallel dazu existiert eine persistente
+  Autorisierungsschicht (EF Core/SQLite) mit System- und frei erstellbaren Custom-Rollen
+  über eine Rolle×Aktion-Matrix, Rechtevergabe je AD-Gruppe × VM-Gruppe, verwaltet über die
+  `/api/admin/*`-Endpunkte. Details: [`docs/authorization.md`](docs/authorization.md).
 - **Konfiguration:** Sämtliche Secrets und Verbindungsdaten liegen in `appsettings.json`,
   nichts ist im Code hartcodiert.
 
 ## API-Endpunkte
 
-| Methode | Pfad                       | Beschreibung                          | Auth |
-| ------- | -------------------------- | ------------------------------------- | ---- |
-| POST    | `/api/auth/login`          | Login gegen AD, setzt JWT-Cookie      | –    |
-| POST    | `/api/auth/logout`         | Löscht das JWT-Cookie                 | ✓    |
-| GET     | `/api/vm`                  | VMs des angemeldeten Benutzers        | ✓    |
-| POST    | `/api/vm/{id}/start`       | VM starten                            | ✓    |
-| POST    | `/api/vm/{id}/stop`        | VM stoppen (`-Force`)                 | ✓    |
-| POST    | `/api/vm/{id}/reset`       | VM neu starten (`-Force`)             | ✓    |
-| POST    | `/api/vm/{id}/snapshot`    | Snapshot/Checkpoint erstellen         | ✓    |
+### Auth (`AuthController`)
 
-Antwortcodes bei VM-Operationen: `200` Erfolg, `403` fremde VM, `404` VM unbekannt,
-`502` Hyper-V-Ausführung fehlgeschlagen.
+| Methode | Pfad                | Beschreibung                     | Auth |
+| ------- | -------------------- | --------------------------------- | ---- |
+| POST    | `/api/auth/login`    | Login gegen AD, setzt JWT-Cookie  | –    |
+| POST    | `/api/auth/logout`   | Löscht das JWT-Cookie             | ✓    |
+
+### VMs (`VmController`, RBAC über `vmroles`-Claim)
+
+| Methode | Pfad                              | Beschreibung                    |
+| ------- | ---------------------------------- | -------------------------------- |
+| GET     | `/api/vm`                          | VMs, für die eine Rolle vorliegt (mind. Viewer) |
+| GET     | `/api/vm/{id}`                     | VM-Details                       |
+| GET     | `/api/vm/{id}/metering`            | Ressourcenverbrauch (`Measure-VM`) |
+| POST    | `/api/vm/{id}/start`               | VM starten                       |
+| POST    | `/api/vm/{id}/stop`                | VM stoppen (`-Force`)            |
+| POST    | `/api/vm/{id}/pause`               | VM pausieren                     |
+| POST    | `/api/vm/{id}/resume`              | VM fortsetzen                    |
+| POST    | `/api/vm/{id}/save-state`          | VM-Zustand speichern             |
+| POST    | `/api/vm/{id}/reset`               | VM neu starten (`-Force`)        |
+| POST    | `/api/vm/{id}/snapshot`            | Snapshot/Checkpoint erstellen    |
+| POST    | `/api/vm/{id}/snapshot/apply`      | Snapshot anwenden                |
+| DELETE  | `/api/vm/{id}/snapshot/{name}`     | Snapshot löschen                 |
+| POST    | `/api/vm/{id}/console`             | Konsolenverbindung (`501`, nicht implementiert) |
+| POST    | `/api/vm/{id}/resize-ram`          | Arbeitsspeicher anpassen         |
+| POST    | `/api/vm/{id}/resize-cpu`          | CPU-Anzahl anpassen              |
+| POST    | `/api/vm/{id}/network-adapter`     | Netzwerkadapter anhängen         |
+| POST    | `/api/vm/{id}/vhd/resize`          | Virtuelle Festplatte vergrößern  |
+| POST    | `/api/vm/{id}/vhd/compact`         | Virtuelle Festplatte komprimieren |
+| POST    | `/api/vm/{id}/export`              | VM exportieren                   |
+| POST    | `/api/vm/{id}/import`              | VM importieren                   |
+| POST    | `/api/vm/{id}/clone`               | VM klonen (`501`, nicht implementiert) |
+| POST    | `/api/vm/{id}/migrate`             | Live-Migration (`501`, nicht implementiert) |
+
+Alle VM-Endpunkte erfordern `[Authorize]`. Antwortcodes: `200`/`204` Erfolg, `401` nicht
+angemeldet, `403` keine ausreichende Rolle auf der VM, `404` VM unbekannt, `501` bewusst
+nicht implementierte Aktion, `502` Hyper-V-Ausführung fehlgeschlagen.
+
+### Administration (`Controllers/Admin/*`, nur Bootstrap-FullAdmin)
+
+Verwalten die SQLite-Autorisierungsschicht (Rollen, Zuordnungen, VM-Gruppen, Server) —
+siehe [`docs/authorization.md`](docs/authorization.md) für das Datenmodell.
+
+| Methode | Pfad                          | Beschreibung                                 |
+| ------- | ------------------------------ | --------------------------------------------- |
+| GET     | `/api/admin/roles`             | Alle Rollen inkl. `IsSystemRole` und Aktionen |
+| POST    | `/api/admin/roles`             | Custom-Rolle anlegen (optional `cloneFromRoleId`) |
+| PUT     | `/api/admin/roles/{id}`        | Aktionsliste einer Custom-Rolle ersetzen (`400` bei System-Rolle) |
+| DELETE  | `/api/admin/roles/{id}`        | Custom-Rolle löschen (`400` bei System-Rolle oder aktiver Nutzung) |
+| GET     | `/api/admin/permissions`       | Alle Zuordnungen (UserGroup × VmGroup × Role) |
+| POST    | `/api/admin/permissions`       | Zuordnung anlegen                             |
+| DELETE  | `/api/admin/permissions/{id}`  | Zuordnung löschen                             |
+| GET     | `/api/admin/vm-groups`         | Alle VM-Gruppen                               |
+| GET     | `/api/admin/vm-groups/{id}`    | VM-Gruppe inkl. Mitglieder                    |
+| POST    | `/api/admin/vm-groups`         | VM-Gruppe anlegen                             |
+| PUT     | `/api/admin/vm-groups/{id}`    | VM-Gruppe umbenennen                          |
+| DELETE  | `/api/admin/vm-groups/{id}`    | VM-Gruppe löschen                             |
+| GET     | `/api/admin/servers`           | Alle Hyper-V-Hosts                            |
+| POST    | `/api/admin/servers`           | Hyper-V-Host anlegen                          |
+
+Antwortcodes: `401` nicht angemeldet, `403` keine Bootstrap-FullAdmin-Mitgliedschaft
+(AD-Gruppe aus `Authorization:BootstrapFullAdminGroup`), sonst wie bei einer typischen
+REST-API (`200`/`201`/`204`/`400`/`404`).
 
 ## Voraussetzungen
 
@@ -130,15 +191,35 @@ und wird nicht versioniert.
 {
   "Virtualization": { "Provider": "HyperV" },   // oder "Dummy"
   "Ldap":  { "Host": "…", "Port": 389, "BaseDn": "DC=…,DC=…" },
-  "Jwt": { "Secret": "…", "Issuer": "VmPortal.Api", "Audience": "VmPortal.Client", "ExpiryHours": 8 }
+  "Jwt": { "Secret": "…", "Issuer": "VmPortal.Api", "Audience": "VmPortal.Client", "ExpiryHours": 8 },
+  "ConnectionStrings": { "VmPortalDb": "Data Source=vmportal.db" },
+  "Authorization": { "BootstrapFullAdminGroup": "VM-Portal-Benutzer" }  // "ESX Admins" in Produktion
 }
 ```
 
 Der `HyperV`-Provider führt PowerShell lokal aus und benötigt daher keine
 Verbindungskonfiguration (kein Host/Port/Zugangsdaten).
 
+`ConnectionStrings:VmPortalDb` und `Authorization:BootstrapFullAdminGroup` sind
+umgebungsabhängig (`appsettings.json` = Testumgebung, `appsettings.Production.json`
+überschreibt mit dem Siemens-AD-Wert und dem Produktionspfad
+`C:\VmPortal\data\vmportal.db`) — siehe [`docs/authorization.md`](docs/authorization.md).
+
 > **Hinweis:** `appsettings.json` enthält in der Testumgebung Klartext-Secrets. In Produktion
 > gehören diese in Umgebungsvariablen bzw. einen Secret-Store (siehe Phase 5).
+
+## Datenbank / Migrationen
+
+Die SQLite-Autorisierungsschicht wird nicht automatisch beim App-Start migriert (bewusst,
+siehe `docs/authorization.md`). Vor dem ersten Start bzw. nach jeder neuen Migration:
+
+```bash
+dotnet ef database update --project VmPortal.Core --startup-project VmPortal.Api
+```
+
+Voraussetzung: `dotnet tool install --global dotnet-ef`. Die Migration
+`InitialAuthorizationSchema` legt Schema **und** Seed-Daten an (fünf System-Rollen, alle
+22 VM-Aktionen, die vier Hyper-V-Hosts, die beiden Bootstrap-`UserGroups`).
 
 ## Deployment-Modell
 
@@ -157,4 +238,6 @@ verfügbar.
 | M3          | LDAP-Auth, JWT, geschützte Endpunkte, RBAC          | ✅     |
 | M4          | Hyper-V-Anbindung über lokale PowerShell            | ✅     |
 | M5          | React-Frontend (Login, Übersicht, Detail)           | ✅     |
-| M6–M7       | Persistenz, Evaluation (siehe CLAUDE.md)            | ⏳     |
+| M6          | SQLite/EF-Core-Autorisierungsschicht (RBAC, Admin-API) | ✅ (Teil 1) |
+| M6 (Rest)   | `VmController` auf DB-Autorisierung umstellen, Audit-Log, Secret-Store | ⏳     |
+| M7          | Evaluation (siehe CLAUDE.md)                        | ⏳     |

@@ -1,7 +1,10 @@
 # VmPortal — Projekterklärung (Onboarding für mich selbst)
 
 > Ziel dieser Datei: Das gesamte Repo einmal komplett verstehen — was existiert,
-> wo es liegt und **warum** es so gebaut wurde. Stand: 2026-07-29, Commit `f4a70bc`.
+> wo es liegt und **warum** es so gebaut wurde. Stand: 2026-08-12 (seit dem
+> ursprünglichen Stand vom 2026-07-29, Commit `f4a70bc`, ist die
+> SQLite/EF-Core-Autorisierungsschicht aus Kapitel 4.4 dazugekommen; Details siehe
+> [`docs/authorization.md`](authorization.md)).
 
 ---
 
@@ -24,7 +27,7 @@ und Plattformunabhängigkeit bewertet?
 | Projekt | Was drin ist | Rolle |
 | --- | --- | --- |
 | `VmPortal.Api` | Controller, Middleware, `Program.cs`, `appsettings` | Die REST-Schicht: nimmt HTTP-Anfragen an, prüft Authentifizierung/Autorisierung, übersetzt Fehler in HTTP-Statuscodes. Liefert im Produktivbetrieb außerdem das gebaute React-Frontend aus `wwwroot/` aus. |
-| `VmPortal.Core` | Interfaces, Models, Services, Konfigurationsklassen | Die Fachlogik: alles, was das Portal *inhaltlich* kann (LDAP-Login, JWT-Erzeugung, Rollenmodell, Hypervisor-Ansteuerung) — komplett ohne Wissen über HTTP. |
+| `VmPortal.Core` | Interfaces, Models, Services, Konfigurationsklassen, `Data/` (EF-Core-DbContext, Entities, Migrationen) | Die Fachlogik: alles, was das Portal *inhaltlich* kann (LDAP-Login, JWT-Erzeugung, Rollenmodell, Hypervisor-Ansteuerung, seit Kapitel 4.4 auch die SQLite-Autorisierungsschicht) — komplett ohne Wissen über HTTP. |
 | `VmPortal.Frontend` | React-SPA (Vite, plain JavaScript) | Die Oberfläche: Login, VM-Übersicht, VM-Detail. Spricht ausschließlich über die REST-API mit dem Backend. |
 
 **Warum die Trennung?** Die API-Schicht kennt nur Interfaces (`IVirtualizationProvider`,
@@ -129,6 +132,20 @@ Detail in `HyperVProvider.InvokeAsync()`: Der Runspace wird mit
 vermeidet die Abhängigkeit zum Konsolen-Host; das Hyper-V-Modul wird unter Windows
 bei Bedarf automatisch über den `PSModulePath` nachgeladen. Unter Linux existiert
 das Modul nicht → `Get-VM` unbekannt → sauberer `502` (planmäßig, siehe Kapitel 7).
+
+### Entity Framework Core + SQLite (`Microsoft.EntityFrameworkCore.Sqlite`)
+EF Core ist Microsofts ORM (Object-Relational Mapper) für .NET; SQLite ist eine
+dateibasierte, serverlose Datenbank (eine einzelne Datei `vmportal.db`, kein separater
+Datenbankprozess). Trägt seit Kapitel 4.4 die neue Autorisierungsschicht (Rollen,
+VM-Gruppen, AD-Gruppen-Zuordnungen). **Warum SQLite statt PostgreSQL/SQL Server:** Die
+Autorisierungsdaten sind klein (ein paar hundert Zeilen, kein Multi-User-Concurrent-Write
+in nennenswertem Umfang) und die App läuft ohnehin nur auf genau einem Host (dem
+Hyper-V-Server) — ein separater DB-Server wäre reiner Betriebs-Overhead ohne Nutzen. Der
+Preis: SQLite ist nicht für hohe Nebenläufigkeit ausgelegt, was hier unkritisch ist.
+**Warum EF Core statt Dapper/rohem ADO.NET:** Migrationen (`dotnet ef migrations add`)
+versionieren das Schema nachvollziehbar mit, `HasData` seedet deterministisch beim
+`database update` — für eine Bachelorarbeit mit reproduzierbarem Deployment wichtiger als
+die letzten Prozent ORM-Overhead.
 
 ### Dependency Injection (eingebaut in ASP.NET Core)
 In `Program.cs` wird pro Interface genau eine Implementierung registriert — welche,
@@ -326,6 +343,72 @@ Nicht-Berechtigung: was nicht ausdrücklich erlaubt ist, ist verboten. Auch in d
 Übersicht (`GET /api/vm`) taucht `VM-Burath` für ihn nicht auf, weil dort nach
 "hat mindestens Viewer" gefiltert wird.
 
+### 4.4 Die neue SQLite-Autorisierungsschicht (parallel zum `vmroles`-Pfad)
+
+Seit dem 2026-08-12-Stand gibt es **zusätzlich** zur eben beschriebenen
+`vmroles`-Autorisierung eine zweite, persistente Autorisierungsschicht in SQLite/EF Core
+(`VmPortal.Core/Data/`). Wichtig zum Verständnis: **beide Pfade existieren aktuell
+nebeneinander.** `VmController` prüft nach wie vor ausschließlich über den
+`vmroles`-Claim (Kapitel 4.3) — die neue Schicht ist noch nicht in ihn verdrahtet. Sie
+liefert bislang nur die Grundlage (Schema, Autorisierungslogik, Admin-API), über die
+Rollen und AD-Gruppen-Zuordnungen verwaltbar sind, ohne AD-Gruppen manuell nach dem
+`VM-{VmName}-{Rolle}`-Schema anlegen zu müssen. Die Umstellung von `VmController` auf
+diese Schicht ist offener Punkt (Kapitel 7, Punkt 8).
+
+**Warum überhaupt eine zweite Schicht, wenn `vmroles` schon funktioniert?** Der
+`vmroles`-Ansatz kodiert die komplette Rechtevergabe implizit in AD-Gruppennamen
+(`VM-Mikail-PowerUser`) — jede neue Zuordnung braucht eine neue AD-Gruppe, jede VM einen
+eigenen Satz von fünf Rollengruppen, und die Rollen selbst (`Viewer`…`FullAdmin`) sind im
+Code hart verdrahtet, nicht administrierbar. Die SQLite-Schicht trennt das: AD liefert nur
+noch *Gruppenmitgliedschaft* (roher Gruppenname, kein Rollen-Parsing), alles Weitere —
+welche Rolle welche Aktionen darf, welche AD-Gruppe welche Rolle auf welcher VM-Gruppe hat —
+liegt in der DB und ist über eine Admin-UI pflegbar, inklusive frei erstellbarer
+Custom-Rollen (nicht nur der fünf fest kodierten).
+
+**Kernstücke** (ausführlich in [`docs/authorization.md`](authorization.md)):
+
+- **Schema** (`VmPortalDbContext`, `Data/Entities/`): `VirtualServers`,
+  `VirtualMachines` (Entity-Klasse heißt `VirtualMachineRecord` — Namenskollision mit dem
+  Laufzeit-Modell `Models.VirtualMachine` des Providers vermieden, EF-Tabellenname bleibt
+  aber `VirtualMachines`), `VirtualMachineGroups`, `UserGroups` (1:1-Abbild einer
+  AD-Gruppe, nur Name, kein Sync), `Roles`, `VMActions` (Entity `VmActionEntity`, gleiches
+  Namenskollisions-Problem mit dem `VmAction`-Enum), `RoleActions`, `GroupPermissions`.
+- **RBAC statt Level-Vererbung:** Jede Rolle definiert sich über ihre `RoleActions` —
+  eine explizite, vollständige Aktionsliste, keine implizite Vererbung über `Roles.Level`
+  (das dient nur noch der UI-Sortierung). Grund: frei zusammenstellbare Custom-Rollen
+  lassen sich nicht mehr eindeutig in eine Rangfolge bringen (Details/Beispiel in
+  `docs/authorization.md`).
+- **Bootstrap-FullAdmin:** Ist eine AD-Gruppe des Nutzers gleich
+  `Authorization:BootstrapFullAdminGroup` (`VM-Portal-Benutzer` lokal, `ESX Admins` in
+  Produktion — bewusst dieselbe lokale Testgruppe wie der `VMUser`-Legacy-Claim aus 4.1),
+  gilt er ohne DB-Abfrage als FullAdmin mit allen 22 Aktionen. Das ist der einzige Weg, wie
+  nach einem frischen Deployment (leere `GroupPermissions`) überhaupt jemand über die
+  Admin-API erste Rollen/Zuordnungen anlegen kann.
+- **`DbAuthorizationService.GetAllowedActionsAsync(adGroups, vmName)`:** Bootstrap-Check →
+  VM-Gruppe auflösen (keine Gruppe = keine Rechte, secure-by-default) → alle
+  `GroupPermissions` finden, deren `UserGroupId` einer AD-Gruppe des Nutzers entspricht →
+  **Union** der `RoleActions` aller zutreffenden Rollen zurückgeben. Union statt "höchste
+  Rolle gewinnt", weil Custom-Rollen keine totale Ordnung mehr haben — siehe die
+  ausführliche Herleitung in `docs/authorization.md` (das ist der Teil, der auch in der
+  Bachelorarbeit argumentativ gebraucht wird).
+- **Neuer JWT-Claim `adgroups`:** Trägt die rohen AD-Gruppennamen (dieselbe Quelle wie
+  `memberOf` in Kapitel 4.1, Schritt 3 — nur diesmal *ohne* das Herausparsen von
+  VM-Name/Rolle). Existiert **zusätzlich** zum `vmroles`-Claim, der unverändert bleibt
+  (`VmPortal.Core/Services/AdGroupClaims.cs`). Im Dummy-Modus liefert der neue
+  Konfigurationsabschnitt `TestAdGroups` (Pendant zu `TestVmRoles`, Kapitel 6) simulierte
+  Gruppenmitgliedschaften.
+- **Admin-REST-API** (`VmPortal.Api/Controllers/Admin/*`, alle über
+  `AdminControllerBase` mit `[Authorize]` + Bootstrap-FullAdmin-Prüfung als
+  `IActionFilter`): `RolesController` (CRUD für Custom-Rollen, System-Rollen sind
+  schreibgeschützt), `PermissionsController` (`GroupPermissions`-Zuordnungen),
+  `VmGroupsController`, `ServersController`.
+- **Migration `InitialAuthorizationSchema`** (`Data/Migrations/`) legt Schema **und**
+  Seed-Daten per `HasData` an (fünf System-Rollen mit den aus `RolePermissions`
+  übernommenen `RoleActions`, alle 22 `VMActions`, die vier Hyper-V-Hosts, die beiden
+  Bootstrap-`UserGroups`) — läuft **nicht** automatisch beim App-Start, muss separat per
+  `dotnet ef database update` ausgeführt werden (kein `deploy.ps1` im Repo, das diesen
+  Schritt bislang automatisiert).
+
 ---
 
 ## 5. Wirklich implementiert vs. vorbereitet/Platzhalter
@@ -395,6 +478,11 @@ trotzdem schon (FullAdmin-Aktionen), damit der Aktionskatalog vollständig ist.
   gibt keinen Endpunkt, der die vorhandenen Snapshots einer VM auflistet — anwenden/
   löschen erfordert also, den Namen zu kennen.
 - **Keine automatisierten Tests** im Repo (kein Testprojekt in der Solution).
+- **SQLite-Autorisierungsschicht ist gebaut, aber noch nicht angeschlossen:** Wie in
+  Kapitel 4.4 beschrieben, existiert `DbAuthorizationService` inklusive Admin-API bereits
+  vollständig, aber `VmController` fragt weiterhin ausschließlich den `vmroles`-Claim ab.
+  Solange das nicht umgestellt ist, haben über die Admin-API angelegte Rollen/Zuordnungen
+  **keine** Wirkung auf die tatsächliche VM-Autorisierung.
 
 ---
 
@@ -447,6 +535,13 @@ weiter aus der Basisdatei. Deshalb: `Development` = Dummy-Welt (Ubuntu),
     `AuthController` separat auf 8 h hart codiert — wer hier z. B. 1 einträgt,
     bekommt ein totes Cookie, das noch 7 h mitgeschickt wird (→ `401`), umgekehrt
     verschwindet bei 24 das Cookie nach 8 h obwohl der Token noch gültig wäre.
+- **`ConnectionStrings:VmPortalDb`** (`Data Source=vmportal.db`): SQLite-Dateipfad der
+  neuen Autorisierungsschicht (Kapitel 4.4). `RegisterDatabase` in `Program.cs` legt das
+  Zielverzeichnis beim Start automatisch an, falls es fehlt — ersetzt aber **nicht** das
+  Ausführen der Migration selbst (siehe `docs/authorization.md`).
+- **`Authorization:BootstrapFullAdminGroup`** (`VM-Portal-Benutzer`): AD-Gruppe, deren
+  Mitglieder ohne DB-Eintrag als FullAdmin gelten (Bootstrap, Kapitel 4.4). Fehlt der
+  Abschnitt, verweigert die App den Start (`InvalidOperationException`, analog zu `Ldap`).
 
 ### `appsettings.Development.json` (Überlagerung für Entwicklung)
 
@@ -460,8 +555,18 @@ weiter aus der Basisdatei. Deshalb: `Development` = Dummy-Welt (Ubuntu),
   anzulegen. Fehlt der Abschnitt, hat schlicht niemand VM-Rollen (leere Liste,
   kein Fehler). In der Basis-`appsettings.json` fehlt er absichtlich — im
   LDAP-Modus wird er ignoriert.
+- **`TestAdGroups`** → gebunden an `TestAdGroupsSettings` (Pendant zu `TestVmRoles`, aber
+  für den neuen `adgroups`-Claim aus Kapitel 4.4): simulierte AD-Gruppenmitgliedschaften
+  pro Testnutzer, z. B. `mugur` → `["VM-Portal-Benutzer"]`, damit er lokal die
+  Bootstrap-FullAdmin-Admin-API testen kann, ohne echtes AD.
 - `Ldap` und `Jwt` sind hier **nicht** überschrieben → kommen aus der Basisdatei
-  (das JWT-Secret ist in Dev und Prod dasselbe).
+  (das JWT-Secret ist in Dev und Prod dasselbe). `ConnectionStrings:VmPortalDb` ebenfalls
+  nicht — Dev und die lokale Testumgebung nutzen dieselbe `vmportal.db`.
+
+`appsettings.Production.json` überschreibt zusätzlich `ConnectionStrings:VmPortalDb` auf
+`C:\VmPortal\data\vmportal.db` und `Authorization:BootstrapFullAdminGroup` auf
+`ESX Admins` (Siemens-AD `archiv.mhm.siemens.com`) — siehe Kapitel 4.4 bzw.
+`docs/authorization.md`.
 
 Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eigener
 `appsettings.json` — das ist Deploy-Artefakt, nicht Quelle; maßgeblich ist immer
@@ -522,9 +627,12 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
 
 **Fehlende Funktionalität:**
 
-8. **M6/M7 offen:** keine Persistenz (Datenbank für VM↔Benutzer-Zuordnung), **kein
-   Audit-Log** (wer hat wann welche VM gestartet? — steht nur flüchtig im
-   Konsolen-Log), Evaluation ausstehend.
+8. **M6 teilweise offen, M7 offen:** Die SQLite-Autorisierungsschicht (Rollen,
+   VM-Gruppen, AD-Gruppen-Zuordnungen, Admin-API) existiert seit 2026-08-12
+   (Kapitel 4.4), ist aber **noch nicht** in `VmController` verdrahtet — die
+   tatsächliche VM-Autorisierung läuft weiterhin ausschließlich über `vmroles`. Nach wie
+   vor offen: kein **Audit-Log** (wer hat wann welche VM-Aktion ausgeführt? — steht nur
+   flüchtig im Konsolen-Log), Evaluation (M7) ausstehend.
 9. **Frontend deckt nur einen Bruchteil der API ab** und ist nicht rollenbewusst
    (Kapitel 5.3); keine Snapshot-Liste; `VmDetail` nutzt `GET /api/vm` statt
    `GET /api/vm/{id}`.
@@ -535,28 +643,22 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
     und dank `AddParameter` keine Command-Injection, aber ein FullAdmin einer
     einzelnen VM kann damit auf beliebige Host-Pfade schreiben/lesen.
 
-**Doku-Diskrepanzen (README / CLAUDE.md vs. Code):**
+**Doku-Diskrepanzen (README / CLAUDE.md vs. Code) — Stand 2026-08-12:**
 
-12. **README-Endpunkttabelle ist veraltet:** Sie listet nur Login/Logout, `GET /vm`,
-    start, stop, reset, snapshot — tatsächlich existieren ~20 Endpunkte
-    (u. a. `GET /vm/{id}`, metering, pause, resume, save-state, snapshot/apply,
-    snapshot löschen, console, resize-ram/cpu, network-adapter, vhd/resize,
-    vhd/compact, export, import, clone, migrate). Auch der Statuscode `501` fehlt
-    in der README-Aufzählung.
-13. **README beschreibt das alte RBAC-Modell:** "Ein Benutzer sieht ausschließlich
-    VMs, die ihm zugewiesen sind" (Zuordnung über Hyper-V-Notizfeld/`AssignedUserId`).
-    Tatsächlich autorisiert der Code seit dem Rollen-Umbau ausschließlich über den
-    `vmroles`-Claim (AD-Rollengruppen); das Notizfeld wird noch gemappt, aber nicht
-    mehr geprüft. Ebenso nennt die README als JWT-Claims nur `username` und `role` —
-    `vmroles` fehlt.
-14. **`thesis/CLAUDE.md` ist beim Rollenmodell nicht nachgezogen:** Die
-    Struktur-Übersicht und die M3-Beschreibung kennen `VmRole`, `VmAction`,
-    `RolePermissions`, `VmRoleClaims`, `DummyAuthService`, `TestVmRolesSettings`
-    und den erweiterten Aktionskatalog noch nicht.
-15. **Arbeitsverzeichnis unaufgeräumt:** Das Root-`CLAUDE.md` ist gelöscht (Inhalt
-    lebt jetzt in `thesis/CLAUDE.md`, beides uncommitted), `thesis/`, `thesis.zip`,
-    `docs/`, `reference/` und `publish/` sind untracked. `publish/` (Build-Output
-    mit Secrets) und `thesis.zip` gehören eher in `.gitignore` als ins Repo.
+12. ✅ **Behoben:** Die README-Endpunkttabelle war veraltet (nur 6 von ~20
+    `VmController`-Endpunkten). Ist jetzt vollständig (inkl. `501`-Endpunkte) und um die
+    vier neuen Admin-Controller ergänzt.
+13. ✅ **Behoben:** Die README beschrieb noch das alte "VM gehört einem Benutzer"-Modell
+    (`AssignedUserId`/Notizfeld). Beschreibt jetzt den tatsächlichen `vmroles`-Claim-Pfad
+    und ergänzend die neue SQLite-Schicht; JWT-Claims (`username`, `role`, `vmroles`,
+    `adgroups`) sind vollständig genannt.
+14. ✅ **Gegenstandslos:** Ein separates `thesis/CLAUDE.md` existiert nicht (mehr) — es
+    gibt nur noch das eine `CLAUDE.md` im Repo-Root, das mit dem Autorisierungs-Update
+    aktuell gehalten wurde.
+15. ✅ **Behoben:** Das Root-`CLAUDE.md` ist wieder eingecheckt. `publish/` (Build-Output
+    mit Secrets) ist weiterhin untracked und gehört langfristig in `.gitignore`, statt
+    nur uncommitted im Arbeitsverzeichnis zu liegen — das ist der einzige Rest dieses
+    Punktes, der noch offen ist.
 
 ---
 
