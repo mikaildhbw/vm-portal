@@ -15,13 +15,11 @@ skinparam artifact {
   BorderColor #B8860B
 }
 
-package "Entwicklungsumgebung (aktueller Ist-Zustand)" #F8F8F8 {
-  node "Lenovo ThinkPad X13 Gen 4\n(Ubuntu 24.04 LTS, KVM-Host)" as DevHost {
-    node "Windows Server 2022\n(KVM-Gast)" as DevVM {
-      artifact "VmPortal.Api + Core\n(Backend, lokal ausgeführt)" as DevBackend
-      node "verschachtelter Hyper-V-Host\n(Test-VMs: VM-Mikail, VM-Burath)" as DevHyperV
-      database "Active Directory\n(Testdomäne\ntestumgebung.local)" as DevAD
-    }
+package "Testumgebung (aktueller Ist-Zustand)" #F8F8F8 {
+  node "Windows Server 2022\n(AD-Domänencontroller + Hyper-V-Host)" as DevVM {
+    artifact "VmPortal.Api + Core\n(Backend, lokal ausgeführt)" as DevBackend
+    node "Hyper-V-Host\n(Test-VMs: VM-Mikail, VM-Burath)" as DevHyperV
+    database "Active Directory\n(Testdomäne\ntestumgebung.local)" as DevAD
   }
   DevBackend -[#444444]-> DevHyperV : lokale PowerShell\n(kein WinRM)
   DevBackend -[#444444]-> DevAD : LDAP (Port 389)
@@ -55,6 +53,6 @@ note bottom of ProdHyperV
   Hyper-V-Host auf demselben Host laufen.
 end note
 
-DevHost -[hidden]-> SiemensNet
+DevVM -[hidden]-> SiemensNet
 
 @enduml

@@ -43,14 +43,16 @@ HTTP-Client → VmController → IVirtualizationProvider ─┬─ HyperVProvide
 - **Transport:** JWT in einem `httpOnly`-Cookie (`SameSite=Strict`, `Secure`) — kein
   `localStorage`, dadurch kein Zugriff durch JavaScript (XSS-Schutz).
 - **Middleware:** Alle Endpunkte außer `/api/auth/login` sind mit `[Authorize]` geschützt.
-- **RBAC (`VmController`):** Der `vmroles`-Claim ordnet jeder VM eine Rolle
-  (`Viewer < Operator < PowerUser < Admin < FullAdmin`) zu; `RolePermissions` prüft pro
-  Aktion die Mindestrolle. Ohne Rolle für eine VM: implizite Nicht-Berechtigung, `403
-  Forbidden`.
-- **RBAC (SQLite-Autorisierungsschicht):** Parallel dazu existiert eine persistente
-  Autorisierungsschicht (EF Core/SQLite) mit System- und frei erstellbaren Custom-Rollen
-  über eine Rolle×Aktion-Matrix, Rechtevergabe je AD-Gruppe × VM-Gruppe, verwaltet über die
-  `/api/admin/*`-Endpunkte. Details: [`docs/authorization.md`](docs/authorization.md).
+- **RBAC (`VmController`):** VM-Autorisierung läuft ausschließlich über die persistente
+  SQLite-Autorisierungsschicht (`DbAuthorizationService`, EF Core): AD-Gruppen aus dem
+  `adgroups`-Claim werden Rollen auf VM-Gruppen zugeordnet, Rollen definieren sich über eine
+  Rolle×Aktion-Matrix mit System- und frei erstellbaren Custom-Rollen, verwaltet über die
+  `/api/admin/*`-Endpunkte. Ohne passende Zuordnung: implizite Nicht-Berechtigung, `403
+  Forbidden`. Details: [`docs/authorization.md`](docs/authorization.md).
+- **`vmroles`-Claim:** Wird weiterhin erzeugt (VM-Name → Rolle aus AD-Gruppen nach dem Schema
+  `VM-{VmName}-{Rolle}`), fließt aber seit der Umstellung auf `DbAuthorizationService` in
+  keine Autorisierungsentscheidung mehr ein — aktuell ohne Konsumenten, reserviert für eine
+  mögliche Frontend-Anzeige.
 - **Konfiguration:** Sämtliche Secrets und Verbindungsdaten liegen in `appsettings.json`,
   nichts ist im Code hartcodiert.
 
@@ -63,7 +65,7 @@ HTTP-Client → VmController → IVirtualizationProvider ─┬─ HyperVProvide
 | POST    | `/api/auth/login`    | Login gegen AD, setzt JWT-Cookie  | –    |
 | POST    | `/api/auth/logout`   | Löscht das JWT-Cookie             | ✓    |
 
-### VMs (`VmController`, RBAC über `vmroles`-Claim)
+### VMs (`VmController`, RBAC über `DbAuthorizationService`/`adgroups`-Claim)
 
 | Methode | Pfad                              | Beschreibung                    |
 | ------- | ---------------------------------- | -------------------------------- |
@@ -133,7 +135,7 @@ REST-API (`200`/`201`/`204`/`400`/`404`).
 # Bauen (funktioniert auf Linux und Windows)
 dotnet build VmPortal.sln
 
-# Lokal starten mit Dummy-Provider (Entwicklung, z. B. auf Ubuntu)
+# Lokal starten mit Dummy-Provider (automatisierte Tests, infrastrukturunabhängige Entwicklung)
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project VmPortal.Api
 
 # Produktiv starten mit Hyper-V-Provider (auf Windows Server)
@@ -223,11 +225,10 @@ Voraussetzung: `dotnet tool install --global dotnet-ef`. Die Migration
 
 ## Deployment-Modell
 
-Die Entwicklung erfolgt unter Ubuntu; die Anwendung wird auf dem Windows Server 2022
-ausgeführt, der zugleich der Hyper-V-Host ist. Die Hyper-V-Cmdlets werden über eine lokale
-PowerShell-Instanz aufgerufen und funktionieren dort nativ. Der Build läuft
-plattformübergreifend; die Hyper-V-Cmdlets sind ausschließlich unter Windows zur Laufzeit
-verfügbar.
+Die Anwendung wird auf einem Windows Server 2022 ausgeführt, der zugleich der Hyper-V-Host
+ist. Die Hyper-V-Cmdlets werden über eine lokale PowerShell-Instanz aufgerufen und
+funktionieren dort nativ. Der Build läuft plattformübergreifend; die Hyper-V-Cmdlets sind
+ausschließlich unter Windows zur Laufzeit verfügbar.
 
 ## Projektstand
 
@@ -238,6 +239,6 @@ verfügbar.
 | M3          | LDAP-Auth, JWT, geschützte Endpunkte, RBAC          | ✅     |
 | M4          | Hyper-V-Anbindung über lokale PowerShell            | ✅     |
 | M5          | React-Frontend (Login, Übersicht, Detail)           | ✅     |
-| M6          | SQLite/EF-Core-Autorisierungsschicht (RBAC, Admin-API) | ✅ (Teil 1) |
-| M6 (Rest)   | `VmController` auf DB-Autorisierung umstellen, Audit-Log, Secret-Store | ⏳     |
+| M6          | SQLite/EF-Core-Autorisierungsschicht (RBAC, Admin-API); `VmController` auf DB-Autorisierung umgestellt | ✅     |
+| M6 (Rest)   | Audit-Log, Secret-Store, vollständige `GroupPermissions` in der Testumgebung | ⏳     |
 | M7          | Evaluation (siehe CLAUDE.md)                        | ⏳     |

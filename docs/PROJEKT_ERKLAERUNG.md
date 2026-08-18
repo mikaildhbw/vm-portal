@@ -36,7 +36,7 @@ und Plattformunabhängigkeit bewertet?
 1. **den Hypervisor austauschen** (Hyper-V ↔ Dummy ↔ konzeptionell Proxmox), ohne eine
    Zeile im Controller zu ändern — das ist der wissenschaftliche Kern der Arbeit
    (Plattformunabhängigkeit),
-2. **auf Ubuntu entwickeln**, obwohl Hyper-V nur auf Windows existiert (Dummy-Provider),
+2. **plattformunabhängig entwickeln**, obwohl Hyper-V nur auf Windows existiert (Dummy-Provider),
 3. die Fachlogik theoretisch auch aus einem anderen Host (CLI, Tests) heraus nutzen.
 
 Das Frontend ist ein eigenes Projekt, weil es eine eigene Toolchain hat (npm/Vite) und
@@ -50,8 +50,8 @@ nur "totes" HTML/JS, alle Logik mit Sicherheitsrelevanz liegt im Backend.
 ### ASP.NET Core 8 (Backend-Framework)
 Microsofts aktuelles Web-Framework für .NET: HTTP-Server (Kestrel), Routing,
 Dependency Injection, Middleware-Pipeline — alles eingebaut. **Warum:** Vorgabe/
-Constraint des Projekts (C#, kein Python/Django, kein Blazor), läuft auf Linux
-*und* Windows (Entwicklung auf Ubuntu, Betrieb auf Windows Server 2022), und die
+Constraint des Projekts (C#, kein Python/Django, kein Blazor), läuft plattformübergreifend
+(Entwicklung plattformunabhängig, Betrieb auf Windows Server 2022), und die
 Windows-Nähe ist ein Plus, weil das Ziel-System ein Hyper-V-Host ist. .NET 8 ist
 eine LTS-Version (Long-Term Support).
 
@@ -102,9 +102,8 @@ wird automatisch mitgeschickt → CSRF-Risiko) wird durch `SameSite=Strict` adre
 Eine plattformunabhängige .NET-Bibliothek für das LDAP-Protokoll, mit der sich das
 Backend am Active Directory anmeldet (Bind) und Gruppenmitgliedschaften abfragt.
 **Warum nicht `System.DirectoryServices` (Microsofts eigene AD-API):** Die ist
-Windows-only — das Projekt wird aber auf Ubuntu entwickelt und der Build muss
-plattformübergreifend grün sein. Die Novell-Bibliothek spricht rohes LDAP und läuft
-überall. (Der Name ist historisch — das ist eine Portierung der alten Novell/OpenLDAP-
+Windows-only — der Build muss aber plattformübergreifend grün sein. Die Novell-Bibliothek
+spricht rohes LDAP und läuft überall. (Der Name ist historisch — das ist eine Portierung der alten Novell/OpenLDAP-
 Java-Bibliothek, heute community-gepflegt.)
 
 ### System.Management.Automation (PowerShell-Ausführung in-process)
@@ -276,7 +275,7 @@ Im Dummy-Modus (`Auth:Provider = "Dummy"`, `DummyAuthService`) passiert dasselbe
 nur ohne AD: feste Testnutzer `mugur`/`jburath` mit Passwort `Test1234!`, VM-Rollen
 aus dem Konfigurationsabschnitt `TestVmRoles` statt aus AD-Gruppen. Der Rest der
 Pipeline (JWT, Cookie, Autorisierung) ist identisch — genau deshalb existiert der
-Dummy: die komplette Auth-Kette ist auf Ubuntu ohne AD testbar.
+Dummy: die komplette Auth-Kette ist infrastrukturunabhängig, ohne echtes AD, testbar.
 
 ### 4.2 Was bei jeder folgenden Anfrage passiert
 
@@ -478,11 +477,13 @@ trotzdem schon (FullAdmin-Aktionen), damit der Aktionskatalog vollständig ist.
   gibt keinen Endpunkt, der die vorhandenen Snapshots einer VM auflistet — anwenden/
   löschen erfordert also, den Namen zu kennen.
 - **Keine automatisierten Tests** im Repo (kein Testprojekt in der Solution).
-- **SQLite-Autorisierungsschicht ist gebaut, aber noch nicht angeschlossen:** Wie in
-  Kapitel 4.4 beschrieben, existiert `DbAuthorizationService` inklusive Admin-API bereits
-  vollständig, aber `VmController` fragt weiterhin ausschließlich den `vmroles`-Claim ab.
-  Solange das nicht umgestellt ist, haben über die Admin-API angelegte Rollen/Zuordnungen
-  **keine** Wirkung auf die tatsächliche VM-Autorisierung.
+- **SQLite-Autorisierungsschicht ist seit Commit `7df0aae` angeschlossen:** `VmController`
+  fragt für die tatsächliche VM-Autorisierung ausschließlich `DbAuthorizationService` ab
+  (Kapitel 4.4); der `vmroles`-Claim wird zwar weiterhin erzeugt, aber nirgends mehr
+  konsumiert. Konsequenz: Die Testumgebung braucht vollständig befüllte
+  `GroupPermissions`, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten — eine
+  leere/unvollständige Zuordnungstabelle reicht seit der Umstellung nicht mehr aus (siehe
+  Punkt 8 in Kapitel 7).
 
 ---
 
@@ -492,7 +493,7 @@ Grundmechanik: ASP.NET Core lädt `appsettings.json` und **überlagert** sie mit
 `appsettings.{ASPNETCORE_ENVIRONMENT}.json`. Mit
 `ASPNETCORE_ENVIRONMENT=Development` gewinnt also `appsettings.Development.json`
 bei allen Schlüsseln, die dort gesetzt sind; alles andere (z. B. `Jwt`) kommt
-weiter aus der Basisdatei. Deshalb: `Development` = Dummy-Welt (Ubuntu),
+weiter aus der Basisdatei. Deshalb: `Development` = Dummy-Welt (infrastrukturunabhängig),
 `Production` (Default) = LDAP + Hyper-V (Windows Server).
 
 ### `appsettings.json` (Basis = Produktion)
@@ -546,7 +547,7 @@ weiter aus der Basisdatei. Deshalb: `Development` = Dummy-Welt (Ubuntu),
 ### `appsettings.Development.json` (Überlagerung für Entwicklung)
 
 - `Virtualization:Provider = "Dummy"`, `Auth:Provider = "Dummy"` — komplette
-  Offline-Welt für Ubuntu.
+  Offline-Welt, ohne AD- und Hyper-V-Anbindung.
 - **`TestVmRoles`** → gebunden an `TestVmRolesSettings`: simulierte
   Nutzer→VM→Rolle-Zuordnungen für den `DummyAuthService`, ersetzt die AD-Gruppen:
   `mugur` ist `PowerUser` auf `VM-Mikail`, `jburath` ist `Operator` auf `VM-Burath`.
@@ -627,12 +628,16 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
 
 **Fehlende Funktionalität:**
 
-8. **M6 teilweise offen, M7 offen:** Die SQLite-Autorisierungsschicht (Rollen,
+8. **M6 (Rest) offen, M7 offen:** Die SQLite-Autorisierungsschicht (Rollen,
    VM-Gruppen, AD-Gruppen-Zuordnungen, Admin-API) existiert seit 2026-08-12
-   (Kapitel 4.4), ist aber **noch nicht** in `VmController` verdrahtet — die
-   tatsächliche VM-Autorisierung läuft weiterhin ausschließlich über `vmroles`. Nach wie
-   vor offen: kein **Audit-Log** (wer hat wann welche VM-Aktion ausgeführt? — steht nur
-   flüchtig im Konsolen-Log), Evaluation (M7) ausstehend.
+   (Kapitel 4.4) und ist seit Commit `7df0aae` auch in `VmController` verdrahtet — die
+   tatsächliche VM-Autorisierung läuft jetzt ausschließlich über `DbAuthorizationService`
+   (`adgroups`-Claim), nicht mehr über `vmroles`. **Kapitel 3, 4.2, 4.3 und 4.4 dieses
+   Dokuments beschreiben an mehreren Stellen noch den `vmroles`-Pfad als aktiven
+   Autorisierungsweg — das ist seit der Umstellung nicht mehr korrekt und hier bewusst
+   nicht mehr flächendeckend nachgezogen worden** (separate, größere Überarbeitung nötig).
+   Nach wie vor offen: kein **Audit-Log** (wer hat wann welche VM-Aktion ausgeführt? — steht
+   nur flüchtig im Konsolen-Log), Evaluation (M7) ausstehend.
 9. **Frontend deckt nur einen Bruchteil der API ab** und ist nicht rollenbewusst
    (Kapitel 5.3); keine Snapshot-Liste; `VmDetail` nutzt `GET /api/vm` statt
    `GET /api/vm/{id}`.
@@ -649,9 +654,11 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
     `VmController`-Endpunkten). Ist jetzt vollständig (inkl. `501`-Endpunkte) und um die
     vier neuen Admin-Controller ergänzt.
 13. ✅ **Behoben:** Die README beschrieb noch das alte "VM gehört einem Benutzer"-Modell
-    (`AssignedUserId`/Notizfeld). Beschreibt jetzt den tatsächlichen `vmroles`-Claim-Pfad
-    und ergänzend die neue SQLite-Schicht; JWT-Claims (`username`, `role`, `vmroles`,
-    `adgroups`) sind vollständig genannt.
+    (`AssignedUserId`/Notizfeld), später den inzwischen abgelösten `vmroles`-Claim-Pfad als
+    aktiven Autorisierungsweg. Beschreibt jetzt den tatsächlichen Weg über
+    `DbAuthorizationService`/`adgroups`-Claim (Stand seit Commit `7df0aae`) und erwähnt
+    `vmroles` nur noch als weiterhin erzeugten, aber unkonsumierten Claim; JWT-Claims
+    (`username`, `role`, `vmroles`, `adgroups`) sind vollständig genannt.
 14. ✅ **Gegenstandslos:** Ein separates `thesis/CLAUDE.md` existiert nicht (mehr) — es
     gibt nur noch das eine `CLAUDE.md` im Repo-Root, das mit dem Autorisierungs-Update
     aktuell gehalten wurde.

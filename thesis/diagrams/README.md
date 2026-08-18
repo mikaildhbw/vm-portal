@@ -17,10 +17,10 @@ Ohne Root-Rechte lässt sich Graphviz z. B. per Conda installieren:
 conda install -c conda-forge graphviz
 ```
 
-In dieser Umgebung liegt `dot` unter `/home/z8481/miniconda3/bin/dot`. Da dieser Pfad nicht
-zwingend im `PATH` liegt, wird er beim Rendern explizit über die JVM-Property
-`-DGRAPHVIZ_DOT` übergeben (siehe unten). Ist Graphviz systemweit installiert und über
-`PATH` auffindbar, kann die Property entfallen.
+Liegt `dot` nicht im `PATH` (z. B. bei einer Conda-Installation), muss der Pfad zur eigenen
+`dot`-Installation beim Rendern explizit über die JVM-Property `-DGRAPHVIZ_DOT` übergeben
+werden (siehe unten) — ermitteln lässt er sich z. B. via `which dot`. Ist Graphviz systemweit
+installiert und über `PATH` auffindbar, kann die Property entfallen.
 
 ## plantuml.jar besorgen
 
@@ -35,7 +35,7 @@ curl -fL -o thesis/tools/plantuml.jar \
 Einzelnes Diagramm:
 
 ```bash
-java -DGRAPHVIZ_DOT=/home/z8481/miniconda3/bin/dot -jar thesis/tools/plantuml.jar \
+java -DGRAPHVIZ_DOT="$(which dot)" -jar thesis/tools/plantuml.jar \
   -tpdf thesis/diagrams/<name>.puml -o rendered
 ```
 
@@ -43,7 +43,7 @@ Alle Diagramme auf einmal (aus dem Repository-Wurzelverzeichnis):
 
 ```bash
 for f in thesis/diagrams/*.puml; do
-  java -DGRAPHVIZ_DOT=/home/z8481/miniconda3/bin/dot -jar thesis/tools/plantuml.jar \
+  java -DGRAPHVIZ_DOT="$(which dot)" -jar thesis/tools/plantuml.jar \
     -tpdf "$f" -o rendered
 done
 ```
@@ -61,7 +61,7 @@ für das LaTeX-Dokument ist ausschließlich das PDF relevant (verlustfreier Vekt
 | `architektur_uebersicht.puml` | 4-Schichten-Komponentendiagramm, `IVirtualizationProvider` hervorgehoben | 5.2 Hypervisor-Abstraktion |
 | `use_case_rollen.puml` | Use-Cases je VM-Rolle (`VmRole`/`VmAction`/`RolePermissions`) | 5.3 Sicherheitskonzept |
 | `klassendiagramm_core.puml` | Klassendiagramm von `VmPortal.Core` | 6.1 Projektstruktur |
-| `er_diagramm_autorisierung.puml` | **Soll-Konzept**, noch nicht implementiert: geplantes DB-Autorisierungsmodell | 5.3 Sicherheitskonzept |
+| `er_diagramm_autorisierung.puml` | Implementierte SQLite-Autorisierungsschicht (RBAC) | 5.3 Sicherheitskonzept |
 | `sequenz_login.puml` | Ablauf Login/Authentifizierung inkl. Fehlerfall | 5.3 Sicherheitskonzept |
 | `sequenz_vm_aktion_autorisierung.puml` | Ablauf einer VM-Aktion inkl. Autorisierungsprüfung | 5.3 Sicherheitskonzept |
 | `deployment_umgebungen.puml` | Entwicklungs- und Zielumgebung (Siemens) | 8.2 Weg zur Produktionsreife |
@@ -81,8 +81,10 @@ bei Bedarf am Bildschirm vergrößert werden.
 
 ## Hinweis zur Genauigkeit
 
-Die Diagramme `architektur_uebersicht`, `use_case_rollen`, `klassendiagramm_core`,
-`sequenz_login` und `sequenz_vm_aktion_autorisierung` bilden den tatsächlichen Code in
-`VmPortal.Core`/`VmPortal.Api` ab (Stand siehe Git-Historie dieses Verzeichnisses).
-Nur `er_diagramm_autorisierung.puml` zeigt ein **geplantes, nicht implementiertes**
-Zielmodell und ist im Diagramm sowie in der Bildunterschrift entsprechend gekennzeichnet.
+Alle Diagramme in diesem Verzeichnis, einschließlich `er_diagramm_autorisierung.puml`,
+bilden den tatsächlichen Code in `VmPortal.Core`/`VmPortal.Api` ab (Stand siehe
+Git-Historie dieses Verzeichnisses). `er_diagramm_autorisierung.puml` zeigte in einer
+früheren Fassung ein noch nicht implementiertes Zielmodell (Soll-Konzept); seit der
+SQLite-Autorisierungsschicht (Commits `76b7cef`, `7df0aae`) ist es der implementierte
+Datenbankstand. `sequenz_vm_aktion_autorisierung.puml` wurde im selben Zug von der
+vmroles-Claim-Prüfung auf `DbAuthorizationService` umgestellt.

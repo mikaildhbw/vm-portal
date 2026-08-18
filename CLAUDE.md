@@ -77,7 +77,8 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
 ```
 
 ## Testumgebung (nur Entwicklung — keine Produktions-Secrets)
-- Windows Server 2022 als KVM-Gast auf Ubuntu, IP `192.168.122.196`, zugleich Hyper-V-Host.
+- Windows-Server-Testumgebung mit AD und Hyper-V (IP `192.168.122.196`), die die
+  Produktionsbedingungen strukturell nachbildet; zugleich Hyper-V-Host.
 - AD-Domäne `testumgebung.local`, LDAP auf Port 389.
 - Testbenutzer: `mugur` / `Test1234!` und `jburath` / `Test1234!`
   (Gruppe `VM-Portal-Benutzer`, Rolle `VMUser`).
@@ -118,11 +119,11 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
 
 ## Was noch kommt (Phase 6–7)
 - **Phase 6 — Rest:** Audit-Log (wer hat wann welche VM-Aktion ausgeführt); Secrets aus
-  `appsettings.json` in Umgebungsvariablen/Secret-Store auslagern; `deploy.ps1` (existiert
-  noch nicht) um den `dotnet ef database update`-Schritt ergänzen; Testumgebung mit
+  `appsettings.json` in Umgebungsvariablen/Secret-Store auslagern; Testumgebung mit
   vollständigen `GroupPermissions` befüllen (nach der Umstellung auf
   `DbAuthorizationService` reicht eine leere/unvollständige Zuordnungstabelle nicht mehr
-  aus, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten).
+  aus, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten). `deploy.ps1` (inkl.
+  `dotnet ef database update`-Schritt) existiert bereits im Repo.
 - **Phase 7 — Evaluation:** Bewertung nach Sicherheit, Benutzerfreundlichkeit und
   Plattformunabhängigkeit; konzeptioneller Vergleich Hyper-V vs. Proxmox über das gemeinsame
   Interface.
@@ -130,9 +131,9 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
 ## Wichtige Designentscheidungen (für die Bachelorarbeit relevant)
 - **Interface-first (`IVirtualizationProvider`):** entkoppelt Portal-Kern vom Hypervisor und
   ermöglicht den Plattformvergleich, ohne die API zu ändern.
-- **Provider-Auswahl per Konfiguration:** derselbe Code läuft mit `Dummy` (Linux-Entwicklung,
-  automatisierbare Tests) oder `HyperV` (Windows-Produktion) — belegt die Austauschbarkeit
-  praktisch.
+- **Provider-Auswahl per Konfiguration:** derselbe Code läuft mit `Dummy` (automatisierte
+  Tests, infrastrukturunabhängige Entwicklung) oder `HyperV` (Windows-Produktion) — belegt
+  die Austauschbarkeit praktisch.
 - **JWT im `httpOnly`-Cookie statt `localStorage`:** Schutz gegen XSS-Token-Diebstahl;
   bewusste Sicherheitsentscheidung, die in der Arbeit begründet wird.
 - **Rolle aus AD-Gruppe:** keine doppelte Benutzerverwaltung; das AD bleibt führendes System.
@@ -165,8 +166,9 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
 
 ## Konventionen und Constraints
 - ASP.NET Core 8, C#. Kein Blazor, kein Django, kein Python.
-- Entwicklung unter Ubuntu, Ausführung auf Windows Server 2022 — Windows-APIs sind erlaubt,
-  der Build muss aber plattformübergreifend fehlerfrei sein.
+- Der Build ist plattformübergreifend; die Ausführung mit dem HyperV-Provider erfordert
+  Windows. Windows-APIs sind erlaubt, der Build muss aber plattformübergreifend fehlerfrei
+  sein.
 - Sämtliche Secrets/Verbindungsdaten in `appsettings.json`, nichts hartcodiert.
 - Keine Breaking Changes an `IVirtualizationProvider`.
 - Nach jeder abgeschlossenen Aufgabe committen (Conventional Commits, deutschsprachige
