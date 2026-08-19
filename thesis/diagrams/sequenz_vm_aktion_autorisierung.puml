@@ -8,7 +8,7 @@ skinparam maxMessageSize 170
 actor Benutzer
 participant "Frontend\n(React-SPA)" as Frontend
 participant "VmController" as VmController
-participant "RolePermissions" as RolePermissions
+participant "DbAuthorizationService\n(IDbAuthorizationService)" as DbAuth
 participant "HyperVProvider\n(IVirtualizationProvider)" as HyperVProvider
 participant "PowerShell-\nRunspace" as Runspace
 participant "Hyper-V-Host" as HyperV
@@ -19,7 +19,7 @@ activate VmController
 
 VmController -> HyperVProvider : GetVmByIdAsync(id)
 HyperVProvider -> Runspace : Get-VM -Name id
-Runspace -> HyperV : lokale Ausführung
+Runspace -> HyperV : Ausführung (lokal oder WinRM)
 HyperV --> Runspace : VM-Objekt oder leer
 Runspace --> HyperVProvider : PSObject
 HyperVProvider --> VmController : VirtualMachine? vm
@@ -30,19 +30,21 @@ alt vm == null (unbekannte VM)
 
 else VM gefunden
 
-  VmController -> VmController : vmRoles = GetVmRolesFromToken()\n("vmroles"-Claim aus JWT-Cookie)
-  VmController -> RolePermissions : IsAllowed(role, VmAction.Start)
-  RolePermissions --> VmController : bool
+  VmController -> VmController : adGroups = AdGroupClaims.FromPrincipal(User)\n("adgroups"-Claim aus JWT-Cookie)
+  VmController -> DbAuth : IsAllowedAsync(adGroups, vm.Name, VmAction.Start)
+  DbAuth -> DbAuth : VM -> VirtualMachineGroup auflösen\n(keine Gruppe -> leere Rechtemenge)
+  DbAuth -> DbAuth : GroupPermissions für passende\nUserGroup x VmGroup ermitteln
+  DbAuth -> DbAuth : Union der RoleActions aller\nzutreffenden Rollen bilden
+  DbAuth --> VmController : bool erlaubt
 
-  alt keine Rolle für diese VM ODER Rolle erlaubt "Start" nicht
+  alt keine GroupPermission ODER Aktion nicht in RoleActions
     note right of VmController
-      Ein einziger kombinierter Check:
-      vmRoles.TryGetValue(vm.Name, ...) &&
-      RolePermissions.IsAllowed(role, action).
-      Fehlt eine Rollenzuordnung für die VM
-      oder reicht die Rolle nicht aus, liefert
-      AuthorizeVmActionAsync in beiden
-      Fällen Forbid() (403) zurück.
+      403 mit unterscheidbarer Log-Ursache
+      (siehe docs/authorization.md):
+      - VM ohne VirtualMachineGroup
+      - keine passende GroupPermission
+      - Rolle vorhanden, aber Aktion
+        nicht in ihren RoleActions
     end note
     VmController --> Frontend : 403 Forbidden
     Frontend --> Benutzer : Fehlermeldung "Keine Berechtigung"
@@ -50,7 +52,7 @@ else VM gefunden
   else Aktion erlaubt
     VmController -> HyperVProvider : StartVmAsync(id)
     HyperVProvider -> Runspace : Start-VM -Name id
-    Runspace -> HyperV : lokale Ausführung
+    Runspace -> HyperV : Ausführung (lokal oder WinRM)
 
     alt PowerShell-Fehler (Hyper-V nicht erreichbar o. ä.)
       HyperV --> Runspace : Fehler

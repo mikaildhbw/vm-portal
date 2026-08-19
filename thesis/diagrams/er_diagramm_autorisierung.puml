@@ -1,92 +1,117 @@
 @startuml er_diagramm_autorisierung
-title SOLL-KONZEPT (noch nicht implementiert):\ngeplantes datenbankgestütztes Autorisierungsmodell
+title Implementierte Autorisierungsschicht (SQLite/EF Core)
 
 skinparam backgroundColor white
 skinparam entity {
-  BackgroundColor #FFF3CD
-  BorderColor #B8860B
+  BackgroundColor #E8F4EA
+  BorderColor #2E7D32
 }
 skinparam note {
-  BackgroundColor #FFF3CD
-  BorderColor #B8860B
+  BackgroundColor #E8F4EA
+  BorderColor #2E7D32
 }
 
 note as N1
-  Dieses Diagramm zeigt ausschließlich das mit dem Betreuer
-  besprochene ZIELMODELL für eine spätere, persistente
-  Autorisierungsschicht. Es ist zum Stand dieser Arbeit
-  NICHT UMGESETZT — das Portal hält aktuell keine eigene
-  Datenbank (vgl. Kapitel 8, "Fehlende Persistenz" und
-  "Weg zur Produktionsreife").
+  Persistente RBAC-Schicht neben dem Active Directory (Hybrid-Architektur:
+  AD authentifiziert, SQLite autorisiert). Umgesetzt in
+  VmPortal.Core/Data (VmPortalDbContext, Entities, Migrations) und
+  verwaltet ueber die Admin-Endpunkte /api/admin/* sowie die
+  Administrationsoberflaeche im Frontend (Kapitel 6.7). Ersetzt die
+  zuvor im JWT-Claim "vmroles" gefuehrte, nicht persistente Zuordnung
+  als einzige tatsaechlich wirksame Autorisierungsquelle (siehe
+  Kapitel 5.3 und 6.3, docs/authorization.md).
 end note
 
 entity "VirtualServers" as VirtualServers {
-  * id : PK
+  * Id : PK
   --
-  address : string
-  platform : string <<neu>>
+  Address : string
+  Platform : string
+  Name : string
 }
 
 entity "VirtualMachines" as VirtualMachines {
-  * id : PK
+  * Id : PK
   --
-  srvId : FK -> VirtualServers.id
-  grpId : FK -> VirtualMachineGroups.id
-  name : string
+  ServerId : FK -> VirtualServers.Id
+  GroupId : FK -> VirtualMachineGroups.Id (nullable)
+  Name : string
+  VmGuid : string (nullable)
+  ..
+  GroupId = null => secure-by-default
+  (VM unsichtbar, keine Rechte)
+  ..
+  VmGuid: Hyper-V-VM-GUID, nur zur
+  Nachvollziehbarkeit im Multi-Host-
+  Betrieb, nicht Teil der Rechtepruefung
+  (die bleibt Server+Name-basiert)
 }
 
 entity "VirtualMachineGroups" as VirtualMachineGroups {
-  * id : PK
+  * Id : PK
   --
-  grpName : string
+  Name : string
 }
 
 entity "UserGroups" as UserGroups {
-  * id : PK
+  * Id : PK
   --
-  name : string
+  Name : string
+  ..
+  1:1-Abbild einer AD-Gruppe
+  (nur Name, kein Sync)
 }
 
-entity "Role" as Role {
-  * id : PK
+entity "Roles" as Roles {
+  * Id : PK
   --
-  name : string
-  level : int <<neu>>
+  Name : string
+  IsSystemRole : bool
+  Level : int
+  ..
+  Level dient nur der UI-Sortierung,
+  nicht der Rechteableitung
 }
 
 entity "VMActions" as VMActions {
-  * id : PK
+  * Id : PK
   --
-  name : string
+  Name : string
+  ..
+  Abbild von VmAction (22 Werte)
 }
 
 entity "RoleActions" as RoleActions {
-  * id : PK
+  * Id : PK
   --
-  roleId : FK -> Role.id
-  actionId : FK -> VMActions.id
+  RoleId : FK -> Roles.Id
+  ActionId : FK -> VMActions.Id
   ..
-  UNIQUE(roleId, actionId)
+  UNIQUE(RoleId, ActionId)
+  explizite, vollstaendige Rechte-
+  menge je Rolle, keine Vererbung
 }
 
 entity "GroupPermissions" as GroupPermissions {
-  * id : PK
+  * Id : PK
   --
-  vmGrpId : FK -> VirtualMachineGroups.id
-  usrGrpId : FK -> UserGroups.id
-  roleIdStart : FK -> Role.id
+  VmGroupId : FK -> VirtualMachineGroups.Id
+  UserGroupId : FK -> UserGroups.Id
+  RoleId : FK -> Roles.Id
   ..
-  UNIQUE(vmGrpId, usrGrpId)
+  UNIQUE(VmGroupId, UserGroupId, RoleId)
+  mehrere Rollen pro Paar moeglich
+  -> Union statt "hoechste Rolle gewinnt"
 }
 
 VirtualServers ||--o{ VirtualMachines : "hostet"
-VirtualMachineGroups ||--o{ VirtualMachines : "enthält"
+VirtualMachineGroups |o--o{ VirtualMachines : "enthaelt (optional)"
 
-Role ||--o{ RoleActions : "erlaubt"
+Roles ||--o{ RoleActions : "erlaubt"
 VMActions ||--o{ RoleActions : "ist erlaubt in"
 
-VirtualMachineGroups ||--o{ GroupPermissions : "wird berechtigt für"
-UserGroups ||--o{ GroupPermissions : "erhält Berechtigung auf"
-Role ||--o{ GroupPermissions : "als Startrolle"
+VirtualMachineGroups ||--o{ GroupPermissions : "wird berechtigt fuer"
+UserGroups ||--o{ GroupPermissions : "erhaelt Berechtigung auf"
+Roles ||--o{ GroupPermissions : "als zugewiesene Rolle"
 
 @enduml

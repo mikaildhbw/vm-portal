@@ -25,11 +25,13 @@ package "Testumgebung (aktueller Ist-Zustand)" #F8F8F8 {
   DevBackend -[#444444]-> DevAD : LDAP (Port 389)
 }
 
-package "Zielumgebung — Siemens-Produktion (Migrationsziel)" #F8F8F8 {
+package "Zielumgebung — Siemens-Produktion" #F8F8F8 {
   node "Siemens-Firmennetz" as SiemensNet {
     node "Reverse Proxy\n(HTTPS-Terminierung)" as ReverseProxy
     node "Anwendungsserver\n(Backend: VmPortal.Api + Core)" as ProdBackend
-    node "Hyper-V-Host" as ProdHyperV
+    node "MHM-HYPERV1" as ProdHyperV1
+    node "MHM-HYPERV3" as ProdHyperV3
+    node "MHM-HYPERV4" as ProdHyperV4
     database "Domain Controller\narchiv.mhm.siemens.com\n(AGLP-Gruppenstruktur)" as ProdAD
   }
 
@@ -37,20 +39,20 @@ package "Zielumgebung — Siemens-Produktion (Migrationsziel)" #F8F8F8 {
 
   User -[#444444]-> ReverseProxy : HTTPS
   ReverseProxy -[#444444]-> ProdBackend : HTTP (intern)
-  ProdBackend -[#B8860B]-> ProdHyperV : PowerShell **über WinRM**\n(HTTPS)
+  ProdBackend -[#B8860B]-> ProdHyperV1 : WinRM/Kerberos\n(Port 5985)
+  ProdBackend -[#B8860B]-> ProdHyperV3 : WinRM/Kerberos\n(Port 5985)
+  ProdBackend -[#B8860B]-> ProdHyperV4 : WinRM/Kerberos\n(Port 5985)
   ProdBackend -[#444444]-> ProdAD : LDAPS (Port 636)
 }
 
-note bottom of ProdHyperV
-  Getrennter Anwendungs- und Hyper-V-Host
-  setzt den in Kapitel 8 skizzierten
-  WinRM-Remote-Modus voraus (geplante
-  Erweiterung, siehe "Weg zur Produktions-
-  reife"). Der aktuelle HyperVProvider führt
-  PowerShell ausschließlich lokal aus
-  (vgl. Entwicklungsumgebung oben) und
-  setzt daher voraus, dass Backend und
-  Hyper-V-Host auf demselben Host laufen.
+note bottom of ProdHyperV4
+  Getrennter Anwendungs- und Hyper-V-Host: HyperVProvider
+  steuert im Remote-Modus mehrere Hosts gleichzeitig ueber
+  WinRM/Kerberos an (ein wiederverwendbarer RunspacePool je
+  Host), implementiert und gegen alle drei Hosts erfolgreich
+  getestet. Der Local-Modus aus der Entwicklungsumgebung
+  (oben) bleibt als Alternative fuer Deployments mit
+  gemeinsamem Anwendungs-/Hyper-V-Host bestehen.
 end note
 
 DevVM -[hidden]-> SiemensNet
