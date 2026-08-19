@@ -1,0 +1,114 @@
+@startuml klassendiagramm_auth
+title Klassendiagramm: Authentifizierung & Autorisierung (VmPortal.Core)
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
+  ArrowColor #4D4D4D
+}
+skinparam note {
+  BackgroundColor #FAFAFA
+  BorderColor #999999
+}
+
+package "Interfaces" {
+  interface IAuthService {
+    + LoginAsync(username, password) : AuthResult
+    + ValidateTokenAsync(token) : bool
+  }
+
+  interface ITokenService {
+    + GenerateToken(username, role, vmRoles) : string
+    + ValidateToken(token) : bool
+  }
+
+  interface IDbAuthorizationService #E3F2F1;line:00707A {
+    + GetAllowedActionsAsync(adGroups, vmName) : IReadOnlySet<VmAction>
+    + IsAllowedAsync(adGroups, vmName, action) : bool
+    + IsBootstrapFullAdmin(adGroups) : bool
+  }
+}
+
+package "Implementierungen" {
+  class LdapAuthService {
+    + LoginAsync(username, password)
+  }
+
+  class DummyAuthService {
+    + LoginAsync(username, password)
+  }
+
+  class JwtTokenService {
+    + GenerateToken(username, role, vmRoles)
+    + ValidateToken(token)
+  }
+
+  class DbAuthorizationService {
+    + GetAllowedActionsAsync(adGroups, vmName)
+    + IsAllowedAsync(adGroups, vmName, action)
+    + IsBootstrapFullAdmin(adGroups)
+  }
+}
+
+package "RBAC-Modelle & Hilfsklassen" {
+  enum VmAction {
+    ViewStatus, Start, Stop, ...
+    (22 Werte, vollständig: Tabelle
+    RolePermissions bzw. VMActions)
+  }
+
+  enum VmRole {
+    Viewer < Operator < PowerUser
+    < Admin < FullAdmin
+    .. Vorstufe, s. Kapitel 5.3 ..
+  }
+
+  class AuthResult <<record>> {
+    + Success : bool
+    + Token : string?
+  }
+
+  class RolePermissions <<static>> {
+    + {static} IsAllowed(role, action) : bool
+  }
+
+  class AdGroupClaims <<static>> {
+    + {static} FromPrincipal(user) : IReadOnlyCollection<string>
+    .. massgeblich fuer DbAuthorizationService ..
+  }
+
+  class VmRoleClaims <<static>> {
+    .. seit 6.3 kein Konsument mehr im Backend ..
+  }
+}
+
+LdapAuthService ..|> IAuthService
+DummyAuthService ..|> IAuthService
+JwtTokenService ..|> ITokenService
+DbAuthorizationService ..|> IDbAuthorizationService
+
+LdapAuthService ..> ITokenService : verwendet
+DummyAuthService ..> ITokenService : verwendet
+IAuthService ..> AuthResult : liefert
+ITokenService ..> VmRole : verwendet
+IDbAuthorizationService ..> VmAction : verwendet
+
+RolePermissions ..> VmAction : verwendet
+RolePermissions ..> VmRole : verwendet
+VmRoleClaims ..> VmRole : verwendet
+DbAuthorizationService ..> AdGroupClaims : liest Claim ueber
+
+note bottom of DbAuthorizationService
+  Persistenz (VmPortalDbContext, Entities) ist im
+  ER-Diagramm der Autorisierungsschicht dargestellt,
+  nicht hier. Konfigurationsklassen (JwtSettings,
+  LdapSettings, AuthorizationSettings, ...) stehen in
+  der Konfigurationsparameter-Tabelle im Anhang.
+end note
+
+@enduml

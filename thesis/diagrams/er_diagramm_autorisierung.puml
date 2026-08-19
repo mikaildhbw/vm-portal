@@ -2,32 +2,30 @@
 title Implementierte Autorisierungsschicht (SQLite/EF Core)
 
 skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
 skinparam entity {
-  BackgroundColor #E8F4EA
-  BorderColor #2E7D32
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
+  ArrowColor #4D4D4D
 }
 skinparam note {
-  BackgroundColor #E8F4EA
-  BorderColor #2E7D32
+  BackgroundColor #FAFAFA
+  BorderColor #999999
 }
 
 note as N1
-  Persistente RBAC-Schicht neben dem Active Directory (Hybrid-Architektur:
-  AD authentifiziert, SQLite autorisiert). Umgesetzt in
-  VmPortal.Core/Data (VmPortalDbContext, Entities, Migrations) und
-  verwaltet ueber die Admin-Endpunkte /api/admin/* sowie die
-  Administrationsoberflaeche im Frontend (Kapitel 6.7). Ersetzt die
-  zuvor im JWT-Claim "vmroles" gefuehrte, nicht persistente Zuordnung
-  als einzige tatsaechlich wirksame Autorisierungsquelle (siehe
-  Kapitel 5.3 und 6.3, docs/authorization.md).
+  Persistente RBAC-Schicht neben dem Active Directory
+  (Hybrid: AD authentifiziert, SQLite autorisiert).
+  Ersetzt die zuvor im JWT-Claim "vmroles" gefuehrte,
+  nicht persistente Zuordnung (Kapitel 5.3/6.3).
 end note
 
 entity "VirtualServers" as VirtualServers {
   * Id : PK
   --
-  Address : string
-  Platform : string
-  Name : string
+  Address, Platform, Name
 }
 
 entity "VirtualMachines" as VirtualMachines {
@@ -35,16 +33,9 @@ entity "VirtualMachines" as VirtualMachines {
   --
   ServerId : FK -> VirtualServers.Id
   GroupId : FK -> VirtualMachineGroups.Id (nullable)
-  Name : string
-  VmGuid : string (nullable)
+  Name, VmGuid (nullable)
   ..
-  GroupId = null => secure-by-default
-  (VM unsichtbar, keine Rechte)
-  ..
-  VmGuid: Hyper-V-VM-GUID, nur zur
-  Nachvollziehbarkeit im Multi-Host-
-  Betrieb, nicht Teil der Rechtepruefung
-  (die bleibt Server+Name-basiert)
+  GroupId = null -> secure-by-default
 }
 
 entity "VirtualMachineGroups" as VirtualMachineGroups {
@@ -59,18 +50,12 @@ entity "UserGroups" as UserGroups {
   Name : string
   ..
   1:1-Abbild einer AD-Gruppe
-  (nur Name, kein Sync)
 }
 
 entity "Roles" as Roles {
   * Id : PK
   --
-  Name : string
-  IsSystemRole : bool
-  Level : int
-  ..
-  Level dient nur der UI-Sortierung,
-  nicht der Rechteableitung
+  Name, IsSystemRole, Level
 }
 
 entity "VMActions" as VMActions {
@@ -87,9 +72,8 @@ entity "RoleActions" as RoleActions {
   RoleId : FK -> Roles.Id
   ActionId : FK -> VMActions.Id
   ..
-  UNIQUE(RoleId, ActionId)
-  explizite, vollstaendige Rechte-
-  menge je Rolle, keine Vererbung
+  explizite Rechtemenge je Rolle,
+  keine Vererbung
 }
 
 entity "GroupPermissions" as GroupPermissions {
@@ -99,19 +83,18 @@ entity "GroupPermissions" as GroupPermissions {
   UserGroupId : FK -> UserGroups.Id
   RoleId : FK -> Roles.Id
   ..
-  UNIQUE(VmGroupId, UserGroupId, RoleId)
   mehrere Rollen pro Paar moeglich
   -> Union statt "hoechste Rolle gewinnt"
 }
 
-VirtualServers ||--o{ VirtualMachines : "hostet"
-VirtualMachineGroups |o--o{ VirtualMachines : "enthaelt (optional)"
+VirtualServers ||--o{ VirtualMachines : hostet
+VirtualMachineGroups |o--o{ VirtualMachines : enthaelt (optional)
 
-Roles ||--o{ RoleActions : "erlaubt"
-VMActions ||--o{ RoleActions : "ist erlaubt in"
+Roles ||--o{ RoleActions : erlaubt
+VMActions ||--o{ RoleActions : ist erlaubt in
 
-VirtualMachineGroups ||--o{ GroupPermissions : "wird berechtigt fuer"
-UserGroups ||--o{ GroupPermissions : "erhaelt Berechtigung auf"
-Roles ||--o{ GroupPermissions : "als zugewiesene Rolle"
+VirtualMachineGroups ||--o{ GroupPermissions : wird berechtigt fuer
+UserGroups ||--o{ GroupPermissions : erhaelt Berechtigung auf
+Roles ||--o{ GroupPermissions : als zugewiesene Rolle
 
 @enduml

@@ -1,0 +1,77 @@
+@startuml klassendiagramm_virtualisierung
+title Klassendiagramm: Virtualisierungsschicht (VmPortal.Core)
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
+  ArrowColor #4D4D4D
+}
+skinparam note {
+  BackgroundColor #FAFAFA
+  BorderColor #999999
+}
+
+interface IVirtualizationProvider #E3F2F1;line:00707A {
+  + GetVmsAsync()
+  + GetVmByIdAsync(id)
+  + StartVmAsync(id)
+  + StopVmAsync(id)
+  + CreateSnapshotAsync(id, name)
+  + GetMeteringAsync(id)
+  + ... (20 Operationen gesamt,
+    vollständig: Kapitel 5.2)
+}
+
+class HyperVProvider {
+  + GetVmsAsync()
+  + StartVmAsync(id)
+  + ...()
+  - InvokeAsync(configure)
+  - MapVm(psObject)
+  .. Local- oder Remote-Modus,
+  s. Kapitel 6.4 ..
+}
+
+class DummyVirtualizationProvider {
+  - _vms : List<VirtualMachine>
+}
+
+class VirtualMachine {
+  + Id : string
+  + Name : string
+  + Status : VmStatus
+  + HostName, VmGuid : string
+}
+
+enum VmStatus {
+  Running
+  Stopped
+  Paused
+  Unknown
+}
+
+class VmMeteringData <<record>> {
+  + AvgCpu, AvgRam, TotalDisk : string
+}
+
+HyperVProvider ..|> IVirtualizationProvider
+DummyVirtualizationProvider ..|> IVirtualizationProvider
+
+IVirtualizationProvider ..> VirtualMachine : liefert
+IVirtualizationProvider ..> VmMeteringData : liefert
+VirtualMachine *-- VmStatus
+DummyVirtualizationProvider o-- "2" VirtualMachine
+
+note bottom of IVirtualizationProvider
+  Zentrale Plattformabstraktion (Kapitel 5.2): API und
+  Präsentation kennen nur diese Schnittstelle. Ein
+  ProxmoxProvider wäre eine dritte Implementierung
+  ohne Änderung an API oder Frontend.
+end note
+
+@enduml

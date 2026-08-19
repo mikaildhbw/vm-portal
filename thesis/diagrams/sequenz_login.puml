@@ -2,8 +2,25 @@
 title Sequenzdiagramm: Login und Authentifizierung
 
 skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
 skinparam sequenceMessageAlign center
 skinparam maxMessageSize 160
+skinparam sequence {
+  ParticipantBackgroundColor #F5F5F5
+  ParticipantBorderColor #4D4D4D
+  ActorBackgroundColor #F5F5F5
+  ActorBorderColor #4D4D4D
+  LifeLineBorderColor #999999
+  ArrowColor #4D4D4D
+  GroupBackgroundColor #F5F5F5
+  GroupBorderColor #999999
+}
+skinparam note {
+  BackgroundColor #FAFAFA
+  BorderColor #999999
+}
 
 actor Benutzer
 participant "Frontend\n(React-SPA)" as Frontend
@@ -14,35 +31,31 @@ participant "JwtTokenService\n(ITokenService)" as JwtTokenService
 participant "Browser\n(Cookie-Speicher)" as Browser
 
 Benutzer -> Frontend : Benutzername + Passwort eingeben
-Frontend -> AuthController : POST /api/auth/login\n{username, password}
+Frontend -> AuthController : POST /api/auth/login
 AuthController -> LdapAuthService : LoginAsync(username, password)
-LdapAuthService -> AD : LDAP-Bind\n(benutzer@testumgebung.local, Passwort)
+LdapAuthService -> AD : LDAP-Bind (Benutzer, Passwort)
 
 alt Bind erfolgreich (gültige Zugangsdaten)
-  LdapAuthService -> AD : LDAP-Suche (sAMAccountName=username)\nAttribut memberOf
-  AD --> LdapAuthService : Gruppennamen (CN-Liste)
+  LdapAuthService -> AD : LDAP-Suche: memberOf
+  AD --> LdapAuthService : Gruppennamen
 
   note right of LdapAuthService
-    Mitglied von "VM-Portal-Benutzer"?
-    -> globale Rolle "VMUser", sonst "User".
-    Gruppen nach Muster
-    "VM-{VmName}-{Viewer|Operator|
-    PowerUser|Admin|FullAdmin}" ->
-    VM-spezifische Rollenzuordnung
-    (vmRoles-Dictionary).
+    Mitglied von "VM-Portal-Benutzer"? -> Rolle "VMUser".
+    Gruppen nach Muster "VM-{VmName}-{Rolle}" ->
+    vmRoles-Zuordnung (Vorstufe, s. Kapitel 5.3).
   end note
 
   LdapAuthService -> JwtTokenService : GenerateToken(username, role, vmRoles)
-  JwtTokenService --> LdapAuthService : JWT\n(Claims: sub, name, role, jti,\n"vmroles"-JSON-Claim)
-  LdapAuthService --> AuthController : AuthResult(Success=true, Token, null)
+  JwtTokenService --> LdapAuthService : JWT (Claims: username, role, vmRoles)
+  LdapAuthService --> AuthController : AuthResult(Success=true, Token)
   AuthController -> Browser : Set-Cookie: jwt=<JWT>\n(HttpOnly, Secure, SameSite=Strict, 8h)
-  AuthController --> Frontend : 200 OK {"message": "Login erfolgreich"}
+  AuthController --> Frontend : 200 OK
   Frontend --> Benutzer : Weiterleitung zur VM-Übersicht
 
 else Bind fehlgeschlagen (ungültige Zugangsdaten)
   AD --> LdapAuthService : LdapException
-  LdapAuthService --> AuthController : AuthResult(Success=false, null, ErrorMessage)
-  AuthController --> Frontend : 401 Unauthorized\n{"message": "Login fehlgeschlagen: ..."}
+  LdapAuthService --> AuthController : AuthResult(Success=false, ErrorMessage)
+  AuthController --> Frontend : 401 Unauthorized
   Frontend --> Benutzer : Fehlermeldung anzeigen
 end
 

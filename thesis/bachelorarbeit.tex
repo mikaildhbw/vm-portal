@@ -708,7 +708,7 @@ Das Sicherheitskonzept folgt dem Prinzip der minimalen Rechtevergabe und setzt d
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{diagrams/rendered/use_case_rollen.pdf}
-\caption[Use-Cases je VM-Rolle]{Autorisierbare Aktionen je VM-Rolle, unabhängig davon, ob die Rolle aus dem \texttt{vmroles}-Claim (Vorstufe) oder aus einer \texttt{GroupPermission} der SQLite-Autorisierungsschicht (aktueller Stand, s.\,u.) stammt. Jeder Anwendungsfall ist an die niedrigste berechtigte Rolle geknüpft; höhere Rollen erben die Rechte über die dargestellte Aktorvererbung. Dargestellt ist ein Auszug der Kernaktionen je Rollenstufe; das \texttt{VmAction}-Enum umfasst insgesamt 22 Aktionen (vgl. Abbildung~\ref{fig:klassendiagramm-core}).}
+\caption[Use-Cases je VM-Rolle]{Autorisierbare Aktionen je VM-Rolle, unabhängig davon, ob die Rolle aus dem \texttt{vmroles}-Claim (Vorstufe) oder aus einer \texttt{GroupPermission} der SQLite-Autorisierungsschicht (aktueller Stand, s.\,u.) stammt. Jeder Anwendungsfall ist an die niedrigste berechtigte Rolle geknüpft; höhere Rollen erben die Rechte über die dargestellte Aktorvererbung. Dargestellt ist ein Auszug der Kernaktionen je Rollenstufe; das \texttt{VmAction}-Enum umfasst insgesamt 22 Aktionen (vgl. Abbildung~\ref{fig:klassendiagramm-auth}).}
 \label{fig:use-case-rollen}
 \end{figure}
 
@@ -805,13 +805,20 @@ VmPortal.Frontend/             Praesentation (Schicht 1)
   vite.config.js  Dev-Proxy /api -> API
 \end{lstlisting}
 
-\texttt{VmPortal.Core} ist eine reine Klassenbibliothek: Sie definiert die Schnittstellen (\texttt{IVirtualizationProvider}, \texttt{IAuthService}, \texttt{ITokenService}, \texttt{IDbAuthorizationService}), die Modelle, die Dienste sowie — im Unterverzeichnis \texttt{Data} — den EF-Core-\texttt{DbContext} und die Entitätsklassen der SQLite-Autorisierungsschicht (Abschnitt~\ref{sec:impl-db-authz}); eine echte Web-Abhängigkeit besteht dadurch weiterhin nicht, EF~Core ist reine Datenzugriffslogik. \texttt{VmPortal.Api} referenziert \texttt{Core}, enthält die Controller (darunter die sechs Admin-Controller unter \texttt{Controllers/Admin}, Abschnitt~\ref{sec:impl-admin-ui}) und die Middleware und verdrahtet in \texttt{Program.cs} als Composition Root alle Dienste einschließlich des \texttt{DbContext} über den Dependency-Injection-Container. \texttt{VmPortal.Frontend} ist ein eigenständiges Vite-Projekt, dessen Produktions-Build in das \texttt{wwwroot}-Verzeichnis der API kopiert wird (Abschnitt~\ref{sec:deployment}). Die Abhängigkeitsrichtung ist strikt: Das Frontend kennt nur die REST-API, die API kennt nur die Schnittstellen des Core, der Core kennt keine der äußeren Schichten. Abbildung~\ref{fig:klassendiagramm-core} zeigt die Klassen des Core-Projekts und ihre Beziehungen im Detail; das ER-Diagramm der Autorisierungsschicht (Abbildung~\ref{fig:er-autorisierung}) ergänzt dies um die Entitäten unter \texttt{Data/Entities}.
+\texttt{VmPortal.Core} ist eine reine Klassenbibliothek: Sie definiert die Schnittstellen (\texttt{IVirtualizationProvider}, \texttt{IAuthService}, \texttt{ITokenService}, \texttt{IDbAuthorizationService}), die Modelle, die Dienste sowie — im Unterverzeichnis \texttt{Data} — den EF-Core-\texttt{DbContext} und die Entitätsklassen der SQLite-Autorisierungsschicht (Abschnitt~\ref{sec:impl-db-authz}); eine echte Web-Abhängigkeit besteht dadurch weiterhin nicht, EF~Core ist reine Datenzugriffslogik. \texttt{VmPortal.Api} referenziert \texttt{Core}, enthält die Controller (darunter die sechs Admin-Controller unter \texttt{Controllers/Admin}, Abschnitt~\ref{sec:impl-admin-ui}) und die Middleware und verdrahtet in \texttt{Program.cs} als Composition Root alle Dienste einschließlich des \texttt{DbContext} über den Dependency-Injection-Container. \texttt{VmPortal.Frontend} ist ein eigenständiges Vite-Projekt, dessen Produktions-Build in das \texttt{wwwroot}-Verzeichnis der API kopiert wird (Abschnitt~\ref{sec:deployment}). Die Abhängigkeitsrichtung ist strikt: Das Frontend kennt nur die REST-API, die API kennt nur die Schnittstellen des Core, der Core kennt keine der äußeren Schichten. Abbildung~\ref{fig:klassendiagramm-auth} und Abbildung~\ref{fig:klassendiagramm-virt} zeigen die Klassen des Core-Projekts und ihre Beziehungen im Detail, aufgeteilt nach den beiden fachlichen Schwerpunkten Authentifizierung/Autorisierung und Virtualisierung; das ER-Diagramm der Autorisierungsschicht (Abbildung~\ref{fig:er-autorisierung}) ergänzt dies um die Entitäten unter \texttt{Data/Entities}. Konfigurationsklassen (\texttt{JwtSettings}, \texttt{LdapSettings} usw.) sind der Übersichtlichkeit halber nicht in den Klassendiagrammen enthalten, sondern in Tabelle~\ref{tab:configparams} (Anhang~\ref{app:config}) gelistet.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{diagrams/rendered/klassendiagramm_core.pdf}
-\caption[Klassendiagramm der Fachlogikschicht]{Klassendiagramm von \texttt{VmPortal.Core}: Schnittstellen, ihre Implementierungen, Modelle, Konfigurationsklassen sowie die Hilfsklassen für Rollenprüfung und Fehlerbehandlung.}
-\label{fig:klassendiagramm-core}
+\includegraphics[width=\textwidth]{diagrams/rendered/klassendiagramm_auth.pdf}
+\caption[Klassendiagramm: Authentifizierung und Autorisierung]{Klassendiagramm des Authentifizierungs- und Autorisierungsteils von \texttt{VmPortal.Core}: Schnittstellen, ihre Implementierungen sowie die RBAC-Modelle und -Hilfsklassen.}
+\label{fig:klassendiagramm-auth}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{diagrams/rendered/klassendiagramm_virtualisierung.pdf}
+\caption[Klassendiagramm: Virtualisierungsschicht]{Klassendiagramm der Virtualisierungsschicht von \texttt{VmPortal.Core}: \texttt{IVirtualizationProvider} und seine beiden Implementierungen mit den zugehörigen Modellklassen.}
+\label{fig:klassendiagramm-virt}
 \end{figure}
 
 \subsection{Authentifizierung und Autorisierung}

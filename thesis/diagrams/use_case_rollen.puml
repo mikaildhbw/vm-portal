@@ -3,10 +3,18 @@ title Use-Cases je VM-Rolle (Rollenhierarchie mit Vererbung)
 left to right direction
 
 skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
 skinparam actorStyle awesome
 skinparam usecase {
-  BackgroundColor #F2F2F2
-  BorderColor #444444
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
+  ArrowColor #4D4D4D
+}
+skinparam actor {
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
 }
 
 actor Viewer
@@ -22,36 +30,24 @@ PowerUser --|> Operator
 Admin --|> PowerUser
 FullAdmin --|> Admin
 
-rectangle "VmPortal — autorisierbare Aktionen (Auszug aus RolePermissions)" {
-  usecase "VM-Status ansehen\n(ViewStatus)" as UC_View
-  usecase "VM starten\n(Start)" as UC_Start
-  usecase "VM stoppen\n(Stop)" as UC_Stop
-  usecase "VM pausieren / fortsetzen\n(Pause / Resume)" as UC_Pause
-  usecase "VM zurücksetzen\n(Reset)" as UC_Reset
-  usecase "Snapshot erstellen\n(SnapshotCreate)" as UC_SnapCreate
-  usecase "Snapshot wiederherstellen\n(SnapshotApply)" as UC_SnapApply
-  usecase "Snapshot löschen\n(SnapshotDelete)" as UC_SnapDelete
-  usecase "Ressourcen anpassen: RAM/CPU\n(ResizeRam / ResizeCpu)" as UC_Resize
-  usecase "Netzwerk konfigurieren\n(AttachNetworkAdapter)" as UC_Network
-  usecase "VM exportieren / importieren / klonen\n(Export / Import / Clone)" as UC_ExportImport
+rectangle "VmPortal — autorisierbare Aktionen (Auszug, vollständig: Tabelle RolePermissions)" {
+  usecase "VM-Status ansehen" as UC_View
+  usecase "Betrieb steuern\n(Start / Stopp / Pause)" as UC_Betrieb
+  usecase "VM zurücksetzen" as UC_Reset
+  usecase "Snapshots erstellen\n& anwenden" as UC_Snap
+  usecase "Snapshot löschen" as UC_SnapDelete
+  usecase "Ressourcen & Netzwerk\nanpassen" as UC_Resize
+  usecase "Export / Import /\nKlonen" as UC_ExportImport
 }
 
 ' Jeder Use Case ist an die jeweils niedrigste berechtigte Rolle geknüpft;
 ' hoehere Rollen erhalten das Recht ausschliesslich ueber die Aktorvererbung oben.
 Viewer -- UC_View
-
-Operator -- UC_Start
-Operator -- UC_Stop
-Operator -- UC_Pause
-
+Operator -- UC_Betrieb
 PowerUser -- UC_Reset
-PowerUser -- UC_SnapCreate
-PowerUser -- UC_SnapApply
-
+PowerUser -- UC_Snap
 Admin -- UC_SnapDelete
 Admin -- UC_Resize
-Admin -- UC_Network
-
 FullAdmin -- UC_ExportImport
 
 @enduml

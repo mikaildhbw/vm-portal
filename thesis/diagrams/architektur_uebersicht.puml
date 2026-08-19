@@ -1,20 +1,27 @@
 @startuml architektur_uebersicht
 title Architekturübersicht: 4-Schichten-Modell mit Hypervisor-Abstraktion
 
-skinparam componentStyle rectangle
 skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
+skinparam componentStyle rectangle
 skinparam component {
-  BackgroundColor #F2F2F2
-  BorderColor #444444
-  ArrowColor #444444
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
+  ArrowColor #4D4D4D
 }
 skinparam package {
-  BackgroundColor #FFFFFF
-  BorderColor #888888
+  BackgroundColor white
+  BorderColor #999999
+}
+skinparam note {
+  BackgroundColor #FAFAFA
+  BorderColor #999999
 }
 
 package "Schicht 1 — Präsentation\n(VmPortal.Frontend)" as GUI {
-  [React-SPA\n(Login, VmList, VmDetail)] as ReactSpa
+  [React-SPA\n(Login, VM-Übersicht, VM-Detail)] as ReactSpa
 }
 
 package "Schicht 2 — REST-API\n(VmPortal.Api)" as API {
@@ -24,7 +31,7 @@ package "Schicht 2 — REST-API\n(VmPortal.Api)" as API {
 }
 
 package "Schicht 3 — Fachlogik\n(VmPortal.Core)" as CORE {
-  interface "IVirtualizationProvider" as IVP #FFD54F
+  interface "IVirtualizationProvider" as IVP #E3F2F1;line:00707A
   interface "IAuthService" as IAuth
   interface "ITokenService" as IToken
   [RolePermissions] as RolePerm
@@ -43,30 +50,26 @@ package "Schicht 3 — Fachlogik\n(VmPortal.Core)" as CORE {
 }
 
 package "Schicht 4 — Infrastruktur" as INFRA {
-  node "Hyper-V-Host\n(lokale PowerShell)" as HyperVHost
+  node "Hyper-V-Host(s)" as HyperVHost
   node "Active Directory\n(LDAP)" as AD
 }
 
-ReactSpa -down-> AuthController : "HTTPS / JSON\nhttpOnly-Cookie"
-ReactSpa -down-> VmController : "HTTPS / JSON\nhttpOnly-Cookie"
+ReactSpa -down-> AuthController : HTTPS / JSON
+ReactSpa -down-> VmController : HTTPS / JSON
 
-AuthController -down-> IAuth : "Methodenaufruf"
-VmController -down-> IVP : "Methodenaufruf"
-VmController .down.> RolePerm : "IsAllowed(role, action)"
+AuthController -down-> IAuth : Methodenaufruf
+VmController -down-> IVP : Methodenaufruf
+VmController .down.> RolePerm : IsAllowed(role, action)
 
-HyperVProvider -down-> HyperVHost : "PowerShell-Cmdlets\n(Get-VM, Start-VM, ...)"
-LdapAuthService -down-> AD : "LDAP-Bind,\nmemberOf-Suche"
+HyperVProvider -down-> HyperVHost : PowerShell-Cmdlets
+LdapAuthService -down-> AD : LDAP-Bind
 
 note bottom of IVP
-  Zentrale Abstraktion für die
-  Plattformunabhängigkeit: Die API-
-  und Präsentationsschicht kennen
-  nur diese Schnittstelle, nicht den
-  konkreten Hypervisor. Ein
-  ProxmoxProvider wäre eine
-  weitere Implementierung, ohne
-  dass API oder Frontend sich
-  ändern müssten.
+  Zentrale Abstraktion für die Plattformunabhängigkeit:
+  API und Präsentation kennen nur diese Schnittstelle,
+  nie den konkreten Hypervisor. Ein ProxmoxProvider wäre
+  eine weitere Implementierung ohne Änderung an API
+  oder Frontend.
 end note
 
 @enduml

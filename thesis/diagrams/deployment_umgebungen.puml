@@ -2,57 +2,68 @@
 title Deploymentdiagramm: Entwicklungs- und Zielumgebung
 
 skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
 skinparam node {
-  BackgroundColor #F2F2F2
-  BorderColor #444444
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
 }
 skinparam database {
-  BackgroundColor #E3F2FD
-  BorderColor #1565C0
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
 }
 skinparam artifact {
-  BackgroundColor #FFF3CD
-  BorderColor #B8860B
+  BackgroundColor #E3F2F1
+  BorderColor #00707A
 }
+skinparam actor {
+  BackgroundColor #F5F5F5
+  BorderColor #4D4D4D
+}
+skinparam note {
+  BackgroundColor #FAFAFA
+  BorderColor #999999
+}
+skinparam ArrowColor #4D4D4D
 
 package "Testumgebung (aktueller Ist-Zustand)" #F8F8F8 {
   node "Windows Server 2022\n(AD-Domänencontroller + Hyper-V-Host)" as DevVM {
-    artifact "VmPortal.Api + Core\n(Backend, lokal ausgeführt)" as DevBackend
-    node "Hyper-V-Host\n(Test-VMs: VM-Mikail, VM-Burath)" as DevHyperV
-    database "Active Directory\n(Testdomäne\ntestumgebung.local)" as DevAD
+    artifact "VmPortal.Api + Core\n(Backend, Local-Modus)" as DevBackend
+    node "Hyper-V-Host\n(Test-VMs)" as DevHyperV
+    database "Active Directory\n(Testdomäne)" as DevAD
   }
-  DevBackend -[#444444]-> DevHyperV : lokale PowerShell\n(kein WinRM)
-  DevBackend -[#444444]-> DevAD : LDAP (Port 389)
+  DevBackend --> DevHyperV : lokale PowerShell
+  DevBackend --> DevAD : LDAP (Port 389)
 }
 
 package "Zielumgebung — Siemens-Produktion" #F8F8F8 {
   node "Siemens-Firmennetz" as SiemensNet {
     node "Reverse Proxy\n(HTTPS-Terminierung)" as ReverseProxy
-    node "Anwendungsserver\n(Backend: VmPortal.Api + Core)" as ProdBackend
+    node "Anwendungsserver\n(Backend, Remote-Modus)" as ProdBackend
     node "MHM-HYPERV1" as ProdHyperV1
     node "MHM-HYPERV3" as ProdHyperV3
     node "MHM-HYPERV4" as ProdHyperV4
-    database "Domain Controller\narchiv.mhm.siemens.com\n(AGLP-Gruppenstruktur)" as ProdAD
+    database "Domain Controller\n(archiv.mhm.siemens.com)" as ProdAD
   }
 
   actor "Mitarbeitende" as User
 
-  User -[#444444]-> ReverseProxy : HTTPS
-  ReverseProxy -[#444444]-> ProdBackend : HTTP (intern)
-  ProdBackend -[#B8860B]-> ProdHyperV1 : WinRM/Kerberos\n(Port 5985)
-  ProdBackend -[#B8860B]-> ProdHyperV3 : WinRM/Kerberos\n(Port 5985)
-  ProdBackend -[#B8860B]-> ProdHyperV4 : WinRM/Kerberos\n(Port 5985)
-  ProdBackend -[#444444]-> ProdAD : LDAPS (Port 636)
+  User --> ReverseProxy : HTTPS
+  ReverseProxy --> ProdBackend : HTTP (intern)
+  ProdBackend -[#00707A]-> ProdHyperV1 : WinRM/Kerberos
+  ProdBackend -[#00707A]-> ProdHyperV3 : WinRM/Kerberos
+  ProdBackend -[#00707A]-> ProdHyperV4 : WinRM/Kerberos
+  ProdBackend --> ProdAD : LDAPS (Port 636)
 }
 
 note bottom of ProdHyperV4
   Getrennter Anwendungs- und Hyper-V-Host: HyperVProvider
-  steuert im Remote-Modus mehrere Hosts gleichzeitig ueber
-  WinRM/Kerberos an (ein wiederverwendbarer RunspacePool je
-  Host), implementiert und gegen alle drei Hosts erfolgreich
-  getestet. Der Local-Modus aus der Entwicklungsumgebung
-  (oben) bleibt als Alternative fuer Deployments mit
-  gemeinsamem Anwendungs-/Hyper-V-Host bestehen.
+  steuert im Remote-Modus mehrere Hosts gleichzeitig über
+  WinRM/Kerberos (Port 5985) an, implementiert und gegen
+  alle drei Hosts erfolgreich getestet. Der Local-Modus
+  bleibt als Alternative für Deployments mit gemeinsamem
+  Anwendungs-/Hyper-V-Host bestehen.
 end note
 
 DevVM -[hidden]-> SiemensNet

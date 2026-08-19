@@ -2,73 +2,75 @@
 title Sequenzdiagramm: VM-Aktion mit Autorisierungsprüfung (Beispiel "Start")
 
 skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam defaultFontSize 12
 skinparam sequenceMessageAlign center
 skinparam maxMessageSize 170
+skinparam sequence {
+  ParticipantBackgroundColor #F5F5F5
+  ParticipantBorderColor #4D4D4D
+  ActorBackgroundColor #F5F5F5
+  ActorBorderColor #4D4D4D
+  LifeLineBorderColor #999999
+  ArrowColor #4D4D4D
+  GroupBackgroundColor #F5F5F5
+  GroupBorderColor #999999
+}
+skinparam note {
+  BackgroundColor #FAFAFA
+  BorderColor #999999
+}
 
 actor Benutzer
 participant "Frontend\n(React-SPA)" as Frontend
 participant "VmController" as VmController
 participant "DbAuthorizationService\n(IDbAuthorizationService)" as DbAuth
 participant "HyperVProvider\n(IVirtualizationProvider)" as HyperVProvider
-participant "PowerShell-\nRunspace" as Runspace
-participant "Hyper-V-Host" as HyperV
+participant "Hyper-V-Host(s)" as HyperV
 
 Benutzer -> Frontend : Klickt "Start" für VM
-Frontend -> VmController : POST /api/vm/{id}/start\n(Cookie: jwt)
+Frontend -> VmController : POST /api/vm/{id}/start
 activate VmController
 
 VmController -> HyperVProvider : GetVmByIdAsync(id)
-HyperVProvider -> Runspace : Get-VM -Name id
-Runspace -> HyperV : Ausführung (lokal oder WinRM)
-HyperV --> Runspace : VM-Objekt oder leer
-Runspace --> HyperVProvider : PSObject
-HyperVProvider --> VmController : VirtualMachine? vm
+HyperVProvider -> HyperV : Get-VM (lokal oder WinRM)
+HyperV --> HyperVProvider : VM-Objekt oder leer
 
 alt vm == null (unbekannte VM)
-  VmController --> Frontend : 404 Not Found\n{"message": "VM nicht gefunden"}
+  VmController --> Frontend : 404 Not Found
   Frontend --> Benutzer : Fehlermeldung anzeigen
 
 else VM gefunden
 
-  VmController -> VmController : adGroups = AdGroupClaims.FromPrincipal(User)\n("adgroups"-Claim aus JWT-Cookie)
   VmController -> DbAuth : IsAllowedAsync(adGroups, vm.Name, VmAction.Start)
-  DbAuth -> DbAuth : VM -> VirtualMachineGroup auflösen\n(keine Gruppe -> leere Rechtemenge)
-  DbAuth -> DbAuth : GroupPermissions für passende\nUserGroup x VmGroup ermitteln
-  DbAuth -> DbAuth : Union der RoleActions aller\nzutreffenden Rollen bilden
+  DbAuth -> DbAuth : VM-Gruppe auflösen, passende\nGroupPermissions ermitteln, Union bilden
   DbAuth --> VmController : bool erlaubt
 
-  alt keine GroupPermission ODER Aktion nicht in RoleActions
+  alt keine GroupPermission ODER Aktion nicht erlaubt
     note right of VmController
-      403 mit unterscheidbarer Log-Ursache
-      (siehe docs/authorization.md):
-      - VM ohne VirtualMachineGroup
-      - keine passende GroupPermission
-      - Rolle vorhanden, aber Aktion
-        nicht in ihren RoleActions
+      403 mit unterscheidbarer Log-Ursache:
+      VM ohne Gruppe / keine passende
+      GroupPermission / Aktion nicht erlaubt.
     end note
     VmController --> Frontend : 403 Forbidden
     Frontend --> Benutzer : Fehlermeldung "Keine Berechtigung"
 
   else Aktion erlaubt
     VmController -> HyperVProvider : StartVmAsync(id)
-    HyperVProvider -> Runspace : Start-VM -Name id
-    Runspace -> HyperV : Ausführung (lokal oder WinRM)
+    HyperVProvider -> HyperV : Start-VM (lokal oder WinRM)
 
     alt PowerShell-Fehler (Hyper-V nicht erreichbar o. ä.)
-      HyperV --> Runspace : Fehler
-      Runspace --> HyperVProvider : PowerShell-Fehlerstream
+      HyperV --> HyperVProvider : Fehler
       HyperVProvider --> VmController : throw VirtualizationException
       note right of VmController
-        Wird von VirtualizationExceptionMiddleware
-        (siehe Abschnitt "REST-API und
-        Fehlerbehandlung") in 502
-        Bad Gateway uebersetzt.
+        Übersetzung in 502 Bad Gateway
+        durch VirtualizationExceptionMiddleware.
       end note
       VmController --> Frontend : 502 Bad Gateway
 
     else Ausführung erfolgreich
-      HyperV --> Runspace : Erfolg
-      Runspace --> HyperVProvider : (keine Fehler)
+      HyperV --> HyperVProvider : Erfolg
       HyperVProvider --> VmController : Task abgeschlossen
       VmController --> Frontend : 200 OK
       Frontend --> Benutzer : VM-Status aktualisiert

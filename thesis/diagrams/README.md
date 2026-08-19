@@ -60,7 +60,8 @@ für das LaTeX-Dokument ist ausschließlich das PDF relevant (verlustfreier Vekt
 |---|---|---|
 | `architektur_uebersicht.puml` | 4-Schichten-Komponentendiagramm, `IVirtualizationProvider` hervorgehoben | 5.2 Hypervisor-Abstraktion |
 | `use_case_rollen.puml` | Use-Cases je VM-Rolle (`VmRole`/`VmAction`/`RolePermissions`) | 5.3 Sicherheitskonzept |
-| `klassendiagramm_core.puml` | Klassendiagramm von `VmPortal.Core` | 6.1 Projektstruktur |
+| `klassendiagramm_auth.puml` | Klassendiagramm Authentifizierung & Autorisierung (`VmPortal.Core`) | 6.1 Projektstruktur |
+| `klassendiagramm_virtualisierung.puml` | Klassendiagramm Virtualisierungsschicht (`VmPortal.Core`) | 6.1 Projektstruktur |
 | `er_diagramm_autorisierung.puml` | Implementierte SQLite-Autorisierungsschicht (RBAC) | 5.3 Sicherheitskonzept |
 | `sequenz_login.puml` | Ablauf Login/Authentifizierung inkl. Fehlerfall | 5.3 Sicherheitskonzept |
 | `sequenz_vm_aktion_autorisierung.puml` | Ablauf einer VM-Aktion inkl. Autorisierungsprüfung | 5.3 Sicherheitskonzept |
@@ -74,10 +75,16 @@ Komponenten-, ER- und Deploymentdiagramm. Eine Ausnahme: In `use_case_rollen.pum
 die ursprünglich am Use-Case „VM exportieren/importieren/klonen" verankerte Erklärungs-Notiz
 entfernt, weil Graphviz sie mit einer sehr langen, quer durchs Diagramm laufenden
 Verbindungslinie gerendert hat. Der entsprechende Hinweistext (Gesamtzahl der Aktionen im
-`VmAction`-Enum) steht stattdessen in der Bildunterschrift in `bachelorarbeit.tex`. Im
-Klassendiagramm (`klassendiagramm_core.puml`) bleibt die Kantendichte bei 17 Klassen/Enums
-mit zahlreichen Abhängigkeiten grundsätzlich hoch; das PDF ist ein Vektor-Export und sollte
-bei Bedarf am Bildschirm vergrößert werden.
+`VmAction`-Enum) steht stattdessen in der Bildunterschrift in `bachelorarbeit.tex`.
+
+Alle Diagramme folgen einer einheitlichen, dezenten Farbgebung (neutrales Grau für
+Strukturelemente, ein gedämpftes Teal als alleiniger Akzent für die jeweils zentrale
+Abstraktion bzw. den WinRM-Pfad) statt der zuvor uneinheitlichen Grün-/Blau-/Gelbtöne, und
+sind auf das für das Verständnis Wesentliche reduziert — vollständige Attribut-/Methoden-
+bzw. Aktionslisten stehen im Fließtext oder in Tabellen, nicht in den Diagrammen. Das
+ursprünglich einzelne Klassendiagramm (17 Klassen/Enums) ist seit der Layout-Überarbeitung
+in `klassendiagramm_auth.puml` (Authentifizierung & Autorisierung) und
+`klassendiagramm_virtualisierung.puml` (Virtualisierungsschicht) aufgeteilt.
 
 ## Hinweis zur Genauigkeit
 
@@ -87,4 +94,11 @@ Git-Historie dieses Verzeichnisses). `er_diagramm_autorisierung.puml` zeigte in 
 früheren Fassung ein noch nicht implementiertes Zielmodell (Soll-Konzept); seit der
 SQLite-Autorisierungsschicht (Commits `76b7cef`, `7df0aae`) ist es der implementierte
 Datenbankstand. `sequenz_vm_aktion_autorisierung.puml` wurde im selben Zug von der
-vmroles-Claim-Prüfung auf `DbAuthorizationService` umgestellt.
+vmroles-Claim-Prüfung auf `DbAuthorizationService` umgestellt. **Bekannte, noch nicht
+behobene Ausnahme:** `architektur_uebersicht.puml` zeigt weiterhin `VmController` mit einer
+direkten Abhängigkeit zu `RolePermissions.IsAllowed(role, action)` — diese Prüfung wurde im
+Zuge der RBAC-Umstellung aus `VmController` entfernt (die Autorisierung läuft heute über
+`DbAuthorizationService`, siehe `sequenz_vm_aktion_autorisierung.puml`). Bei der reinen
+Layout-Überarbeitung dieses Diagramms wurde das bewusst nicht mitkorrigiert (Auftrag war
+Layout, keine inhaltliche Korrektur) und bleibt als offener Punkt für die nächste
+inhaltliche Konsolidierung.
