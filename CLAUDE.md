@@ -48,7 +48,10 @@ VmPortal.Frontend/
 ### Zentrale Abstraktion
 `IVirtualizationProvider` kapselt den Hypervisor. Konkrete Implementierungen:
 - `HyperVProvider` — Microsoft Hyper-V über lokale PowerShell-Ausführung (die App läuft auf
-  dem Hyper-V-Host, kein WinRM/Remoting).
+  dem Hyper-V-Host). Ein Remote-Modus (PowerShell-Remoting über WinRM) ist im aktuellen Code
+  **nicht implementiert**, nur die lokale Ausführung existiert. Die WinRM/Kerberos-Konnektivität
+  (Port 5985) zu den drei produktiven Hyper-V-Hosts wurde am 2026-08-19 per `Test-WSMan` und
+  `Invoke-Command` verifiziert, ist im Code aber (noch) nicht angebunden.
 - `DummyVirtualizationProvider` — In-Memory-Platzhalter für lokale Entwicklung.
 
 Ein `ProxmoxProvider` wäre über dieselbe Schnittstelle umsetzbar. **Diese
@@ -124,6 +127,13 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   `DbAuthorizationService` reicht eine leere/unvollständige Zuordnungstabelle nicht mehr
   aus, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten). `deploy.ps1` (inkl.
   `dotnet ef database update`-Schritt) existiert bereits im Repo.
+- **Verifizierte Ziel-Infrastruktur (Stand 2026-08-19):** Drei echte Hyper-V-Hosts —
+  `MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4` (FQDN-Muster
+  `<hostname>.archiv.mhm.siemens.com`); `MHM-VCLUSTER1` existiert nicht als eigenständiger
+  Host, sondern ist eine zweite NIC von `MHM-HYPERV4`. VM-Namen sind über die Hosts hinweg
+  **nicht eindeutig** (z. B. laufen `PLURI_BS4A`, `PLURI_DC1` u. a. identisch benannt sowohl
+  auf `MHM-HYPERV1` als auch auf `MHM-HYPERV3`) — künftige VM-Identifikation muss daher über
+  die Kombination Server + Hyper-V-VM-GUID erfolgen, nicht über den VM-Namen allein.
 - **Phase 7 — Evaluation:** Bewertung nach Sicherheit, Benutzerfreundlichkeit und
   Plattformunabhängigkeit; konzeptioneller Vergleich Hyper-V vs. Proxmox über das gemeinsame
   Interface.

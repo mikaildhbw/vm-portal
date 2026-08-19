@@ -406,7 +406,12 @@ Custom-Rollen (nicht nur der fünf fest kodierten).
   übernommenen `RoleActions`, alle 22 `VMActions`, die vier Hyper-V-Hosts, die beiden
   Bootstrap-`UserGroups`) — läuft **nicht** automatisch beim App-Start, muss separat per
   `dotnet ef database update` ausgeführt werden (kein `deploy.ps1` im Repo, das diesen
-  Schritt bislang automatisiert).
+  Schritt bislang automatisiert). **Hinweis (verifiziert 2026-08-19):** Von den vier
+  Seed-Einträgen sind nur drei reale, eigenständige Hyper-V-Hosts — `MHM-HYPERV1`,
+  `MHM-HYPERV3`, `MHM-HYPERV4` (FQDN `<hostname>.archiv.mhm.siemens.com`). Der vierte
+  Eintrag `MHM-VCLUSTER1` bezeichnet keinen eigenen Host; die zugehörige IP ist eine
+  zweite NIC von `MHM-HYPERV4`. Die Seed-Daten selbst wurden im Rahmen dieses
+  Dokumentations-Fixes nicht angepasst (Code-Änderung, siehe Phase-6-Aufgaben).
 
 ---
 

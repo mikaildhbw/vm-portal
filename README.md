@@ -127,7 +127,11 @@ REST-API (`200`/`201`/`204`/`400`/`404`).
 - .NET SDK 8.0
 - Für den Produktivbetrieb: Windows Server 2022 mit Hyper-V-Rolle. Die App läuft direkt auf
   dem Hyper-V-Host und ruft die Hyper-V-Cmdlets über eine lokale PowerShell-Instanz auf —
-  kein WinRM/Remoting nötig.
+  ein Remote-Modus über WinRM ist im aktuellen Code nicht implementiert. Die
+  WinRM/Kerberos-Konnektivität (Port 5985) zu den drei produktiven Hyper-V-Hosts
+  (`MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4`) wurde am 2026-08-19 verifiziert, ist aber
+  (noch) nicht angebunden. Da VM-Namen nicht host-eindeutig sind, muss eine künftige
+  VM-Identifikation über Server + Hyper-V-VM-GUID statt über den Namen allein erfolgen.
 
 ## Bauen und Starten
 
