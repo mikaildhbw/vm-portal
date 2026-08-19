@@ -30,12 +30,21 @@ public class DbAuthorizationService : IDbAuthorizationService
     public bool IsBootstrapFullAdmin(IReadOnlyCollection<string> adGroups) =>
         adGroups.Any(group => string.Equals(group, _settings.BootstrapFullAdminGroup, StringComparison.OrdinalIgnoreCase));
 
-    public async Task<IReadOnlySet<VmAction>> GetAllowedActionsAsync(IReadOnlyCollection<string> adGroups, string vmName)
+    public async Task<IReadOnlySet<VmAction>> GetAllowedActionsAsync(
+        IReadOnlyCollection<string> adGroups, string vmName, string? hostName = null)
     {
         if (IsBootstrapFullAdmin(adGroups))
             return Enum.GetValues<VmAction>().ToHashSet();
 
-        var vm = await _db.VirtualMachines.AsNoTracking().FirstOrDefaultAsync(v => v.Name == vmName);
+        // Ohne hostName (Dummy-Provider, lokaler Hyper-V-Modus mit implizit einem Host) bleibt
+        // die Suche wie bisher namensbasiert. Mit hostName wird zusätzlich auf den
+        // zugeordneten VirtualServer gefiltert, da VM-Namen im Remote-Multi-Host-Modus nicht
+        // host-übergreifend eindeutig sind - siehe XML-Doc auf IDbAuthorizationService.
+        var vmQuery = _db.VirtualMachines.AsNoTracking().Where(v => v.Name == vmName);
+        if (!string.IsNullOrEmpty(hostName))
+            vmQuery = vmQuery.Where(v => v.Server.Name == hostName);
+
+        var vm = await vmQuery.FirstOrDefaultAsync();
         if (vm?.GroupId is not { } groupId)
         {
             // Deckt zwei Fälle ab, die für die Autorisierung gleichbedeutend sind (keine
@@ -43,8 +52,9 @@ public class DbAuthorizationService : IDbAuthorizationService
             // Autorisierungs-DB unbekannt, oder sie ist bekannt, aber (noch) keiner
             // VM-Gruppe zugeordnet (secure-by-default).
             _logger.LogWarning(
-                "DB-Autorisierung verweigert (VM ohne Gruppe): VM '{VmName}' ist {VmState}; AD-Gruppen des Nutzers: [{AdGroups}]",
-                vmName,
+                "DB-Autorisierung verweigert (VM ohne Gruppe): VM '{VmName}' (Host '{HostName}') ist {VmState}; " +
+                "AD-Gruppen des Nutzers: [{AdGroups}]",
+                vmName, hostName,
                 vm is null ? "der Autorisierungs-DB unbekannt" : "keiner VM-Gruppe zugeordnet",
                 string.Join(", ", adGroups));
             return new HashSet<VmAction>();
@@ -88,9 +98,10 @@ public class DbAuthorizationService : IDbAuthorizationService
             .ToHashSet();
     }
 
-    public async Task<bool> IsAllowedAsync(IReadOnlyCollection<string> adGroups, string vmName, VmAction action)
+    public async Task<bool> IsAllowedAsync(
+        IReadOnlyCollection<string> adGroups, string vmName, VmAction action, string? hostName = null)
     {
-        var allowedActions = await GetAllowedActionsAsync(adGroups, vmName);
+        var allowedActions = await GetAllowedActionsAsync(adGroups, vmName, hostName);
         return allowedActions.Contains(action);
     }
 }

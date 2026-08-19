@@ -39,12 +39,14 @@ public static class AuthorizationSeedData
          select new RoleAction { RoleId = RoleId(role), ActionId = ActionId(action) })
         .ToList();
 
+    // Verifiziert 2026-08-19: genau drei eigenständige Hyper-V-Hosts. Ein vierter Eintrag
+    // "MHM-VCLUSTER1" existierte hier ursprünglich, bezeichnet aber keinen eigenen Host -
+    // die zugehörige IP ist eine zweite NIC von MHM-HYPERV4 (siehe docs/PROJEKT_ERKLAERUNG.md).
     public static IReadOnlyList<VirtualServer> VirtualServers { get; } = new List<VirtualServer>
     {
         new() { Id = 1, Address = "MHM-HYPERV1.archiv.mhm.siemens.com", Platform = "HyperV", Name = "MHM-HYPERV1" },
         new() { Id = 2, Address = "MHM-HYPERV3.archiv.mhm.siemens.com", Platform = "HyperV", Name = "MHM-HYPERV3" },
-        new() { Id = 3, Address = "MHM-HYPERV4.archiv.mhm.siemens.com", Platform = "HyperV", Name = "MHM-HYPERV4" },
-        new() { Id = 4, Address = "MHM-VCLUSTER1.archiv.mhm.siemens.com", Platform = "HyperV", Name = "MHM-VCLUSTER1" }
+        new() { Id = 3, Address = "MHM-HYPERV4.archiv.mhm.siemens.com", Platform = "HyperV", Name = "MHM-HYPERV4" }
     };
 
     // Beide Bootstrap-FullAdmin-Gruppennamen (lokale Testumgebung und Siemens-AD) werden

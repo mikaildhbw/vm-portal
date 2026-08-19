@@ -34,7 +34,7 @@ public class VmController : ControllerBase
         var visibleVms = new List<VirtualMachine>();
         foreach (var vm in vms)
         {
-            if (await _authorizationService.IsAllowedAsync(adGroups, vm.Name, VmAction.ViewStatus))
+            if (await _authorizationService.IsAllowedAsync(adGroups, vm.Name, VmAction.ViewStatus, vm.HostName))
                 visibleVms.Add(vm);
         }
 
@@ -180,11 +180,11 @@ public class VmController : ControllerBase
             return (null, NotFound(new { message = "VM nicht gefunden" }));
 
         var adGroups = AdGroupClaims.FromPrincipal(User);
-        if (!await _authorizationService.IsAllowedAsync(adGroups, vm.Name, action))
+        if (!await _authorizationService.IsAllowedAsync(adGroups, vm.Name, action, vm.HostName))
         {
             _logger.LogWarning(
-                "403: Nutzer {User} (AD-Gruppen [{AdGroups}]) darf Aktion {Action} auf VM {VmName} nicht ausführen",
-                User.Identity?.Name, string.Join(", ", adGroups), action, vm.Name);
+                "403: Nutzer {User} (AD-Gruppen [{AdGroups}]) darf Aktion {Action} auf VM {VmName} (Host {HostName}) nicht ausführen",
+                User.Identity?.Name, string.Join(", ", adGroups), action, vm.Name, vm.HostName);
             return (null, Forbid());
         }
 

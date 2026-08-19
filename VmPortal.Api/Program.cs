@@ -151,8 +151,17 @@ static void RegisterVirtualizationProvider(WebApplicationBuilder builder)
 
     if (string.Equals(provider, "HyperV", StringComparison.OrdinalIgnoreCase))
     {
-        // Lokale Ausführung auf dem Hyper-V-Host — keine Verbindungskonfiguration nötig.
-        builder.Services.AddScoped<IVirtualizationProvider, HyperVProvider>();
+        // Ohne "Virtualization:HyperV"-Abschnitt (z. B. bestehende Testumgebungs-Config)
+        // bleibt HyperVSettings.Mode auf Local - identisch zum bisherigen, rein lokalen
+        // Verhalten auf dem Hyper-V-Host selbst, keine Verbindungskonfiguration nötig.
+        var hyperVSettings = builder.Configuration.GetSection("Virtualization:HyperV").Get<HyperVSettings>()
+            ?? new HyperVSettings();
+        builder.Services.AddSingleton(hyperVSettings);
+
+        // Singleton statt Scoped: im Remote-Modus hält der Provider pro Host einen
+        // WinRM-RunspacePool, der über die gesamte Prozesslaufzeit wiederverwendet werden
+        // soll (Verbindungsaufbau ist bei WinRM spürbar teurer als lokal).
+        builder.Services.AddSingleton<IVirtualizationProvider, HyperVProvider>();
         return;
     }
 

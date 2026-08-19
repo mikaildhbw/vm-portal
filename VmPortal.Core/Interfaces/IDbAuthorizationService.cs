@@ -15,9 +15,19 @@ public interface IDbAuthorizationService
     /// Leere Menge, wenn die VM keiner VM-Gruppe zugeordnet ist oder keine
     /// GroupPermission zutrifft.
     /// </summary>
-    Task<IReadOnlySet<VmAction>> GetAllowedActionsAsync(IReadOnlyCollection<string> adGroups, string vmName);
+    /// <param name="hostName">
+    /// Name des Hyper-V-Hosts (<see cref="Models.VirtualMachine.HostName"/>), auf dem die VM
+    /// läuft. Optional für Rückwärtskompatibilität (Dummy-Provider/lokaler Modus liefern keinen
+    /// Hostnamen), aber notwendig für korrekte Autorisierung im Remote-Multi-Host-Modus: VM-Namen
+    /// sind dort nicht eindeutig (bestätigte Kollisionen zwischen Hosts, siehe
+    /// docs/PROJEKT_ERKLAERUNG.md) - ohne Host-Filter würde die Autorisierung eine von mehreren
+    /// gleichnamigen VMs beliebig auswählen.
+    /// </param>
+    Task<IReadOnlySet<VmAction>> GetAllowedActionsAsync(
+        IReadOnlyCollection<string> adGroups, string vmName, string? hostName = null);
 
-    Task<bool> IsAllowedAsync(IReadOnlyCollection<string> adGroups, string vmName, VmAction action);
+    Task<bool> IsAllowedAsync(
+        IReadOnlyCollection<string> adGroups, string vmName, VmAction action, string? hostName = null);
 
     /// <summary>
     /// True, wenn eine der AD-Gruppen des Nutzers der konfigurierte Bootstrap-FullAdmin-Gruppe
