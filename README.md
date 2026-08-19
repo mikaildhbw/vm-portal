@@ -130,10 +130,16 @@ siehe [`docs/authorization.md`](docs/authorization.md) für das Datenmodell.
 | DELETE  | `/api/admin/vm-groups/{id}`    | VM-Gruppe löschen                             |
 | GET     | `/api/admin/servers`           | Alle Hyper-V-Hosts                            |
 | POST    | `/api/admin/servers`           | Hyper-V-Host anlegen                          |
+| GET     | `/api/admin/vm-groups/{id}/members`        | Mitglieder der VM-Gruppe (Host + VM-Name/GUID) |
+| POST    | `/api/admin/vm-groups/{id}/members`        | Eine oder mehrere VMs hinzufügen (legt sie bei Bedarf neu an) |
+| DELETE  | `/api/admin/vm-groups/{id}/members/{memberId}` | VM aus der Gruppe entfernen (Gruppe wird `null`, Eintrag bleibt) |
+| GET     | `/api/admin/ad-groups?search=`             | AD-Gruppen durchsuchen (Autocomplete-Vorstufe) |
+| GET     | `/api/admin/discover-vms`                  | Voller Hypervisor-Bestand vs. DB-Stand (read-only Vorschau) |
 
 Antwortcodes: `401` nicht angemeldet, `403` keine Bootstrap-FullAdmin-Mitgliedschaft
 (AD-Gruppe aus `Authorization:BootstrapFullAdminGroup`), sonst wie bei einer typischen
-REST-API (`200`/`201`/`204`/`400`/`404`).
+REST-API (`200`/`201`/`204`/`400`/`404`); `/api/admin/ad-groups` zusätzlich `502` bei
+LDAP-Fehlern (z. B. fehlender Service-Account, siehe [Konfiguration](#konfiguration)).
 
 ## Voraussetzungen
 
@@ -224,7 +230,11 @@ und wird nicht versioniert.
       "Remote": { "Port": 5985, "UseSsl": false, "Authentication": "Kerberos" }
     }
   },
-  "Ldap":  { "Host": "…", "Port": 389, "BaseDn": "DC=…,DC=…" },
+  "Ldap":  {
+    "Host": "…", "Port": 389, "BaseDn": "DC=…,DC=…",
+    "ServiceAccountUsername": "…",   // optional, für GET /api/admin/ad-groups
+    "ServiceAccountPassword": "…"    // ohne diese Felder: anonymer LDAP-Bind-Versuch
+  },
   "Jwt": { "Secret": "…", "Issuer": "VmPortal.Api", "Audience": "VmPortal.Client", "ExpiryHours": 8 },
   "ConnectionStrings": { "VmPortalDb": "Data Source=vmportal.db" },
   "Authorization": { "BootstrapFullAdminGroup": "VM-Portal-Benutzer" }  // "ESX Admins" in Produktion
@@ -244,6 +254,13 @@ Kontos, kein Credential in der Konfiguration.
 Produktionspfad `C:\VmPortal\data\vmportal.db`) — siehe
 [`docs/authorization.md`](docs/authorization.md).
 
+`Ldap:ServiceAccountUsername`/`ServiceAccountPassword` sind optional und werden nur von
+`GET /api/admin/ad-groups` gebraucht (AD-Gruppensuche fürs Admin-Panel, läuft nicht im
+Kontext eines eingeloggten Nutzers wie der Login selbst). Fehlen sie, wird ein anonymer
+LDAP-Bind versucht — auf restriktiv konfigurierten ADs (z. B. der Siemens-Produktions-AD)
+schlägt das vermutlich fehl, dann müssen hier echte Service-Account-Zugangsdaten hinterlegt
+werden.
+
 > **Hinweis:** `appsettings.json` enthält in der Testumgebung Klartext-Secrets. In Produktion
 > gehören diese in Umgebungsvariablen bzw. einen Secret-Store (siehe Phase 5).
 
@@ -259,10 +276,11 @@ dotnet ef database update --project VmPortal.Core --startup-project VmPortal.Api
 Voraussetzung: `dotnet tool install --global dotnet-ef`. Die Migration
 `InitialAuthorizationSchema` legt Schema **und** Grund-Seed-Daten an (fünf System-Rollen,
 alle 22 VM-Aktionen, die beiden Bootstrap-`UserGroups`, ursprünglich vier Hyper-V-Hosts).
-Zwei Folgemigrationen korrigieren/ergänzen das: `FixVirtualServersHostCount` entfernt den
+Drei Folgemigrationen korrigieren/ergänzen das: `FixVirtualServersHostCount` entfernt den
 vierten, nicht real existierenden Host-Eintrag (übrig: die drei echten Hosts
 `MHM-HYPERV1`/`3`/`4`), `SeedTestUserPermissions` seedet eine Testberechtigung für die
-neun Hyper-V-Test-VMs `HVP_1`–`HVP_9`.
+neun Hyper-V-Test-VMs `HVP_1`–`HVP_9`, `AddVmGuidToVirtualMachines` ergänzt die optionale
+Spalte `VmGuid` (befüllt über die Admin-API bei VM-Gruppen-Mitgliedschaft, siehe oben).
 
 ## Deployment-Modell
 
@@ -286,4 +304,6 @@ remote — WinRM-Ziel ist immer ein Windows-Host mit Hyper-V-Rolle).
 | M6          | SQLite/EF-Core-Autorisierungsschicht (RBAC, Admin-API); `VmController` auf DB-Autorisierung umgestellt | ✅     |
 | M6 (Rest)   | Audit-Log, Secret-Store, vollständige `GroupPermissions` in der Testumgebung | ⏳     |
 | M7          | WinRM-Multi-Host-Remote-Modus (Produktivbetrieb, gegen alle 3 Hosts getestet); Login gegen Produktionsdomäne; DB-first-Autorisierung statt Full-Inventory-Scan | ✅     |
-| M8          | Evaluation (siehe CLAUDE.md)                        | ⏳     |
+| M8          | Admin-Backend für Rechtevergabe-Matrix (AD-Gruppensuche, VM-Gruppen-Mitgliederverwaltung, VM-Discovery) — reines Backend, kein Frontend | ✅     |
+| M8 (Rest)   | Admin-Panel-Frontend; LDAP-Service-Account für AD-Gruppensuche in Produktion hinterlegen | ⏳     |
+| M9          | Evaluation (siehe CLAUDE.md)                        | ⏳     |

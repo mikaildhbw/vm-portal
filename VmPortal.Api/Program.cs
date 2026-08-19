@@ -45,6 +45,7 @@ builder.Services.AddSingleton(authorizationSettings);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 RegisterDatabase(builder);
 RegisterAuthService(builder);
+RegisterAdGroupSearchService(builder);
 RegisterVirtualizationProvider(builder);
 
 builder.Services
@@ -123,6 +124,22 @@ static void RegisterAuthService(WebApplicationBuilder builder)
     }
 
     builder.Services.AddScoped<IAuthService, LdapAuthService>();
+}
+
+// Dieselbe Provider-Auswahl wie RegisterAuthService (Auth:Provider): die AD-Gruppensuche
+// fürs Admin-Panel braucht denselben Unterschied zwischen "echtes AD" und "lokale
+// Entwicklung ohne AD" - kein zusätzlicher Konfigurationsschlüssel dafür.
+static void RegisterAdGroupSearchService(WebApplicationBuilder builder)
+{
+    var provider = builder.Configuration["Auth:Provider"] ?? "Ldap";
+
+    if (string.Equals(provider, "Dummy", StringComparison.OrdinalIgnoreCase))
+    {
+        builder.Services.AddScoped<IAdGroupSearchService, DummyAdGroupSearchService>();
+        return;
+    }
+
+    builder.Services.AddScoped<IAdGroupSearchService, LdapAdGroupSearchService>();
 }
 
 // Registriert den SQLite-DbContext für die Autorisierungsschicht und legt das

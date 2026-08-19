@@ -18,21 +18,24 @@ Drei Projekte, klare Schichtentrennung:
 ```
 VmPortal.Core/
   Interfaces/     IVirtualizationProvider, IAuthService, ITokenService,
-                  IDbAuthorizationService
-  Models/         VirtualMachine, VmStatus, VmRole, VmAction
+                  IDbAuthorizationService, IAdGroupSearchService
+  Models/         VirtualMachine, VmStatus, VmRole, VmAction, VmReference
   Services/       HyperVProvider, DummyVirtualizationProvider,
                   LdapAuthService, DummyAuthService, JwtTokenService,
                   RolePermissions, VmRoleClaims, AdGroupClaims,
-                  DbAuthorizationService, VirtualizationException
+                  DbAuthorizationService, LdapAdGroupSearchService,
+                  DummyAdGroupSearchService, VirtualizationException
   Configuration/  LdapSettings, JwtSettings, AuthorizationSettings,
-                  TestVmRolesSettings, TestAdGroupsSettings
+                  TestVmRolesSettings, TestAdGroupsSettings, HyperVSettings
   Data/           VmPortalDbContext, AuthorizationSeedData, Entities/,
                   Migrations/ (SQLite-Autorisierungsschicht, siehe
                   docs/authorization.md)
 VmPortal.Api/
   Controllers/    AuthController, VmController
   Controllers/Admin/ RolesController, PermissionsController,
-                  VmGroupsController, ServersController (FullAdmin-only)
+                  VmGroupsController (inkl. VM-Gruppen-Mitgliederverwaltung),
+                  ServersController, AdGroupsController, VmDiscoveryController
+                  (alle FullAdmin-only)
   Middleware/     VirtualizationExceptionMiddleware
   Constants/      AuthConstants
   wwwroot/        gebautes React-Frontend (generiert, nicht versioniert)
@@ -92,7 +95,7 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   (Gruppe `VM-Portal-Benutzer`, Rolle `VMUser`).
 - Hyper-V-VMs: `VM-Mikail` (Notes = `mugur`), `VM-Burath` (Notes = `jburath`).
 
-## Was bereits implementiert ist (M1–M7)
+## Was bereits implementiert ist (M1–M8)
 - **M1/M2:** Projektstruktur, Interfaces, Models, Dummy-Services, DI, testbare API.
 - **M3:** LDAP-Authentifizierung gegen AD; Rolle aus AD-Gruppenmitgliedschaft; echtes JWT
   (HMAC-SHA256, Claims `username`/`role`, 8 h); JWT im `httpOnly`-Cookie
@@ -142,6 +145,27 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   (Host, VM)-Paare in einer einzigen Abfrage, danach fragt der Provider gezielt nur noch
   dafür beim jeweiligen Host nach. Bootstrap-FullAdmin (z. B. `ESX Admins`) bleibt
   Sonderfall mit vollem, ungefiltertem Inventarzugriff.
+- **M8 (Admin-Backend für Rechtevergabe-Matrix, reines Backend, kein Frontend):** Drei neue
+  FullAdmin-only-Endpunktgruppen als Vorbereitung für ein kommendes Admin-Panel
+  (AD-Gruppe × VM-Gruppe × Rolle):
+  - `GET /api/admin/ad-groups?search=` — durchsucht AD-Gruppen (nicht nur die des
+    eingeloggten Nutzers) über `IAdGroupSearchService`; nutzt denselben
+    LDAP-Verbindungsmechanismus wie `LdapAuthService`, aber einen eigenen Bind-Kontext
+    (`Ldap:ServiceAccountUsername`/`ServiceAccountPassword`, sonst anonymer Bind-Versuch —
+    **auf der Siemens-Produktions-AD vermutlich nicht ausreichend, Service-Account-Zugangsdaten
+    müssen noch ergänzt werden**, siehe „Offene Punkte“). Ohne Suchbegriff auf 50, mit
+    Suchbegriff auf 100 Treffer begrenzt (`truncated`-Flag statt Vollabruf).
+  - `GET/POST/DELETE /api/admin/vm-groups/{groupId}/members` — VM-Gruppen-Mitgliederverwaltung
+    (fehlte bisher komplett, `VmGroupsController` verwaltete nur die Gruppen selbst). POST legt
+    einen `VirtualMachineRecord` bei Bedarf neu an (Host+Name, optional GUID) statt einen
+    Fehler zu werfen; DELETE setzt `GroupId` auf `null` (secure-by-default), löscht den Eintrag
+    nicht. Server-/Bestandsabgleich läuft je einmal pro Batch, nicht pro VM einzeln.
+  - `GET /api/admin/discover-vms` — read-only Abgleich des vollen Hypervisor-Inventars (alle
+    Hosts, wie bei Bootstrap-FullAdmin) gegen die DB; legt selbst nichts an. `VirtualServers`
+    und `VirtualMachines` werden je einmal geladen (Dictionary/Lookup), kein Roundtrip pro VM.
+  - Schema-Erweiterung: `VirtualMachineRecord.VmGuid` (nullable, additive Migration
+    `AddVmGuidToVirtualMachines`) — dient nur der Nachvollziehbarkeit, **nicht** der
+    Autorisierungsprüfung in `DbAuthorizationService` (die bleibt unverändert host-/namensbasiert).
 
 ## Was noch kommt (Phase 6–7)
 - **Phase 6 — Rest:** Audit-Log (wer hat wann welche VM-Aktion ausgeführt); Secrets aus
@@ -150,6 +174,14 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   `DbAuthorizationService` reicht eine leere/unvollständige Zuordnungstabelle nicht mehr
   aus, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten). `deploy.ps1` (inkl.
   `dotnet ef database update`-Schritt) existiert bereits im Repo.
+- **M8 (Rest) — Admin-Panel-Frontend:** Bisher reines Backend (siehe M8 oben); UI für die
+  Rechtevergabe-Matrix (AD-Gruppe × VM-Gruppe × Rolle, Autocomplete über
+  `GET /api/admin/ad-groups`, VM-Auswahl über `GET /api/admin/discover-vms` +
+  `POST .../members`) fehlt noch. Zusätzlich offen: `Ldap:ServiceAccountUsername`/
+  `ServiceAccountPassword` müssen für die Produktions-AD (`archiv.mhm.siemens.com`) mit
+  echten Service-Account-Zugangsdaten befüllt werden, sonst schlägt die AD-Gruppensuche dort
+  vermutlich fehl (anonymer LDAP-Bind ist auf restriktiven ADs i. d. R. deaktiviert) — bisher
+  nur gegen die lokale Testumgebung/den Dummy-Modus verifiziert.
 - **Phase 7 — Evaluation:** Bewertung nach Sicherheit, Benutzerfreundlichkeit und
   Plattformunabhängigkeit; konzeptioneller Vergleich Hyper-V vs. Proxmox über das gemeinsame
   Interface.

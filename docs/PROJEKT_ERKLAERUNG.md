@@ -14,6 +14,12 @@
 > von einem Full-Inventory-Scan mit Pro-VM-Prüfung (N+1) auf DB-first umgestellt
 > (Details Abschnitt 5.1). Diese drei Punkte waren zuvor offene Baustellen
 > (Abschnitt 7) und sind hiermit erledigt.
+>
+> **Update 2026-08-19 (2):** Backend-Vorarbeit für ein kommendes Admin-Panel
+> (Rechtevergabe-Matrix AD-Gruppe × VM-Gruppe × Rolle) ergänzt: AD-Gruppensuche
+> (`GET /api/admin/ad-groups`), VM-Gruppen-Mitgliederverwaltung
+> (`/api/admin/vm-groups/{id}/members`) und VM-Discovery (`GET /api/admin/discover-vms`),
+> Details Abschnitt 4 bzw. Abschnitt 7. Reines Backend, noch ohne Frontend.
 
 ---
 
@@ -428,6 +434,27 @@ Custom-Rollen (nicht nur der fünf fest kodierten).
   `IActionFilter`): `RolesController` (CRUD für Custom-Rollen, System-Rollen sind
   schreibgeschützt), `PermissionsController` (`GroupPermissions`-Zuordnungen),
   `VmGroupsController`, `ServersController`.
+  **Update 2026-08-19:** Drei neue Endpunktgruppen als Backend-Vorbereitung für die
+  Rechtevergabe-Matrix im kommenden Admin-Panel:
+  - `VmGroupsController` um `GET/POST/DELETE .../{groupId}/members` erweitert
+    (VM-Gruppen-Mitgliederverwaltung fehlte bisher komplett - der Controller verwaltete nur
+    die Gruppen selbst, nicht die Zuordnung einzelner VMs). POST legt einen
+    `VirtualMachineRecord` bei Bedarf neu an (Host+Name, optional GUID über das neue,
+    nullable Feld `VirtualMachineRecord.VmGuid`), statt einen Fehler zu werfen, wenn die VM
+    der DB noch unbekannt ist.
+  - `AdGroupsController` (neu, `GET /api/admin/ad-groups?search=`): durchsucht AD-Gruppen
+    über `IAdGroupSearchService`/`LdapAdGroupSearchService` - nutzt denselben
+    Novell.Directory.Ldap-Verbindungsaufbau wie `LdapAuthService`, aber einen eigenen
+    Bind-Kontext (`Ldap:ServiceAccountUsername`/`ServiceAccountPassword`, sonst anonymer
+    Bind-Versuch), weil die Suche außerhalb eines Nutzer-Logins läuft und daher nicht das
+    Passwort des jeweiligen Nutzers zur Verfügung hat. Ohne Suchbegriff auf 50, mit
+    Suchbegriff auf 100 Treffer serverseitig gedeckelt (`truncated`-Flag statt Vollabruf
+    tausender Gruppen).
+  - `VmDiscoveryController` (neu, `GET /api/admin/discover-vms`): read-only Abgleich des
+    vollen Hypervisor-Inventars (`IVirtualizationProvider.GetVmsAsync()`, derselbe Pfad wie
+    für Bootstrap-FullAdmin) gegen den DB-Stand. `VirtualServers` und `VirtualMachines`
+    werden je einmal geladen statt pro gefundener VM einzeln nachzuschlagen - Lehre aus dem
+    N+1-Performance-Fix vom selben Tag (Abschnitt 5.1).
 - **Migration `InitialAuthorizationSchema`** (`Data/Migrations/`) legt Schema **und**
   Seed-Daten per `HasData` an (fünf System-Rollen mit den aus `RolePermissions`
   übernommenen `RoleActions`, alle 22 `VMActions`, die vier Hyper-V-Hosts, die beiden
@@ -716,6 +743,23 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
     eine Dokumentationspflicht ergänzt (proaktive Aktualisierung dieser drei Dateien
     nach jeder funktional relevanten Aufgabe), damit solche Diskrepanzen künftig seltener
     entstehen.
+
+**Neu seit 2026-08-19 — Admin-Backend (Frontend fehlt noch):**
+
+17. **AD-Gruppensuche vermutlich nicht produktionsbereit ohne Service-Account.**
+    `GET /api/admin/ad-groups` bindet ohne konfigurierten
+    `Ldap:ServiceAccountUsername`/`ServiceAccountPassword` anonym gegen das AD - das ist auf
+    restriktiv konfigurierten ADs (zu erwarten bei `archiv.mhm.siemens.com`) i. d. R.
+    deaktiviert. Bisher nur gegen die lokale Testumgebung bzw. den Dummy-Modus verifiziert,
+    nicht gegen die echte Produktions-AD. Ein echter Service-Account mit Lesezugriff muss
+    noch beschafft und in `appsettings.Production.json` hinterlegt werden.
+18. **Admin-Panel-Frontend fehlt komplett** (ergänzt Punkt 9): Die drei neuen
+    Backend-Endpunktgruppen (AD-Gruppensuche, VM-Gruppen-Mitgliederverwaltung, VM-Discovery)
+    haben noch keine Oberfläche - reine Vorbereitung für einen kommenden Frontend-Durchgang.
+19. **`VirtualMachineRecord.VmGuid` ist nicht durch einen Constraint gegen Duplikate
+    geschützt** und wird von `DbAuthorizationService` bewusst nicht für den
+    Autorisierungs-Abgleich genutzt (der bleibt host-/namensbasiert) - das Feld dient aktuell
+    nur der Nachvollziehbarkeit in der Admin-API, nicht der Sicherheit.
 
 ---
 

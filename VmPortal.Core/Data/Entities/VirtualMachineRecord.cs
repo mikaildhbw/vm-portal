@@ -20,4 +20,13 @@ public class VirtualMachineRecord
     public VirtualMachineGroup? Group { get; set; }
 
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Hyper-V-VM-GUID (Get-VM-Attribut "Id"), optional. Wird beim Anlegen/Aktualisieren über
+    /// die Admin-API (VM-Gruppen-Mitgliedschaft, siehe VmGroupsController) aus der
+    /// Live-Hypervisor-Antwort übernommen, falls bekannt - dient nur der Nachvollziehbarkeit/
+    /// Robustheit gegen VM-Umbenennung, NICHT dem Autorisierungs-Abgleich in
+    /// DbAuthorizationService (der bleibt namens-/host-basiert, siehe docs/authorization.md).
+    /// </summary>
+    public string? VmGuid { get; set; }
 }
