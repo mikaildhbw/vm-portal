@@ -47,11 +47,16 @@ VmPortal.Frontend/
 
 ### Zentrale Abstraktion
 `IVirtualizationProvider` kapselt den Hypervisor. Konkrete Implementierungen:
-- `HyperVProvider` — Microsoft Hyper-V über lokale PowerShell-Ausführung (die App läuft auf
-  dem Hyper-V-Host). Ein Remote-Modus (PowerShell-Remoting über WinRM) ist im aktuellen Code
-  **nicht implementiert**, nur die lokale Ausführung existiert. Die WinRM/Kerberos-Konnektivität
-  (Port 5985) zu den drei produktiven Hyper-V-Hosts wurde am 2026-08-19 per `Test-WSMan` und
-  `Invoke-Command` verifiziert, ist im Code aber (noch) nicht angebunden.
+- `HyperVProvider` — Microsoft Hyper-V, zwei Modi über `Virtualization:HyperV:Mode`:
+  - `Local` — lokale PowerShell-Ausführung, die App läuft direkt auf dem Hyper-V-Host
+    (ursprüngliches Verhalten, weiterhin unterstützt).
+  - `Remote` — WinRM/Kerberos (Port 5985) gegen mehrere Hyper-V-Hosts, die App läuft auf
+    einem separaten Server. **Implementiert und am 2026-08-19 auf der Produktions-VM
+    erfolgreich gegen alle drei Ziel-Hosts (`MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4`)
+    getestet** — pro Host ein wiederverwendbarer `RunspacePool`. Da VM-Namen über Hosts
+    hinweg nicht eindeutig sind, identifiziert der Remote-Modus VMs über Host + Hyper-V-VM-GUID
+    (`VirtualMachine.HostName`/`VmGuid`); die VM-Liste wird zusätzlich DB-first ermittelt
+    (siehe M7 unten) statt das komplette Inventar aller Hosts zu scannen.
 - `DummyVirtualizationProvider` — In-Memory-Platzhalter für lokale Entwicklung.
 
 Ein `ProxmoxProvider` wäre über dieselbe Schnittstelle umsetzbar. **Diese
@@ -87,7 +92,7 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   (Gruppe `VM-Portal-Benutzer`, Rolle `VMUser`).
 - Hyper-V-VMs: `VM-Mikail` (Notes = `mugur`), `VM-Burath` (Notes = `jburath`).
 
-## Was bereits implementiert ist (M1–M5)
+## Was bereits implementiert ist (M1–M7)
 - **M1/M2:** Projektstruktur, Interfaces, Models, Dummy-Services, DI, testbare API.
 - **M3:** LDAP-Authentifizierung gegen AD; Rolle aus AD-Gruppenmitgliedschaft; echtes JWT
   (HMAC-SHA256, Claims `username`/`role`, 8 h); JWT im `httpOnly`-Cookie
@@ -119,6 +124,24 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   Logs unterscheidbar: „nicht authentifiziert“, „DB-Autorisierung verweigert (VM ohne
   Gruppe)“, „DB-Autorisierung verweigert (keine passende GroupPermission)“. Details:
   [`docs/authorization.md`](docs/authorization.md).
+- **M7 (Produktivbetrieb — WinRM-Multi-Host, Login, Performance):** `HyperVProvider`
+  unterstützt jetzt zusätzlich zum lokalen Modus einen WinRM/Kerberos-Remote-Modus
+  (`Virtualization:HyperV:Mode=Remote`) für mehrere Hyper-V-Hosts — **am 2026-08-19 auf der
+  Produktions-VM erfolgreich gegen alle drei Ziel-Hosts getestet:** `MHM-HYPERV1`,
+  `MHM-HYPERV3`, `MHM-HYPERV4` (FQDN-Muster `<hostname>.archiv.mhm.siemens.com`;
+  `MHM-VCLUSTER1` existiert **nicht** als eigenständiger Host, sondern ist eine zweite NIC
+  von `MHM-HYPERV4`). Der frühere Verdacht, der Remote-Modus sei nur falsch konfiguriert
+  gewesen, hat sich **nicht** bestätigt — er musste komplett neu gebaut werden (kein
+  bloßer Config-Fix). Da VM-Namen über Hosts hinweg nicht eindeutig sind (bestätigte
+  Kollisionen, z. B. `PLURI_DC1` identisch auf `MHM-HYPERV1` und `MHM-HYPERV3`),
+  identifiziert der Remote-Modus VMs über Host + Hyper-V-VM-GUID statt über den Namen
+  allein. Der Login gegen die Produktionsdomäne (`archiv.mhm.siemens.com`) funktioniert.
+  Zusätzlich wurde die VM-Listen-/Autorisierungskette von einem Full-Inventory-Scan (alle
+  VMs aller Hosts + Autorisierungsprüfung pro VM, N+1) auf DB-first umgestellt:
+  `IDbAuthorizationService.GetAuthorizedVmsAsync` ermittelt die autorisierten
+  (Host, VM)-Paare in einer einzigen Abfrage, danach fragt der Provider gezielt nur noch
+  dafür beim jeweiligen Host nach. Bootstrap-FullAdmin (z. B. `ESX Admins`) bleibt
+  Sonderfall mit vollem, ungefiltertem Inventarzugriff.
 
 ## Was noch kommt (Phase 6–7)
 - **Phase 6 — Rest:** Audit-Log (wer hat wann welche VM-Aktion ausgeführt); Secrets aus
@@ -127,13 +150,6 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   `DbAuthorizationService` reicht eine leere/unvollständige Zuordnungstabelle nicht mehr
   aus, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten). `deploy.ps1` (inkl.
   `dotnet ef database update`-Schritt) existiert bereits im Repo.
-- **Verifizierte Ziel-Infrastruktur (Stand 2026-08-19):** Drei echte Hyper-V-Hosts —
-  `MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4` (FQDN-Muster
-  `<hostname>.archiv.mhm.siemens.com`); `MHM-VCLUSTER1` existiert nicht als eigenständiger
-  Host, sondern ist eine zweite NIC von `MHM-HYPERV4`. VM-Namen sind über die Hosts hinweg
-  **nicht eindeutig** (z. B. laufen `PLURI_BS4A`, `PLURI_DC1` u. a. identisch benannt sowohl
-  auf `MHM-HYPERV1` als auch auf `MHM-HYPERV3`) — künftige VM-Identifikation muss daher über
-  die Kombination Server + Hyper-V-VM-GUID erfolgen, nicht über den VM-Namen allein.
 - **Phase 7 — Evaluation:** Bewertung nach Sicherheit, Benutzerfreundlichkeit und
   Plattformunabhängigkeit; konzeptioneller Vergleich Hyper-V vs. Proxmox über das gemeinsame
   Interface.
@@ -154,11 +170,24 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   nur im httpOnly-Cookie und wird per `withCredentials` mitgeschickt. Konsequente Fortführung
   der XSS-Härtung bis in die Client-Schicht.
 - **Lokale PowerShell-Ausführung statt nativer Hyper-V-.NET-API:** Die Hyper-V-Cmdlets sind
-  die offiziell unterstützte, stabile Automatisierungsschnittstelle. Da die App direkt auf dem
-  Hyper-V-Host läuft, werden sie lokal ausgeführt — das umgeht die WinRM-Zugriffs- und
-  Zertifikatsproblematik und benötigt keine Netzwerk-Zugangsdaten. Der Runspace wird mit
-  `InitialSessionState.CreateDefault2()` erstellt, damit nur die Core-Cmdlets geladen werden
-  und das Hyper-V-Modul bei Bedarf über den PSModulePath nachgeladen wird.
+  die offiziell unterstützte, stabile Automatisierungsschnittstelle. Läuft die App direkt auf
+  dem Hyper-V-Host (`Mode=Local`), werden sie lokal ausgeführt — das umgeht die
+  WinRM-Zugriffs- und Zertifikatsproblematik und benötigt keine Netzwerk-Zugangsdaten. Der
+  Runspace wird mit `InitialSessionState.CreateDefault2()` erstellt, damit nur die
+  Core-Cmdlets geladen werden und das Hyper-V-Modul bei Bedarf über den PSModulePath
+  nachgeladen wird.
+- **WinRM/Kerberos-Remote-Modus mit Host+GUID-Identifikation (`Mode=Remote`):** Läuft die App
+  auf einem separaten Server (Produktivbetrieb), steuert sie mehrere Hyper-V-Hosts über
+  PowerShell-Remoting an — pro Host ein wiederverwendbarer `RunspacePool` statt eines neuen
+  Runspace-Aufbaus pro Aufruf, da WinRM-Verbindungsaufbau spürbar teurer ist als lokal. Da
+  VM-Namen über Hosts hinweg nicht eindeutig sind, identifiziert dieser Modus VMs über die
+  Kombination Host + Hyper-V-VM-GUID statt über den Namen allein.
+- **DB-first statt Full-Inventory-Scan bei der VM-Liste:** `VmController.GetVms()` ermittelt
+  zuerst per einziger DB-Abfrage, welche (Host, VM)-Paare der Nutzer sehen darf, und fragt den
+  Hypervisor erst danach gezielt nur dafür an — statt das komplette Inventar aller Hosts zu
+  holen und anschließend jede VM einzeln zu autorisieren (N+1-Problem). Bootstrap-FullAdmin
+  bleibt Sonderfall mit vollem Inventarzugriff, da für ihn keine einschränkende
+  `GroupPermission`-Zeile existiert, gegen die sich vorab filtern ließe.
 - **Hybrid-Autorisierung (AD authentifiziert, SQLite autorisiert):** Das AD bleibt alleinige
   Quelle für „wer ist der Nutzer und in welchen Gruppen ist er" — keine doppelte
   Benutzerverwaltung. Was eine AD-Gruppe auf welchen VMs darf, ist dagegen ein reines
@@ -184,8 +213,30 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
 - Nach jeder abgeschlossenen Aufgabe committen (Conventional Commits, deutschsprachige
   Beschreibung); `dotnet build VmPortal.sln` muss grün sein.
 
+## Dokumentationspflicht
+Nach Abschluss jeder Aufgabe, die den **funktionalen Stand** des Projekts ändert (neue
+Features, behobene Bugs, geänderte Architektur, korrigierte Fehlannahmen aus früheren
+Sessions), aktualisiert Claude Code proaktiv `CLAUDE.md`, `README.md` und ggf.
+`docs/PROJEKT_ERKLAERUNG.md` **im selben Durchgang** — nicht erst auf Nachfrage. Gilt
+insbesondere für:
+- Änderungen an der Architektur (neue Provider-Modi, neue Schichten),
+- neue oder geänderte Konfigurationsschlüssel,
+- geänderte Autorisierungslogik,
+- behobene Fehleinschätzungen aus früheren Sessions (z. B. „X ist nur ein Config-Problem“
+  stellt sich als „X muss neu gebaut werden“ heraus).
+
+Reine Textkorrekturen ohne Funktionsänderung (Tippfehler, Formatierung) lösen das nicht aus.
+Als letzten Schritt jeder abschließenden Zusammenfassung kurz benennen, welche
+Dokumentationsdateien aktualisiert wurden (oder dass keine Aktualisierung nötig war und
+warum) — damit das im Abschlussbericht sichtbar ist, statt separat nachgefragt werden zu
+müssen.
+
 ## Bekannte Einschränkung beim Testen
 Die Hyper-V-Cmdlets sind nur unter Windows verfügbar. Unter Linux baut und startet die App, der
 `HyperV`-Provider quittiert einen Zugriff aber planmäßig mit `502` (`Get-VM` nicht bekannt). Ein
-vollständiger Hyper-V-End-to-End-Test läuft daher auf dem Windows-Server-Deployment:
-`GET /api/vm` liefert dort die realen VMs (`VM-Mikail`, `VM-Burath`), `start`/`stop` steuern sie.
+vollständiger Hyper-V-End-to-End-Test läuft daher auf Windows-Deployments:
+- Lokaler Testumgebungs-Host (`Mode=Local`, IP `192.168.122.196`): `GET /api/vm` liefert die
+  realen VMs (`VM-Mikail`, `VM-Burath`), `start`/`stop` steuern sie.
+- Produktions-VM (`Mode=Remote`, separater Server): am 2026-08-19 erfolgreich gegen alle drei
+  Ziel-Hosts (`MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4`) getestet, Login gegen
+  `archiv.mhm.siemens.com` funktioniert.

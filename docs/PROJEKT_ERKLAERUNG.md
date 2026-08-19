@@ -5,6 +5,15 @@
 > ursprünglichen Stand vom 2026-07-29, Commit `f4a70bc`, ist die
 > SQLite/EF-Core-Autorisierungsschicht aus Kapitel 4.4 dazugekommen; Details siehe
 > [`docs/authorization.md`](authorization.md)).
+>
+> **Update 2026-08-19:** WinRM-Multi-Host-Remote-Modus für `HyperVProvider`
+> implementiert und auf der Produktions-VM erfolgreich gegen alle drei Ziel-Hosts
+> (`MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4`) getestet (Details Abschnitt 2,
+> "System.Management.Automation"). Login gegen die Produktionsdomäne
+> (`archiv.mhm.siemens.com`) funktioniert. Die VM-Listen-/Autorisierungskette wurde
+> von einem Full-Inventory-Scan mit Pro-VM-Prüfung (N+1) auf DB-first umgestellt
+> (Details Abschnitt 5.1). Diese drei Punkte waren zuvor offene Baustellen
+> (Abschnitt 7) und sind hiermit erledigt.
 
 ---
 
@@ -119,10 +128,28 @@ unterstützte Hyper-V-.NET-Bibliothek. Die Alternativen wären:
   low-level, schlecht dokumentiert und fehleranfällig (man baut faktisch nach, was
   die Cmdlets intern tun).
 - **PowerShell-Remoting über WinRM:** war die erste Implementierung (Commit `085727e`),
-  wurde aber bewusst wieder entfernt (Commit `614c398`), weil die App ohnehin **direkt
-  auf dem Hyper-V-Host läuft** — lokale Ausführung umgeht die komplette
-  WinRM-Zertifikats- und Berechtigungsproblematik und braucht keinerlei
-  Netzwerk-Zugangsdaten in der Konfiguration.
+  wurde aber bewusst wieder entfernt (Commit `614c398`), weil die App zu diesem
+  Zeitpunkt ausschließlich **direkt auf dem Hyper-V-Host lief** — lokale Ausführung
+  umgeht die komplette WinRM-Zertifikats- und Berechtigungsproblematik und braucht
+  keinerlei Netzwerk-Zugangsdaten in der Konfiguration.
+
+**Update 2026-08-19 — WinRM ist zurück, diesmal als produktiver Multi-Host-Modus:**
+Der Produktivbetrieb läuft jetzt auf einem separaten Server, der drei Hyper-V-Hosts
+ansteuert — ein einzelner impliziter lokaler Host reicht dafür nicht mehr aus.
+`HyperVProvider` unterstützt seitdem zusätzlich einen `Remote`-Modus
+(`Virtualization:HyperV:Mode`): pro Host ein wiederverwendbarer `RunspacePool` über
+`WSManConnectionInfo` (Kerberos, Port 5985, Authentifizierung über die
+Prozessidentität, kein Credential in der Konfiguration). Wichtig für die
+Bachelorarbeit: Ein früherer Verdacht in dieser Session war, der ursprünglich
+entfernte Remote-Modus sei nur falsch konfiguriert gewesen und ließe sich mit
+wenig Aufwand reaktivieren — das hat sich **nicht bestätigt**. Es musste komplett
+neu gebaut werden, u. a. weil VM-Namen über die drei Hosts hinweg nicht eindeutig
+sind (bestätigte Kollisionen, siehe Abschnitt 4 bzw. die Migration
+`FixVirtualServersHostCount`) und der ursprüngliche Code dafür keine Lösung hatte
+(Identifikation nur über den VM-Namen). Der neue Modus identifiziert VMs daher über
+Host + Hyper-V-VM-GUID. Am 2026-08-19 erfolgreich gegen alle drei Ziel-Hosts
+(`MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4`) getestet, inklusive Login gegen die
+Produktionsdomäne `archiv.mhm.siemens.com`.
 
 Die Hyper-V-Cmdlets sind Microsofts offiziell unterstützte, stabile
 Automatisierungsschnittstelle — genau das, was auch ein Admin von Hand benutzen würde.
@@ -406,12 +433,15 @@ Custom-Rollen (nicht nur der fünf fest kodierten).
   übernommenen `RoleActions`, alle 22 `VMActions`, die vier Hyper-V-Hosts, die beiden
   Bootstrap-`UserGroups`) — läuft **nicht** automatisch beim App-Start, muss separat per
   `dotnet ef database update` ausgeführt werden (kein `deploy.ps1` im Repo, das diesen
-  Schritt bislang automatisiert). **Hinweis (verifiziert 2026-08-19):** Von den vier
-  Seed-Einträgen sind nur drei reale, eigenständige Hyper-V-Hosts — `MHM-HYPERV1`,
-  `MHM-HYPERV3`, `MHM-HYPERV4` (FQDN `<hostname>.archiv.mhm.siemens.com`). Der vierte
-  Eintrag `MHM-VCLUSTER1` bezeichnet keinen eigenen Host; die zugehörige IP ist eine
-  zweite NIC von `MHM-HYPERV4`. Die Seed-Daten selbst wurden im Rahmen dieses
-  Dokumentations-Fixes nicht angepasst (Code-Änderung, siehe Phase-6-Aufgaben).
+  Schritt bislang automatisiert). **Update 2026-08-19:** Von den ursprünglich vier
+  Seed-Einträgen waren nur drei reale, eigenständige Hyper-V-Hosts — `MHM-HYPERV1`,
+  `MHM-HYPERV3`, `MHM-HYPERV4` (FQDN `<hostname>.archiv.mhm.siemens.com`); der vierte
+  Eintrag `MHM-VCLUSTER1` bezeichnete keinen eigenen Host, sondern eine zweite NIC von
+  `MHM-HYPERV4`. Zwei Folgemigrationen haben das inzwischen korrigiert bzw. ergänzt:
+  `FixVirtualServersHostCount` entfernt den `MHM-VCLUSTER1`-Eintrag,
+  `SeedTestUserPermissions` seedet eine Testberechtigung (UserGroup `ESXUserIT`,
+  VM-Gruppe `Testumgebung-HVP`, Rolle PowerUser) für die neun Hyper-V-Test-VMs
+  `HVP_1`–`HVP_9` auf `MHM-HYPERV4`.
 
 ---
 
@@ -419,12 +449,15 @@ Custom-Rollen (nicht nur der fünf fest kodierten).
 
 ### 5.1 HyperVProvider — was ruft echte Cmdlets auf
 
-Alle folgenden Methoden führen echte PowerShell-Cmdlets aus (lokal, in-process):
+Alle folgenden Methoden führen echte PowerShell-Cmdlets aus — im `Local`-Modus lokal
+in-process (wie ursprünglich), im `Remote`-Modus über den `RunspacePool` des jeweiligen
+Hosts (WinRM/Kerberos, siehe Abschnitt 2, Update 2026-08-19):
 
 | Methode | Cmdlet | Anmerkung |
 | --- | --- | --- |
-| `GetVmsAsync` | `Get-VM` | mappt Name, Status, `Notes` → `AssignedUserId` |
-| `GetVmByIdAsync` | `Get-VM -Name {id}` | `Id` = VM-Name (Hyper-V-VMs werden über den Namen angesprochen) |
+| `GetVmsAsync()` | `Get-VM` (pro Host) | ungefiltertes volles Inventar — nur für Bootstrap-FullAdmin bzw. Admin-Kontexte |
+| `GetVmsAsync(authorizedVms)` | `Get-VM -Name <Array>` (pro betroffenem Host) | **neu, Performance-Fix:** fragt gezielt nur die per DB-Autorisierung ermittelten VMs ab statt des kompletten Inventars; Hosts ohne autorisierte VMs werden nicht angefragt |
+| `GetVmByIdAsync` | `Local`: `Get-VM -Name {id}` · `Remote`: `Get-VM -Id {guid}` auf dem aus der Id geparsten Host | `Id` ist im `Local`-Modus der VM-Name (wie ursprünglich), im `Remote`-Modus `Host::Guid` — VM-Namen sind über Hosts hinweg nicht eindeutig |
 | `StartVmAsync` | `Start-VM` | |
 | `StopVmAsync` | `Stop-VM -Force` | |
 | `ResetVmAsync` | `Restart-VM -Force` | |
@@ -633,16 +666,19 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
 
 **Fehlende Funktionalität:**
 
-8. **M6 (Rest) offen, M7 offen:** Die SQLite-Autorisierungsschicht (Rollen,
-   VM-Gruppen, AD-Gruppen-Zuordnungen, Admin-API) existiert seit 2026-08-12
-   (Kapitel 4.4) und ist seit Commit `7df0aae` auch in `VmController` verdrahtet — die
-   tatsächliche VM-Autorisierung läuft jetzt ausschließlich über `DbAuthorizationService`
-   (`adgroups`-Claim), nicht mehr über `vmroles`. **Kapitel 3, 4.2, 4.3 und 4.4 dieses
-   Dokuments beschreiben an mehreren Stellen noch den `vmroles`-Pfad als aktiven
-   Autorisierungsweg — das ist seit der Umstellung nicht mehr korrekt und hier bewusst
-   nicht mehr flächendeckend nachgezogen worden** (separate, größere Überarbeitung nötig).
+8. **M6 (Rest) offen, M8 (Evaluation) offen — M7 seit 2026-08-19 erledigt:** Die
+   SQLite-Autorisierungsschicht (Rollen, VM-Gruppen, AD-Gruppen-Zuordnungen, Admin-API)
+   existiert seit 2026-08-12 (Kapitel 4.4) und ist seit Commit `7df0aae` auch in
+   `VmController` verdrahtet — die tatsächliche VM-Autorisierung läuft jetzt
+   ausschließlich über `DbAuthorizationService` (`adgroups`-Claim), nicht mehr über
+   `vmroles`. **Kapitel 3, 4.2, 4.3 und 4.4 dieses Dokuments beschreiben an mehreren
+   Stellen noch den `vmroles`-Pfad als aktiven Autorisierungsweg — das ist seit der
+   Umstellung nicht mehr korrekt und hier bewusst nicht mehr flächendeckend
+   nachgezogen worden** (separate, größere Überarbeitung nötig). M7 (WinRM-Multi-Host,
+   Login gegen Produktionsdomäne, DB-first-Autorisierung statt N+1-Full-Inventory-Scan)
+   ist seit 2026-08-19 erledigt, siehe Update-Hinweis am Dateianfang sowie Abschnitt 2/5.1.
    Nach wie vor offen: kein **Audit-Log** (wer hat wann welche VM-Aktion ausgeführt? — steht
-   nur flüchtig im Konsolen-Log), Evaluation (M7) ausstehend.
+   nur flüchtig im Konsolen-Log), M6 (Rest, siehe CLAUDE.md) und Evaluation (M8) ausstehend.
 9. **Frontend deckt nur einen Bruchteil der API ab** und ist nicht rollenbewusst
    (Kapitel 5.3); keine Snapshot-Liste; `VmDetail` nutzt `GET /api/vm` statt
    `GET /api/vm/{id}`.
@@ -671,6 +707,15 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
     mit Secrets) ist weiterhin untracked und gehört langfristig in `.gitignore`, statt
     nur uncommitted im Arbeitsverzeichnis zu liegen — das ist der einzige Rest dieses
     Punktes, der noch offen ist.
+16. ✅ **Behoben (2026-08-19):** CLAUDE.md, README.md und diese Datei beschrieben den
+    WinRM-Remote-Modus noch als "nicht implementiert, nur Konnektivität verifiziert"
+    bzw. führten noch die ursprünglich vier statt drei Hyper-V-Hosts. Alle drei Dateien
+    aktualisiert auf den tatsächlichen Stand: Remote-Modus implementiert und produktiv
+    gegen alle drei Hosts getestet, Login gegen die Produktionsdomäne funktioniert,
+    DB-first-Autorisierung statt N+1-Full-Inventory-Scan. Zusätzlich wurde in CLAUDE.md
+    eine Dokumentationspflicht ergänzt (proaktive Aktualisierung dieser drei Dateien
+    nach jeder funktional relevanten Aufgabe), damit solche Diskrepanzen künftig seltener
+    entstehen.
 
 ---
 

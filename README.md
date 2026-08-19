@@ -22,21 +22,34 @@ Die Lösung besteht aus drei Projekten:
 | `VmPortal.Frontend` | React-SPA (Vite, plain JavaScript): Login, VM-Übersicht, VM-Detail   |
 
 Kern des Entwurfs ist die Schnittstelle **`IVirtualizationProvider`** als Abstraktion über den
-Hypervisor. `HyperVProvider` ist die konkrete Implementierung für Microsoft Hyper-V;
+Hypervisor. `HyperVProvider` ist die konkrete Implementierung für Microsoft Hyper-V — mit zwei
+Modi: `Local` (App läuft direkt auf dem Hyper-V-Host, lokale PowerShell-Ausführung) und
+`Remote` (App läuft auf einem separaten Server, steuert mehrere Hyper-V-Hosts über
+WinRM/Kerberos an — der produktiv genutzte Modus, siehe [Voraussetzungen](#voraussetzungen)).
 `DummyVirtualizationProvider` dient der lokalen Entwicklung. Ein alternativer `ProxmoxProvider`
 wäre über dieselbe Schnittstelle möglich — diese Plattformunabhängigkeit ist der
 wissenschaftliche Kern der Arbeit.
 
 ```
-HTTP-Client → VmController → IVirtualizationProvider ─┬─ HyperVProvider  (lokale PowerShell)
-                                                      └─ DummyProvider   (In-Memory)
+HTTP-Client → VmController → IDbAuthorizationService (DB-first: welche VMs darf der Nutzer sehen?)
+                            → IVirtualizationProvider ─┬─ HyperVProvider  (Local: lokale PowerShell)
+                                                        │                 (Remote: WinRM/Kerberos, Multi-Host)
+                                                        └─ DummyProvider   (In-Memory)
 ```
+
+Die VM-Liste wird DB-first ermittelt: `VmController.GetVms()` fragt zuerst per einziger
+DB-Abfrage, welche (Host, VM)-Paare der angemeldete Nutzer sehen darf, und ruft den Hypervisor
+erst danach gezielt nur dafür ab — statt das komplette Inventar aller Hosts zu holen und
+anschließend jede VM einzeln zu autorisieren. Bootstrap-FullAdmin (z. B. `ESX Admins`) sieht
+weiterhin das volle, ungefilterte Inventar.
 
 ## Sicherheit
 
-- **Authentifizierung:** LDAP-Bind gegen Active Directory (`testumgebung.local`) —
-  `LdapAuthService`. Das Portal prüft nie selbst ein Passwort, sondern bindet sich als der
-  jeweilige Benutzer ans AD.
+- **Authentifizierung:** LDAP-Bind gegen Active Directory — `LdapAuthService`. Das Portal
+  prüft nie selbst ein Passwort, sondern bindet sich als der jeweilige Benutzer ans AD.
+  Domäne ist umgebungsabhängig konfiguriert (`Ldap:Host`/`BaseDn`): lokale Testumgebung
+  `testumgebung.local`, Produktion die Siemens-Domäne `archiv.mhm.siemens.com` — dort seit
+  dem 2026-08-19-Deployment erfolgreich verifiziert.
 - **Token:** JWT (HMAC-SHA256), Claims `username`, `role`, `vmroles` (VM-Name → Rolle, aus
   AD-Gruppen nach dem Schema `VM-{VmName}-{Rolle}`) und `adgroups` (rohe
   AD-Gruppennamen), Gültigkeit 8 Stunden.
@@ -125,13 +138,17 @@ REST-API (`200`/`201`/`204`/`400`/`404`).
 ## Voraussetzungen
 
 - .NET SDK 8.0
-- Für den Produktivbetrieb: Windows Server 2022 mit Hyper-V-Rolle. Die App läuft direkt auf
-  dem Hyper-V-Host und ruft die Hyper-V-Cmdlets über eine lokale PowerShell-Instanz auf —
-  ein Remote-Modus über WinRM ist im aktuellen Code nicht implementiert. Die
-  WinRM/Kerberos-Konnektivität (Port 5985) zu den drei produktiven Hyper-V-Hosts
-  (`MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4`) wurde am 2026-08-19 verifiziert, ist aber
-  (noch) nicht angebunden. Da VM-Namen nicht host-eindeutig sind, muss eine künftige
-  VM-Identifikation über Server + Hyper-V-VM-GUID statt über den Namen allein erfolgen.
+- Für den Produktivbetrieb: `HyperVProvider` im `Remote`-Modus (`Virtualization:HyperV:Mode`).
+  Die App läuft auf einem separaten Windows-Server und steuert die drei produktiven
+  Hyper-V-Hosts (`MHM-HYPERV1`, `MHM-HYPERV3`, `MHM-HYPERV4`, FQDN-Muster
+  `<hostname>.archiv.mhm.siemens.com`) über WinRM/Kerberos (Port 5985) an. **Implementiert
+  und am 2026-08-19 auf der Produktions-VM erfolgreich gegen alle drei Hosts getestet**,
+  inklusive Login gegen die Produktionsdomäne (`archiv.mhm.siemens.com`). Da VM-Namen nicht
+  host-eindeutig sind (bestätigte Kollisionen zwischen Hosts), identifiziert der Remote-Modus
+  VMs über Server + Hyper-V-VM-GUID statt über den Namen allein.
+  Alternativ existiert weiterhin der ursprüngliche `Local`-Modus (Windows Server 2022 mit
+  Hyper-V-Rolle, App läuft direkt auf dem Hyper-V-Host, Cmdlets über eine lokale
+  PowerShell-Instanz) — für Deployments, bei denen App und Hyper-V-Host derselbe Rechner sind.
 
 ## Bauen und Starten
 
@@ -174,7 +191,7 @@ npm install
 npm run dev            # Dev-Server auf http://localhost:5173
 ```
 
-Der Vite-Dev-Server proxyt `/api` an die echte API (`http://192.168.122.196:5000`, siehe
+Der Vite-Dev-Server proxyt `/api` an die echte API (`http://localhost:5000`, siehe
 `vite.config.js`), sodass Frontend und API unter derselben Origin laufen. Alternativ erlaubt
 das Backend CORS für `http://localhost:5173` (konfigurierbar über `Cors:AllowedOrigins`).
 
@@ -195,7 +212,18 @@ und wird nicht versioniert.
 
 ```jsonc
 {
-  "Virtualization": { "Provider": "HyperV" },   // oder "Dummy"
+  "Virtualization": {
+    "Provider": "HyperV",   // oder "Dummy"
+    "HyperV": {              // optional - fehlt der Abschnitt, ist Mode implizit "Local"
+      "Mode": "Remote",       // "Local" oder "Remote"
+      "Hosts": [
+        { "Name": "MHM-HYPERV1", "FQDN": "mhm-hyperv1.archiv.mhm.siemens.com" },
+        { "Name": "MHM-HYPERV3", "FQDN": "mhm-hyperv3.archiv.mhm.siemens.com" },
+        { "Name": "MHM-HYPERV4", "FQDN": "mhm-hyperv4.archiv.mhm.siemens.com" }
+      ],
+      "Remote": { "Port": 5985, "UseSsl": false, "Authentication": "Kerberos" }
+    }
+  },
   "Ldap":  { "Host": "…", "Port": 389, "BaseDn": "DC=…,DC=…" },
   "Jwt": { "Secret": "…", "Issuer": "VmPortal.Api", "Audience": "VmPortal.Client", "ExpiryHours": 8 },
   "ConnectionStrings": { "VmPortalDb": "Data Source=vmportal.db" },
@@ -203,13 +231,18 @@ und wird nicht versioniert.
 }
 ```
 
-Der `HyperV`-Provider führt PowerShell lokal aus und benötigt daher keine
-Verbindungskonfiguration (kein Host/Port/Zugangsdaten).
+Ohne `Virtualization:HyperV`-Abschnitt (bzw. `Mode: "Local"`) führt der `HyperV`-Provider
+PowerShell lokal aus und benötigt keine Verbindungskonfiguration — der bisherige,
+weiterhin unterstützte Modus. Mit `Mode: "Remote"` (Produktivbetrieb,
+`appsettings.Production.json`) verbindet er sich per WinRM/Kerberos zu jedem in `Hosts`
+gelisteten Host; die Authentifizierung läuft über die Prozessidentität des ausführenden
+Kontos, kein Credential in der Konfiguration.
 
-`ConnectionStrings:VmPortalDb` und `Authorization:BootstrapFullAdminGroup` sind
-umgebungsabhängig (`appsettings.json` = Testumgebung, `appsettings.Production.json`
-überschreibt mit dem Siemens-AD-Wert und dem Produktionspfad
-`C:\VmPortal\data\vmportal.db`) — siehe [`docs/authorization.md`](docs/authorization.md).
+`ConnectionStrings:VmPortalDb`, `Authorization:BootstrapFullAdminGroup`, `Ldap` und
+`Virtualization:HyperV` sind umgebungsabhängig (`appsettings.json` = Testumgebung,
+`appsettings.Production.json` überschreibt mit den Siemens-AD-/Hyper-V-Werten und dem
+Produktionspfad `C:\VmPortal\data\vmportal.db`) — siehe
+[`docs/authorization.md`](docs/authorization.md).
 
 > **Hinweis:** `appsettings.json` enthält in der Testumgebung Klartext-Secrets. In Produktion
 > gehören diese in Umgebungsvariablen bzw. einen Secret-Store (siehe Phase 5).
@@ -224,15 +257,22 @@ dotnet ef database update --project VmPortal.Core --startup-project VmPortal.Api
 ```
 
 Voraussetzung: `dotnet tool install --global dotnet-ef`. Die Migration
-`InitialAuthorizationSchema` legt Schema **und** Seed-Daten an (fünf System-Rollen, alle
-22 VM-Aktionen, die vier Hyper-V-Hosts, die beiden Bootstrap-`UserGroups`).
+`InitialAuthorizationSchema` legt Schema **und** Grund-Seed-Daten an (fünf System-Rollen,
+alle 22 VM-Aktionen, die beiden Bootstrap-`UserGroups`, ursprünglich vier Hyper-V-Hosts).
+Zwei Folgemigrationen korrigieren/ergänzen das: `FixVirtualServersHostCount` entfernt den
+vierten, nicht real existierenden Host-Eintrag (übrig: die drei echten Hosts
+`MHM-HYPERV1`/`3`/`4`), `SeedTestUserPermissions` seedet eine Testberechtigung für die
+neun Hyper-V-Test-VMs `HVP_1`–`HVP_9`.
 
 ## Deployment-Modell
 
-Die Anwendung wird auf einem Windows Server 2022 ausgeführt, der zugleich der Hyper-V-Host
-ist. Die Hyper-V-Cmdlets werden über eine lokale PowerShell-Instanz aufgerufen und
-funktionieren dort nativ. Der Build läuft plattformübergreifend; die Hyper-V-Cmdlets sind
-ausschließlich unter Windows zur Laufzeit verfügbar.
+Produktivbetrieb läuft im `Remote`-Modus: Die Anwendung wird auf einem **separaten**
+Windows-Server ausgeführt und steuert die drei Hyper-V-Hosts über WinRM/Kerberos an (kein
+gemeinsamer Rechner mehr nötig). Alternativ unterstützt `HyperVProvider` weiterhin den
+ursprünglichen `Local`-Modus, bei dem die Anwendung direkt auf dem Hyper-V-Host läuft und die
+Cmdlets über eine lokale PowerShell-Instanz aufruft. Der Build läuft plattformübergreifend;
+die Hyper-V-Cmdlets sind ausschließlich unter Windows zur Laufzeit verfügbar (lokal wie
+remote — WinRM-Ziel ist immer ein Windows-Host mit Hyper-V-Rolle).
 
 ## Projektstand
 
@@ -245,4 +285,5 @@ ausschließlich unter Windows zur Laufzeit verfügbar.
 | M5          | React-Frontend (Login, Übersicht, Detail)           | ✅     |
 | M6          | SQLite/EF-Core-Autorisierungsschicht (RBAC, Admin-API); `VmController` auf DB-Autorisierung umgestellt | ✅     |
 | M6 (Rest)   | Audit-Log, Secret-Store, vollständige `GroupPermissions` in der Testumgebung | ⏳     |
-| M7          | Evaluation (siehe CLAUDE.md)                        | ⏳     |
+| M7          | WinRM-Multi-Host-Remote-Modus (Produktivbetrieb, gegen alle 3 Hosts getestet); Login gegen Produktionsdomäne; DB-first-Autorisierung statt Full-Inventory-Scan | ✅     |
+| M8          | Evaluation (siehe CLAUDE.md)                        | ⏳     |
