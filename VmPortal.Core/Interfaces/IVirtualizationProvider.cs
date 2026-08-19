@@ -4,7 +4,20 @@ namespace VmPortal.Core.Interfaces;
 
 public interface IVirtualizationProvider
 {
+    /// <summary>Volles Inventar aller konfigurierten Hosts, ungefiltert. Teuer im
+    /// Remote-Multi-Host-Modus (ein Get-VM ohne Filter pro Host) - nur für Kontexte gedacht,
+    /// die tatsächlich alles brauchen (z. B. Bootstrap-FullAdmin-Sicht, Admin-Werkzeuge),
+    /// nicht für die reguläre, autorisierungsgefilterte VM-Liste. Siehe
+    /// <see cref="GetVmsAsync(IReadOnlyCollection{VmReference})"/> für den gezielten Abruf.</summary>
     Task<IEnumerable<VirtualMachine>> GetVmsAsync();
+
+    /// <summary>Fragt gezielt nur die übergebenen VMs ab (pro Host per Namensliste in einem
+    /// Aufruf statt des kompletten Inventars) - für die autorisierungsgefilterte VM-Liste:
+    /// erst per DB ermitteln, was der Nutzer sehen darf (<see cref="Interfaces.IDbAuthorizationService.GetAuthorizedVmsAsync"/>),
+    /// dann nur dafür beim Hypervisor nachfragen. Hosts ohne Einträge in
+    /// <paramref name="authorizedVms"/> werden gar nicht angefragt.</summary>
+    Task<IEnumerable<VirtualMachine>> GetVmsAsync(IReadOnlyCollection<VmReference> authorizedVms);
+
     Task<VirtualMachine?> GetVmByIdAsync(string id);
     Task StartVmAsync(string id);
     Task StopVmAsync(string id);

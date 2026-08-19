@@ -25,27 +25,40 @@ public class VmController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// DB-first statt Full-Inventory-Scan: erst in EINER Abfrage ermitteln, welche VMs der
+    /// Nutzer sehen darf (<see cref="IDbAuthorizationService.GetAuthorizedVmsAsync"/>), dann
+    /// beim Provider gezielt NUR dafür nachfragen. Vorher wurde das komplette Inventar aller
+    /// Hosts geholt und pro VM einzeln autorisiert (N+1: bei ~140 VMs > 400 DB-Roundtrips pro
+    /// Aufruf/Poll-Tick) - siehe docs/authorization.md bzw. den Bericht zu dieser Aufgabe.
+    /// Bootstrap-FullAdmin hat keine einschränkende GroupPermission-Zeile und sieht deshalb
+    /// weiterhin das volle Hypervisor-Inventar.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetVms()
     {
         var adGroups = AdGroupClaims.FromPrincipal(User);
-        var vms = await _virtualizationProvider.GetVmsAsync();
 
-        var visibleVms = new List<VirtualMachine>();
-        foreach (var vm in vms)
+        IEnumerable<VirtualMachine> vms;
+        if (_authorizationService.IsBootstrapFullAdmin(adGroups))
         {
-            if (await _authorizationService.IsAllowedAsync(adGroups, vm.Name, VmAction.ViewStatus, vm.HostName))
-                visibleVms.Add(vm);
+            vms = await _virtualizationProvider.GetVmsAsync();
+        }
+        else
+        {
+            var authorizedVms = await _authorizationService.GetAuthorizedVmsAsync(adGroups, VmAction.ViewStatus);
+            vms = authorizedVms.Count == 0
+                ? Enumerable.Empty<VirtualMachine>()
+                : await _virtualizationProvider.GetVmsAsync(authorizedVms);
         }
 
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug(
-                "GET /api/vm: AD-Gruppen [{AdGroups}] -> sichtbare VMs [{VisibleVmNames}] von Provider-VMs [{AllVmNames}]",
+                "GET /api/vm: AD-Gruppen [{AdGroups}] -> sichtbare VMs [{VisibleVmNames}]",
                 string.Join(", ", adGroups),
-                string.Join(", ", visibleVms.Select(vm => vm.Name)),
                 string.Join(", ", vms.Select(vm => vm.Name)));
 
-        return Ok(visibleVms);
+        return Ok(vms);
     }
 
     [HttpGet("{id}")]

@@ -83,6 +83,51 @@ public class HyperVProvider : IVirtualizationProvider
         return allVms;
     }
 
+    public async Task<IEnumerable<VirtualMachine>> GetVmsAsync(IReadOnlyCollection<VmReference> authorizedVms)
+    {
+        if (authorizedVms.Count == 0)
+            return Enumerable.Empty<VirtualMachine>();
+
+        if (_settings.Mode != HyperVMode.Remote)
+        {
+            // Lokaler Modus: ein impliziter Host - trotzdem gezielt per Namensliste statt
+            // des kompletten Get-VM ohne Filter.
+            var localNames = authorizedVms.Select(v => v.Name).Distinct().ToArray();
+            _logger.LogInformation("Rufe {Count} autorisierte VMs vom lokalen Hyper-V-Host ab", localNames.Length);
+            var localResults = await InvokeLocalAsync(ps => ps
+                .AddCommand("Get-VM")
+                .AddParameter("Name", localNames)
+                .AddParameter("ErrorAction", "SilentlyContinue"));
+            return localResults.Select(vm => MapVm(string.Empty, vm)).ToList();
+        }
+
+        var allVms = new List<VirtualMachine>();
+        foreach (var hostGroup in authorizedVms.GroupBy(v => v.HostName, StringComparer.OrdinalIgnoreCase))
+        {
+            var hostName = hostGroup.Key;
+            var names = hostGroup.Select(v => v.Name).Distinct().ToArray();
+
+            try
+            {
+                // EIN Get-VM mit Namensliste pro Host statt eines vollen, ungefilterten
+                // Inventar-Abrufs - Hosts ohne autorisierte VMs tauchen in authorizedVms gar
+                // nicht erst auf und werden dadurch automatisch übersprungen.
+                _logger.LogInformation("Rufe {Count} autorisierte VMs von Host {HostName} ab", names.Length, hostName);
+                var results = await InvokeOnHostAsync(hostName, ps => ps
+                    .AddCommand("Get-VM")
+                    .AddParameter("Name", names)
+                    .AddParameter("ErrorAction", "SilentlyContinue"));
+                allVms.AddRange(results.Select(vm => MapVm(hostName, vm)));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Host {HostName} bei gezielter VM-Abfrage übersprungen (nicht erreichbar oder Fehler)", hostName);
+            }
+        }
+
+        return allVms;
+    }
+
     public async Task<VirtualMachine?> GetVmByIdAsync(string id)
     {
         if (_settings.Mode != HyperVMode.Remote)

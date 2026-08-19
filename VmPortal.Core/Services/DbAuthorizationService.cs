@@ -104,4 +104,28 @@ public class DbAuthorizationService : IDbAuthorizationService
         var allowedActions = await GetAllowedActionsAsync(adGroups, vmName, hostName);
         return allowedActions.Contains(action);
     }
+
+    public async Task<IReadOnlyList<VmReference>> GetAuthorizedVmsAsync(
+        IReadOnlyCollection<string> adGroups, VmAction action)
+    {
+        // Eine einzige Abfrage statt einer Prüfung pro VM (vorher: N VMs * 3 Queries) -
+        // adgroups-Claim -> UserGroups -> GroupPermissions (mit passender RoleAction) ->
+        // VirtualMachines, direkt als Join/Exists von EF Core in EIN SQL-Statement übersetzt.
+        // Bootstrap-FullAdmin wird hier bewusst NICHT behandelt (siehe XML-Doc auf dem
+        // Interface) - der hat keine GroupPermission-Zeile, gegen die sich filtern ließe.
+        var actionName = action.ToString();
+
+        var rows = await
+            (from vm in _db.VirtualMachines.AsNoTracking()
+             where vm.GroupId != null
+             join gp in _db.GroupPermissions.AsNoTracking() on vm.GroupId equals gp.VmGroupId
+             join ug in _db.UserGroups.AsNoTracking() on gp.UserGroupId equals ug.Id
+             where adGroups.Contains(ug.Name)
+             where gp.Role.RoleActions.Any(ra => ra.Action.Name == actionName)
+             select new { vm.Name, ServerName = vm.Server.Name })
+            .Distinct()
+            .ToListAsync();
+
+        return rows.Select(r => new VmReference(r.ServerName, r.Name)).ToList();
+    }
 }

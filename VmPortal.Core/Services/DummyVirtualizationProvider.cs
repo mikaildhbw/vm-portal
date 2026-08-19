@@ -14,6 +14,12 @@ public class DummyVirtualizationProvider : IVirtualizationProvider
     public Task<IEnumerable<VirtualMachine>> GetVmsAsync() =>
         Task.FromResult(_vms.AsEnumerable());
 
+    public Task<IEnumerable<VirtualMachine>> GetVmsAsync(IReadOnlyCollection<VmReference> authorizedVms)
+    {
+        var names = authorizedVms.Select(v => v.Name).ToHashSet();
+        return Task.FromResult(_vms.Where(vm => names.Contains(vm.Name)).AsEnumerable());
+    }
+
     public Task<VirtualMachine?> GetVmByIdAsync(string id) =>
         Task.FromResult(_vms.FirstOrDefault(v => v.Id == id));
 

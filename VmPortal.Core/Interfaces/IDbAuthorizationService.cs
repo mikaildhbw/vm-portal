@@ -35,4 +35,16 @@ public interface IDbAuthorizationService
     /// Admin-Endpunkten genutzt, die global FullAdmin voraussetzen.
     /// </summary>
     bool IsBootstrapFullAdmin(IReadOnlyCollection<string> adGroups);
+
+    /// <summary>
+    /// Ermittelt in EINER Abfrage, welche VMs der Nutzer (über seine AD-Gruppen) für die
+    /// angegebene Aktion sehen darf - Gegenstück zum pro-VM-Aufruf von
+    /// <see cref="GetAllowedActionsAsync"/>/<see cref="IsAllowedAsync"/>, gedacht für Listen
+    /// (z. B. die VM-Übersicht), wo eine Autorisierungsprüfung pro einzelner VM zu N+1
+    /// DB-Roundtrips führen würde. Berücksichtigt NICHT den Bootstrap-FullAdmin-Fall (der hat
+    /// keine einschränkende GroupPermission-Zeile, gegen die man vorab filtern könnte) -
+    /// Aufrufer müssen <see cref="IsBootstrapFullAdmin"/> selbst vorab prüfen und in dem Fall
+    /// das volle Hypervisor-Inventar abfragen statt diese Methode zu nutzen.
+    /// </summary>
+    Task<IReadOnlyList<VmReference>> GetAuthorizedVmsAsync(IReadOnlyCollection<string> adGroups, VmAction action);
 }
