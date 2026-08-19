@@ -57,4 +57,41 @@ public static class AuthorizationSeedData
         new() { Id = 1, Name = "ESX Admins" },
         new() { Id = 2, Name = "VM-Portal-Benutzer" }
     };
+
+    // --- Testberechtigung für den Verfasser-Account (Migration "SeedTestUserPermissions") ---
+    // Reine Testdaten, keine Erweiterung der übrigen Berechtigungsmatrix: die AD-Gruppe
+    // "ESXUserIT" (Verfasser, kein FullAdmin) bekommt Rolle PowerUser auf genau den neun
+    // Hyper-V-Test-VMs HVP_1-HVP_9 auf MHM-HYPERV4. Es gibt aktuell weder einen
+    // VM-Discovery-/Sync-Mechanismus noch eine Admin-UI-Funktion, um einzelne VMs einer
+    // VirtualMachineGroup zuzuordnen (VmGroupsController verwaltet nur Gruppennamen, nicht
+    // die Mitgliedschaft) - die VirtualMachines-Tabelle wird daher bislang ausschließlich per
+    // Seed/Migration befüllt, siehe Bericht zu dieser Aufgabe.
+    private const int TestUserGroupId = 3;
+    private const int TestVmGroupId = 1;
+    private const int TestHyperV4ServerId = 3; // MHM-HYPERV4, siehe VirtualServers oben
+
+    public static IReadOnlyList<UserGroup> TestUserGroups { get; } = new List<UserGroup>
+    {
+        new() { Id = TestUserGroupId, Name = "ESXUserIT" }
+    };
+
+    public static IReadOnlyList<VirtualMachineGroup> TestVirtualMachineGroups { get; } = new List<VirtualMachineGroup>
+    {
+        new() { Id = TestVmGroupId, Name = "Testumgebung-HVP" }
+    };
+
+    public static IReadOnlyList<VirtualMachineRecord> TestVirtualMachines { get; } = Enumerable.Range(1, 9)
+        .Select(i => new VirtualMachineRecord
+        {
+            Id = i,
+            Name = $"HVP_{i}",
+            ServerId = TestHyperV4ServerId,
+            GroupId = TestVmGroupId
+        })
+        .ToList();
+
+    public static IReadOnlyList<GroupPermission> TestGroupPermissions { get; } = new List<GroupPermission>
+    {
+        new() { Id = 1, VmGroupId = TestVmGroupId, UserGroupId = TestUserGroupId, RoleId = RoleId(VmRole.PowerUser) }
+    };
 }

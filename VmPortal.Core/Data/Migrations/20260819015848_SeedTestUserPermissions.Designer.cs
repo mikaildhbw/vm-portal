@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VmPortal.Core.Data;
 
@@ -10,9 +11,11 @@ using VmPortal.Core.Data;
 namespace VmPortal.Core.Data.Migrations
 {
     [DbContext(typeof(VmPortalDbContext))]
-    partial class VmPortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260819015848_SeedTestUserPermissions")]
+    partial class SeedTestUserPermissions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.8");

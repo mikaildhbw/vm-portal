@@ -90,5 +90,12 @@ public class VmPortalDbContext : DbContext
         modelBuilder.Entity<RoleAction>().HasData(AuthorizationSeedData.RoleActions);
         modelBuilder.Entity<VirtualServer>().HasData(AuthorizationSeedData.VirtualServers);
         modelBuilder.Entity<UserGroup>().HasData(AuthorizationSeedData.UserGroups);
+
+        // Testberechtigung für den Verfasser-Account (ESXUserIT auf den HVP-Test-VMs) -
+        // siehe Kommentar auf den Test*-Properties in AuthorizationSeedData.
+        modelBuilder.Entity<UserGroup>().HasData(AuthorizationSeedData.TestUserGroups);
+        modelBuilder.Entity<VirtualMachineGroup>().HasData(AuthorizationSeedData.TestVirtualMachineGroups);
+        modelBuilder.Entity<VirtualMachineRecord>().HasData(AuthorizationSeedData.TestVirtualMachines);
+        modelBuilder.Entity<GroupPermission>().HasData(AuthorizationSeedData.TestGroupPermissions);
     }
 }
