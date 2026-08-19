@@ -247,3 +247,265 @@ a {
 .notice.error {
   color: var(--danger);
 }
+
+/* Header actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-admin-link {
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  padding: 0.5rem 1rem;
+}
+
+.header-admin-link:hover {
+  background-color: rgba(0, 153, 153, 0.08);
+}
+
+/* Admin panel */
+.admin-container {
+  max-width: 1200px;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.admin-nav-link {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+
+.admin-nav-link:hover {
+  color: var(--text);
+}
+
+.admin-nav-link.active {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+  font-weight: 600;
+}
+
+.inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.inline-form .field {
+  margin-bottom: 0;
+  min-width: 200px;
+}
+
+select {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background-color: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+
+select:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: -1px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.admin-table,
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.admin-table th,
+.admin-table td,
+.matrix-table th,
+.matrix-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-table th,
+.matrix-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.muted-cell {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Rollen-Matrix */
+.matrix-role-col {
+  position: sticky;
+  left: 0;
+  background-color: var(--surface);
+  z-index: 1;
+}
+
+.matrix-action-col {
+  text-align: center;
+}
+
+.matrix-action-col input[type='checkbox'] {
+  width: auto;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  margin-left: 0.5rem;
+  border: 1px solid transparent;
+}
+
+.badge-neutral {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+.badge-warning {
+  background-color: rgba(176, 0, 32, 0.08);
+  color: var(--danger);
+  border-color: var(--danger);
+  white-space: normal;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 10;
+}
+
+.modal {
+  background-color: var(--surface);
+  border-top: 3px solid var(--teal);
+  width: 100%;
+  max-width: 800px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-body {
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+}
+
+.modal-filters {
+  margin-bottom: 1rem;
+}
+
+.modal-table-scroll {
+  max-height: 45vh;
+}
+
+.modal-footer {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* AD-Gruppen-Picker */
+.ad-group-picker {
+  position: relative;
+}
+
+.ad-group-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 5;
+}
+
+.ad-group-option {
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.ad-group-option:hover {
+  background-color: rgba(0, 153, 153, 0.08);
+}
+
+.ad-group-option.disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.ad-group-option.disabled:hover {
+  background-color: transparent;
+}
+
+.ad-group-unknown {
+  font-size: 0.75rem;
+  color: var(--danger);
+}
+
+.ad-group-hint {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

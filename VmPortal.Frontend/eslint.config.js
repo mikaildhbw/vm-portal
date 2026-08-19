@@ -29,6 +29,9 @@ export default [
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
       'react/jsx-no-target-blank': 'off',
+      // Projekt ist plain JS ohne TypeScript und ohne das prop-types-Paket - PropTypes-
+      // Deklarationen wären hier reine Mehrarbeit ohne echte Typprüfung.
+      'react/prop-types': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

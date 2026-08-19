@@ -42,9 +42,13 @@ VmPortal.Api/
   Program.cs      Composition Root (DI, Auth, CORS, Static/SPA, Provider-Auswahl,
                   DbContext-Registrierung)
 VmPortal.Frontend/
-  src/api/        client (Axios, withCredentials, 401-Interceptor), vmApi
+  src/api/        client (Axios, withCredentials, 401-Interceptor), vmApi,
+                  adminApi (Admin-Endpunkte), errors (getErrorMessage-Helper)
   src/pages/      Login, VmList, VmDetail
-  src/components/ Header
+  src/pages/admin/ AdminLayout (FullAdmin-Gate), RolesPage, VmGroupsPage,
+                  VmGroupDetailPage, PermissionsPage
+  src/hooks/      useIsFullAdmin (Probe gegen GET /api/admin/servers)
+  src/components/ Header, Modal, AdGroupPicker
   vite.config.js  Dev-Proxy /api -> Windows-Server-API
 ```
 
@@ -95,7 +99,7 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   (Gruppe `VM-Portal-Benutzer`, Rolle `VMUser`).
 - Hyper-V-VMs: `VM-Mikail` (Notes = `mugur`), `VM-Burath` (Notes = `jburath`).
 
-## Was bereits implementiert ist (M1–M8)
+## Was bereits implementiert ist (M1–M9)
 - **M1/M2:** Projektstruktur, Interfaces, Models, Dummy-Services, DI, testbare API.
 - **M3:** LDAP-Authentifizierung gegen AD; Rolle aus AD-Gruppenmitgliedschaft; echtes JWT
   (HMAC-SHA256, Claims `username`/`role`, 8 h); JWT im `httpOnly`-Cookie
@@ -166,6 +170,23 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   - Schema-Erweiterung: `VirtualMachineRecord.VmGuid` (nullable, additive Migration
     `AddVmGuidToVirtualMachines`) — dient nur der Nachvollziehbarkeit, **nicht** der
     Autorisierungsprüfung in `DbAuthorizationService` (die bleibt unverändert host-/namensbasiert).
+- **M9 (Admin-Panel-Frontend):** React-UI für M8 unter `/admin` (`AdminLayout` + drei
+  Unterseiten), nur sichtbar/erreichbar für FullAdmin. Da das JWT im httpOnly-Cookie liegt
+  und clientseitig nicht lesbar ist, gibt es keinen Claim, den das Frontend direkt auslesen
+  könnte — `useIsFullAdmin` probt stattdessen einmalig `GET /api/admin/servers` (200 = Admin,
+  sonst nicht); `AdminLayout` leitet Nicht-Admins clientseitig zu `/vms` um (kein Warten auf
+  einen 403 einer Unterseite), der Header blendet den „Administration“-Link entsprechend
+  ein/aus. Rollen-Matrix (`RolesPage`): Spalten kommen nicht von einem eigenen
+  Aktionskatalog-Endpunkt (den gibt es nicht), sondern aus der `actions`-Liste der
+  System-Rolle FullAdmin, die per `RolePermissions.IsAllowed` garantiert alle 22 Aktionen
+  enthält und als System-Rolle nicht editierbar ist. VM-Gruppen-Detailseite:
+  „VMs hinzufügen“ lädt `GET /api/admin/discover-vms` einmal und filtert/selektiert rein
+  client-seitig (`useMemo`), kein Request pro Tastenanschlag. Zuordnungen-Formular
+  (`PermissionsPage`/`AdGroupPicker`): **es gibt keinen Endpunkt, der alle UserGroups aus der
+  Autorisierungs-DB unabhängig von bestehenden Zuordnungen auflistet, und keinen zum Anlegen
+  einer neuen UserGroup** — der Picker kann eine AD-Gruppe daher nur zuordnen, wenn sie schon
+  über eine bestehende `GroupPermission` bekannt ist; die Live-AD-Suche dient nur als
+  Autocomplete/Fallback-Anzeige. Siehe „Was noch kommt“.
 
 ## Was noch kommt (Phase 6–7)
 - **Phase 6 — Rest:** Audit-Log (wer hat wann welche VM-Aktion ausgeführt); Secrets aus
@@ -174,14 +195,15 @@ npm run build && cp -r dist/* ../VmPortal.Api/wwwroot/   # Produktions-Build in 
   `DbAuthorizationService` reicht eine leere/unvollständige Zuordnungstabelle nicht mehr
   aus, um dieselben Zugriffe wie vorher über `vmroles` zu erhalten). `deploy.ps1` (inkl.
   `dotnet ef database update`-Schritt) existiert bereits im Repo.
-- **M8 (Rest) — Admin-Panel-Frontend:** Bisher reines Backend (siehe M8 oben); UI für die
-  Rechtevergabe-Matrix (AD-Gruppe × VM-Gruppe × Rolle, Autocomplete über
-  `GET /api/admin/ad-groups`, VM-Auswahl über `GET /api/admin/discover-vms` +
-  `POST .../members`) fehlt noch. Zusätzlich offen: `Ldap:ServiceAccountUsername`/
-  `ServiceAccountPassword` müssen für die Produktions-AD (`archiv.mhm.siemens.com`) mit
-  echten Service-Account-Zugangsdaten befüllt werden, sonst schlägt die AD-Gruppensuche dort
-  vermutlich fehl (anonymer LDAP-Bind ist auf restriktiven ADs i. d. R. deaktiviert) — bisher
-  nur gegen die lokale Testumgebung/den Dummy-Modus verifiziert.
+- **M9 (Rest):** `Ldap:ServiceAccountUsername`/`ServiceAccountPassword` müssen für die
+  Produktions-AD (`archiv.mhm.siemens.com`) mit echten Service-Account-Zugangsdaten befüllt
+  werden, sonst schlägt die AD-Gruppensuche dort vermutlich fehl (anonymer LDAP-Bind ist auf
+  restriktiven ADs i. d. R. deaktiviert) — bisher nur gegen die lokale Testumgebung/den
+  Dummy-Modus verifiziert. Fehlender Backend-Endpunkt (beim Frontend-Bau aufgefallen, bewusst
+  nicht selbst ergänzt): kein `GET`/`POST` für `UserGroups` (AD-Gruppe → DB-Eintrag mit Id)
+  unabhängig von bestehenden `GroupPermissions` — ohne den lässt sich einer AD-Gruppe, die
+  noch nie zugeordnet war, aktuell keine erste Berechtigung geben, außer man kennt ihre
+  `UserGroupId` bereits (z. B. per direktem DB-Zugriff/Migration wie bei `ESXUserIT`).
 - **Phase 7 — Evaluation:** Bewertung nach Sicherheit, Benutzerfreundlichkeit und
   Plattformunabhängigkeit; konzeptioneller Vergleich Hyper-V vs. Proxmox über das gemeinsame
   Interface.

@@ -19,7 +19,15 @@
 > (Rechtevergabe-Matrix AD-Gruppe × VM-Gruppe × Rolle) ergänzt: AD-Gruppensuche
 > (`GET /api/admin/ad-groups`), VM-Gruppen-Mitgliederverwaltung
 > (`/api/admin/vm-groups/{id}/members`) und VM-Discovery (`GET /api/admin/discover-vms`),
-> Details Abschnitt 4 bzw. Abschnitt 7. Reines Backend, noch ohne Frontend.
+> Details Abschnitt 4 bzw. Abschnitt 7.
+>
+> **Update 2026-08-19 (3):** Das zugehörige React-Frontend (`/admin/*`: Rollen-Matrix,
+> VM-Gruppen inkl. Mitgliederverwaltung, Zuordnungen) ist jetzt ebenfalls da, Details
+> Abschnitt 7. Dabei aufgefallen und bewusst nicht selbst ergänzt: es fehlt ein
+> Backend-Endpunkt, um eine bisher unbekannte AD-Gruppe als `UserGroup` in der
+> Autorisierungs-DB anzulegen (bzw. alle bekannten `UserGroups` unabhängig von
+> bestehenden Zuordnungen aufzulisten) - das Zuordnungen-Formular kann daher nur AD-Gruppen
+> zuordnen, die schon über eine bestehende `GroupPermission` bekannt sind.
 
 ---
 
@@ -744,7 +752,7 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
     nach jeder funktional relevanten Aufgabe), damit solche Diskrepanzen künftig seltener
     entstehen.
 
-**Neu seit 2026-08-19 — Admin-Backend (Frontend fehlt noch):**
+**Neu seit 2026-08-19 — Admin-Backend + Admin-Panel-Frontend:**
 
 17. **AD-Gruppensuche vermutlich nicht produktionsbereit ohne Service-Account.**
     `GET /api/admin/ad-groups` bindet ohne konfigurierten
@@ -753,13 +761,25 @@ Daneben existiert `publish/` mit einem älteren veröffentlichten Build samt eig
     deaktiviert. Bisher nur gegen die lokale Testumgebung bzw. den Dummy-Modus verifiziert,
     nicht gegen die echte Produktions-AD. Ein echter Service-Account mit Lesezugriff muss
     noch beschafft und in `appsettings.Production.json` hinterlegt werden.
-18. **Admin-Panel-Frontend fehlt komplett** (ergänzt Punkt 9): Die drei neuen
-    Backend-Endpunktgruppen (AD-Gruppensuche, VM-Gruppen-Mitgliederverwaltung, VM-Discovery)
-    haben noch keine Oberfläche - reine Vorbereitung für einen kommenden Frontend-Durchgang.
+18. ✅ **Behoben (2026-08-19):** Admin-Panel-Frontend war komplett offen (ergänzt Punkt 9) -
+    jetzt vorhanden unter `/admin/*` (`AdminLayout` + `RolesPage`/`VmGroupsPage`/
+    `VmGroupDetailPage`/`PermissionsPage`), FullAdmin-Gate per Probe gegen
+    `GET /api/admin/servers` (kein Claim clientseitig lesbar, httpOnly-Cookie). Dabei
+    aufgefallen: kein Endpunkt zum Anlegen/Auflisten von `UserGroups` unabhängig von
+    bestehenden Zuordnungen (siehe neuer Punkt 20) - bewusst nicht selbst ergänzt.
 19. **`VirtualMachineRecord.VmGuid` ist nicht durch einen Constraint gegen Duplikate
     geschützt** und wird von `DbAuthorizationService` bewusst nicht für den
     Autorisierungs-Abgleich genutzt (der bleibt host-/namensbasiert) - das Feld dient aktuell
     nur der Nachvollziehbarkeit in der Admin-API, nicht der Sicherheit.
+20. **Kein Backend-Endpunkt zum Anlegen einer neuen `UserGroup`** (bzw. zum Auflisten aller
+    `UserGroups` unabhängig von bestehenden `GroupPermissions`). `POST /api/admin/permissions`
+    braucht eine `UserGroupId`; `GET /api/admin/ad-groups` liefert aber nur AD-Gruppennamen
+    aus dem Live-AD, keine DB-Ids. Im Zuordnungen-Formular des Admin-Panels (`AdGroupPicker`)
+    behelfsweise gelöst, indem nur AD-Gruppen wählbar sind, die schon über eine bestehende
+    `GroupPermission`-Zeile bekannt sind (aus `GET /api/admin/permissions` abgeleitet) - eine
+    komplett neue AD-Gruppe kann damit aktuell nicht über die API/das Frontend erstmals
+    berechtigt werden, nur per direkter DB-Migration (wie bei `ESXUserIT`,
+    `SeedTestUserPermissions`).
 
 ---
 

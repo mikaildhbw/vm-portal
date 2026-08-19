@@ -189,6 +189,17 @@ Axios sendet es über `withCredentials: true` automatisch mit. Ein zentraler Int
 bei `401` zur Login-Seite. Views: Login (`/`), VM-Übersicht (`/vms`), VM-Detail (`/vms/:id`
 mit Status-Polling alle 5 s und Snapshot-Funktion).
 
+**Admin-Panel** (`/admin/*`, nur für FullAdmin sichtbar/erreichbar, baut auf den
+Admin-Endpunkten aus dem Abschnitt „Administration“ oben auf): Rollen-Matrix
+(`/admin/roles`), VM-Gruppen inkl. Mitgliederverwaltung (`/admin/vm-groups`,
+`/admin/vm-groups/:groupId`) und Zuordnungen AD-Gruppe × VM-Gruppe × Rolle
+(`/admin/permissions`). Da das JWT clientseitig nicht lesbar ist, gibt es keinen Claim für
+den Zugriffscheck — das Frontend probt stattdessen `GET /api/admin/servers` (200 = Admin).
+Die AD-Gruppen-Auswahl im Zuordnungen-Formular kann nur AD-Gruppen zuordnen, die bereits als
+`UserGroup` in der DB bekannt sind (kein Endpunkt zum Anlegen neuer `UserGroups`, siehe
+Projektstand-Tabelle unten) — die Live-AD-Suche dient dort nur als Autocomplete/Fallback-
+Anzeige.
+
 ### Entwicklung
 
 ```bash
@@ -304,6 +315,7 @@ remote — WinRM-Ziel ist immer ein Windows-Host mit Hyper-V-Rolle).
 | M6          | SQLite/EF-Core-Autorisierungsschicht (RBAC, Admin-API); `VmController` auf DB-Autorisierung umgestellt | ✅     |
 | M6 (Rest)   | Audit-Log, Secret-Store, vollständige `GroupPermissions` in der Testumgebung | ⏳     |
 | M7          | WinRM-Multi-Host-Remote-Modus (Produktivbetrieb, gegen alle 3 Hosts getestet); Login gegen Produktionsdomäne; DB-first-Autorisierung statt Full-Inventory-Scan | ✅     |
-| M8          | Admin-Backend für Rechtevergabe-Matrix (AD-Gruppensuche, VM-Gruppen-Mitgliederverwaltung, VM-Discovery) — reines Backend, kein Frontend | ✅     |
-| M8 (Rest)   | Admin-Panel-Frontend; LDAP-Service-Account für AD-Gruppensuche in Produktion hinterlegen | ⏳     |
-| M9          | Evaluation (siehe CLAUDE.md)                        | ⏳     |
+| M8          | Admin-Backend für Rechtevergabe-Matrix (AD-Gruppensuche, VM-Gruppen-Mitgliederverwaltung, VM-Discovery) | ✅     |
+| M9          | Admin-Panel-Frontend (Rollen-Matrix, VM-Gruppen, Zuordnungen unter `/admin/*`, FullAdmin-Gate) | ✅     |
+| M9 (Rest)   | LDAP-Service-Account für AD-Gruppensuche in Produktion hinterlegen; fehlender Backend-Endpunkt für neue `UserGroups` (siehe Konfiguration/Frontend oben) | ⏳     |
+| M10         | Evaluation (siehe CLAUDE.md)                        | ⏳     |
