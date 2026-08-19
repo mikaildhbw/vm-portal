@@ -34,19 +34,21 @@ package "Schicht 3 — Fachlogik\n(VmPortal.Core)" as CORE {
   interface "IVirtualizationProvider" as IVP #E3F2F1;line:00707A
   interface "IAuthService" as IAuth
   interface "ITokenService" as IToken
-  [RolePermissions] as RolePerm
+  interface "IDbAuthorizationService" as IDbAuth
 
   [HyperVProvider] as HyperVProvider
   [DummyVirtualizationProvider] as DummyProvider
   [LdapAuthService] as LdapAuthService
   [DummyAuthService] as DummyAuthService
   [JwtTokenService] as JwtTokenService
+  [DbAuthorizationService] as DbAuthImpl
 
   HyperVProvider .up.|> IVP
   DummyProvider .up.|> IVP
   LdapAuthService .up.|> IAuth
   DummyAuthService .up.|> IAuth
   JwtTokenService .up.|> IToken
+  DbAuthImpl .up.|> IDbAuth
 }
 
 package "Schicht 4 — Infrastruktur" as INFRA {
@@ -59,7 +61,7 @@ ReactSpa -down-> VmController : HTTPS / JSON
 
 AuthController -down-> IAuth : Methodenaufruf
 VmController -down-> IVP : Methodenaufruf
-VmController .down.> RolePerm : IsAllowed(role, action)
+VmController .down.> IDbAuth : IsAllowedAsync(adGroups, vmName, action)
 
 HyperVProvider -down-> HyperVHost : PowerShell-Cmdlets
 LdapAuthService -down-> AD : LDAP-Bind

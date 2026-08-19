@@ -94,11 +94,11 @@ Git-Historie dieses Verzeichnisses). `er_diagramm_autorisierung.puml` zeigte in 
 früheren Fassung ein noch nicht implementiertes Zielmodell (Soll-Konzept); seit der
 SQLite-Autorisierungsschicht (Commits `76b7cef`, `7df0aae`) ist es der implementierte
 Datenbankstand. `sequenz_vm_aktion_autorisierung.puml` wurde im selben Zug von der
-vmroles-Claim-Prüfung auf `DbAuthorizationService` umgestellt. **Bekannte, noch nicht
-behobene Ausnahme:** `architektur_uebersicht.puml` zeigt weiterhin `VmController` mit einer
+vmroles-Claim-Prüfung auf `DbAuthorizationService` umgestellt. `architektur_uebersicht.puml`
+zeigte bis zu einem gezielten Korrekturdurchgang ebenfalls noch `VmController` mit einer
 direkten Abhängigkeit zu `RolePermissions.IsAllowed(role, action)` — diese Prüfung wurde im
 Zuge der RBAC-Umstellung aus `VmController` entfernt (die Autorisierung läuft heute über
-`DbAuthorizationService`, siehe `sequenz_vm_aktion_autorisierung.puml`). Bei der reinen
-Layout-Überarbeitung dieses Diagramms wurde das bewusst nicht mitkorrigiert (Auftrag war
-Layout, keine inhaltliche Korrektur) und bleibt als offener Punkt für die nächste
-inhaltliche Konsolidierung.
+`DbAuthorizationService`, siehe `sequenz_vm_aktion_autorisierung.puml`); das Diagramm zeigt
+seither stattdessen `VmController -> IDbAuthorizationService -> DbAuthorizationService`,
+`RolePermissions` ist dort nicht mehr enthalten (bleibt intern als Seed-Datenquelle für
+`AuthorizationSeedData` bestehen, siehe Kapitel 5.3/6.3).
