@@ -1,21 +1,233 @@
 % ======================================================================
 % literatur.bib — Literaturverzeichnis der Bachelorarbeit (VmPortal)
 % ======================================================================
-% Platzhalter — Einträge werden im Laufe der Arbeit ergänzt.
-%
-% Beispiel-Eintrag (biblatex, authoryear):
-%
-% @book{schluessel2024,
-%   author    = {Nachname, Vorname},
-%   title     = {Titel des Werks},
-%   publisher = {Verlag},
-%   year      = {2024}
-% }
-%
-% @online{schluessel2025,
-%   author  = {Nachname, Vorname},
-%   title   = {Titel der Webseite},
-%   year    = {2025},
-%   url     = {https://example.org},
-%   urldate = {2026-07-28}
-% }
+
+@article{popekgoldberg1974,
+  author  = {Popek, Gerald J. and Goldberg, Robert P.},
+  title   = {Formal Requirements for Virtualizable Third Generation Architectures},
+  journal = {Communications of the ACM},
+  volume  = {17},
+  number  = {7},
+  pages   = {412--421},
+  year    = {1974},
+  doi     = {10.1145/361011.361073}
+}
+
+@book{smithnair2005,
+  author    = {Smith, James E. and Nair, Ravi},
+  title     = {Virtual Machines: Versatile Platforms for Systems and Processes},
+  publisher = {Morgan Kaufmann},
+  year      = {2005},
+  isbn      = {978-1-55860-910-5}
+}
+
+@online{microsoft-hyperv-overview,
+  author  = {{Microsoft}},
+  title   = {Hyper-V-Technologieübersicht},
+  year    = {2024},
+  url     = {https://learn.microsoft.com/de-de/windows-server/virtualization/hyper-v/hyper-v-technology-overview},
+  urldate = {2026-08-13}
+}
+
+@online{microsoft-hyperv-architecture,
+  author  = {{Microsoft}},
+  title   = {Hyper-V Architecture},
+  year    = {2023},
+  url     = {https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/reference/hyper-v-architecture},
+  urldate = {2026-08-13}
+}
+
+@online{proxmox-ve-admin-guide,
+  author  = {{Proxmox Server Solutions GmbH}},
+  title   = {Proxmox VE Administration Guide},
+  year    = {2024},
+  url     = {https://pve.proxmox.com/pve-docs/pve-admin-guide.html},
+  urldate = {2026-08-13}
+}
+
+@online{proxmox-ve-api,
+  author  = {{Proxmox Server Solutions GmbH}},
+  title   = {Proxmox VE API},
+  year    = {2024},
+  url     = {https://pve.proxmox.com/pve-docs/api-viewer/},
+  urldate = {2026-08-13}
+}
+
+@online{libvirt-drivers,
+  author  = {{libvirt Project}},
+  title   = {Hypervisor Drivers},
+  year    = {2024},
+  url     = {https://libvirt.org/drivers.html},
+  urldate = {2026-08-13}
+}
+
+@online{itil4-2019,
+  author  = {{AXELOS}},
+  title   = {ITIL 4 Foundation: ITIL 4 Edition},
+  year    = {2019},
+  url     = {https://www.axelos.com/certifications/itil-service-management/itil-4-foundation},
+  urldate = {2026-08-13}
+}
+
+@online{microsoft-ad-overview,
+  author  = {{Microsoft}},
+  title   = {Active Directory Domain Services Übersicht},
+  year    = {2023},
+  url     = {https://learn.microsoft.com/de-de/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview},
+  urldate = {2026-08-13}
+}
+
+@techreport{rfc4511,
+  author      = {Sermersheim, J.},
+  title       = {Lightweight Directory Access Protocol (LDAP): The Protocol},
+  institution = {IETF},
+  type        = {RFC},
+  number      = {4511},
+  year        = {2006},
+  doi         = {10.17487/RFC4511}
+}
+
+@techreport{rfc4513,
+  author      = {Harrison, R.},
+  title       = {Lightweight Directory Access Protocol (LDAP): Authentication Methods and Security Mechanisms},
+  institution = {IETF},
+  type        = {RFC},
+  number      = {4513},
+  year        = {2006},
+  doi         = {10.17487/RFC4513}
+}
+
+@online{microsoft-rbac-overview,
+  author  = {{Microsoft}},
+  title   = {Rollenbasierte Zugriffssteuerung (RBAC) für Cloudbereitstellungen},
+  year    = {2024},
+  url     = {https://learn.microsoft.com/de-de/azure/role-based-access-control/overview},
+  urldate = {2026-08-13}
+}
+
+@article{sandhu1996rbac,
+  author  = {Sandhu, Ravi S. and Coyne, Edward J. and Feinstein, Hal L. and Youman, Charles E.},
+  title   = {Role-Based Access Control Models},
+  journal = {Computer},
+  volume  = {29},
+  number  = {2},
+  pages   = {38--47},
+  year    = {1996},
+  doi     = {10.1109/2.485845}
+}
+
+@techreport{rfc7519,
+  author      = {Jones, M. and Bradley, J. and Sakimura, N.},
+  title       = {JSON Web Token (JWT)},
+  institution = {IETF},
+  type        = {RFC},
+  number      = {7519},
+  year        = {2015},
+  doi         = {10.17487/RFC7519}
+}
+
+@techreport{rfc6265,
+  author      = {Barth, A.},
+  title       = {HTTP State Management Mechanism},
+  institution = {IETF},
+  type        = {RFC},
+  number      = {6265},
+  year        = {2011},
+  doi         = {10.17487/RFC6265}
+}
+
+@online{owasp-top10-2021,
+  author  = {{OWASP Foundation}},
+  title   = {OWASP Top 10:2021 — The Ten Most Critical Web Application Security Risks},
+  year    = {2021},
+  url     = {https://owasp.org/Top10/},
+  urldate = {2026-08-13}
+}
+
+@online{owasp-cheatsheet-session,
+  author  = {{OWASP Foundation}},
+  title   = {Session Management Cheat Sheet},
+  year    = {2023},
+  url     = {https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html},
+  urldate = {2026-08-13}
+}
+
+@online{mdn-samesite,
+  author  = {{MDN Web Docs}},
+  title   = {Set-Cookie — SameSite},
+  year    = {2024},
+  url     = {https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value},
+  urldate = {2026-08-13}
+}
+
+@misc{iso27001-2022,
+  author       = {{International Organization for Standardization}},
+  title        = {ISO/IEC 27001:2022 — Information security, cybersecurity and privacy protection — Information security management systems — Requirements},
+  year         = {2022},
+  organization = {ISO/IEC}
+}
+
+@techreport{fielding2000rest,
+  author      = {Fielding, Roy Thomas},
+  title       = {Architectural Styles and the Design of Network-based Software Architectures},
+  institution = {University of California, Irvine},
+  type        = {Dissertation},
+  year        = {2000}
+}
+
+@book{martin2003agile,
+  author    = {Martin, Robert C.},
+  title     = {Agile Software Development: Principles, Patterns, and Practices},
+  publisher = {Prentice Hall},
+  year      = {2003},
+  isbn      = {978-0-13-597444-5}
+}
+
+@online{fowler2004ioc,
+  author  = {Fowler, Martin},
+  title   = {Inversion of Control Containers and the Dependency Injection Pattern},
+  year    = {2004},
+  url     = {https://martinfowler.com/articles/injection.html},
+  urldate = {2026-08-13}
+}
+
+@book{fowler2002patterns,
+  author    = {Fowler, Martin},
+  title     = {Patterns of Enterprise Application Architecture},
+  publisher = {Addison-Wesley},
+  year      = {2002},
+  isbn      = {978-0-321-12742-6}
+}
+
+@online{microsoft-aspnetcore-di,
+  author  = {{Microsoft}},
+  title   = {Dependency Injection in ASP.NET Core},
+  year    = {2024},
+  url     = {https://learn.microsoft.com/de-de/aspnet/core/fundamentals/dependency-injection},
+  urldate = {2026-08-13}
+}
+
+@online{microsoft-efcore-overview,
+  author  = {{Microsoft}},
+  title   = {Entity Framework Core — Übersicht},
+  year    = {2024},
+  url     = {https://learn.microsoft.com/de-de/ef/core/},
+  urldate = {2026-08-13}
+}
+
+@online{nist-rbac,
+  author  = {{InterNational Committee for Information Technology Standards}},
+  title   = {American National Standard for Information Technology — Role Based Access Control},
+  year    = {2004},
+  note    = {ANSI INCITS 359-2004},
+  url     = {https://webstore.ansi.org/standards/incits/ansiincits3592004},
+  urldate = {2026-08-20}
+}
+
+@online{aglp-model,
+  author  = {{Microsoft}},
+  title   = {Active Directory Security Groups},
+  year    = {2023},
+  url     = {https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups},
+  urldate = {2026-08-20}
+}
