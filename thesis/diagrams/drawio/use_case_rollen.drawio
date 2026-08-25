@@ -1,0 +1,88 @@
+<mxfile host="app.diagrams.net" agent="claude-code" version="24.7.0">
+  <diagram id="use_case_rollen" name="use_case_rollen">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Use-Cases je VM-Rolle (Rollenhierarchie mit Vererbung)" style="text;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1000" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="actViewer" value="Viewer" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="80" width="40" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="actOperator" value="Operator" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="215" width="40" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="actPowerUser" value="PowerUser" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="350" width="40" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="actAdmin" value="Admin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="485" width="40" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="actFullAdmin" value="FullAdmin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="620" width="40" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="genOpViewer" value="" style="html=1;endArrow=block;endFill=0;strokeColor=#4D4D4D;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="actOperator" target="actViewer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="genPuOp" value="" style="html=1;endArrow=block;endFill=0;strokeColor=#4D4D4D;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="actPowerUser" target="actOperator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="genAdminPu" value="" style="html=1;endArrow=block;endFill=0;strokeColor=#4D4D4D;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="actAdmin" target="actPowerUser">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="genFaAdmin" value="" style="html=1;endArrow=block;endFill=0;strokeColor=#4D4D4D;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="actFullAdmin" target="actAdmin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="genNote" value="Rollenvererbung gemäß VmRole (Viewer=0 &amp;lt; Operator=1 &amp;lt; PowerUser=2 &amp;lt; Admin=3 &amp;lt; FullAdmin=4): eine höhere Rolle erbt alle Rechte der niedrigeren Rolle. Jeder Use Case ist an die jeweils niedrigste berechtigte Rolle geknüpft." style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontStyle=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="730" width="360" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="sysBoundary" value="VmPortal — autorisierbare Aktionen (Auszug, vollständig: Tabelle RolePermissions)" style="rounded=0;html=1;whiteSpace=wrap;verticalAlign=top;align=center;spacing=6;fontStyle=1;fontSize=12;fillColor=none;strokeColor=#4D4D4D;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="380" y="60" width="680" height="660" as="geometry" />
+        </mxCell>
+        <mxCell id="ucView" value="VM-Status ansehen" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="sysBoundary">
+          <mxGeometry x="60" y="45" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucBetrieb" value="Betrieb steuern&lt;br&gt;(Start / Stopp / Pause)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="sysBoundary">
+          <mxGeometry x="60" y="150" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ucReset" value="VM zurücksetzen" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="sysBoundary">
+          <mxGeometry x="60" y="270" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucSnap" value="Snapshots erstellen&lt;br&gt;&amp;amp; anwenden" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="sysBoundary">
+          <mxGeometry x="380" y="270" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ucSnapDelete" value="Snapshot löschen" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="sysBoundary">
+          <mxGeometry x="60" y="400" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucResize" value="Ressourcen &amp;amp; Netzwerk&lt;br&gt;anpassen" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="sysBoundary">
+          <mxGeometry x="380" y="400" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ucExportImport" value="Export / Import /&lt;br&gt;Klonen" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;" vertex="1" parent="sysBoundary">
+          <mxGeometry x="60" y="530" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="aViewerView" value="" style="html=1;endArrow=none;strokeColor=#4D4D4D;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actViewer" target="ucView">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aOpBetrieb" value="" style="html=1;endArrow=none;strokeColor=#4D4D4D;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actOperator" target="ucBetrieb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aPuReset" value="" style="html=1;endArrow=none;strokeColor=#4D4D4D;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actPowerUser" target="ucReset">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aPuSnap" value="" style="html=1;endArrow=none;strokeColor=#4D4D4D;exitX=1;exitY=0.5;entryX=0;entryY=1;" edge="1" parent="1" source="actPowerUser" target="ucSnap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aAdminSnapDelete" value="" style="html=1;endArrow=none;strokeColor=#4D4D4D;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actAdmin" target="ucSnapDelete">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aAdminResize" value="" style="html=1;endArrow=none;strokeColor=#4D4D4D;exitX=1;exitY=0.5;entryX=0;entryY=1;" edge="1" parent="1" source="actAdmin" target="ucResize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aFaExportImport" value="" style="html=1;endArrow=none;strokeColor=#4D4D4D;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actFullAdmin" target="ucExportImport">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

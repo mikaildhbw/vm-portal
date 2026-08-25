@@ -353,27 +353,34 @@ Werkzeuge zur Verwaltung und Steuerung virtueller Maschinen existieren in große
 
 Tabelle~\ref{tab:stand-vergleich} stellt die fünf Kategorien anhand der für diese Arbeit maßgeblichen Kriterien gegenüber: Plattformunabhängigkeit (funktioniert der Ansatz über mehrere Hypervisoren hinweg?), Selbstbedienungsgrad (können Endnutzer ohne IT-Fachwissen eigenständig agieren?), Integrationsaufwand (welcher Aufwand entsteht für Einführung und Betrieb im konkreten Umfeld?) und Zielgruppe.
 
-\begin{table}[H]
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/stand-vergleich.xlsx
+% \begin{table}[H]
+% \centering
+% \caption[Vergleich der Ansätze zur VM-Verwaltung]{Vergleich der Ansätze zur VM-Verwaltung und -Steuerung anhand der Kriterien dieser Arbeit.}
+% \label{tab:stand-vergleich}
+% \small
+% \begin{tabular}{p{3.6cm}p{2.6cm}p{2.6cm}p{2.7cm}p{2.4cm}}
+% \toprule
+% \textbf{Ansatz} & \textbf{Plattform-\newline unabhängigkeit} & \textbf{Selbst-\newline bedienungsgrad} & \textbf{Integrations-\newline aufwand} & \textbf{Zielgruppe} \\
+% \midrule
+% Hersteller-native Tools (Hyper-V-Manager, vSphere Client, Proxmox-Web-UI) & Keine (je ein Hypervisor) & Keiner (kein Nutzer-Scope) & Gering (mitgeliefert) & Administratoren \\
+% \addlinespace
+% Zentrale Verwaltungsplattformen (SCVMM, vCenter) & Gering (Hersteller-Ökosystem) & Gering bis mittel (Zusatzkomponenten) & Hoch (Lizenz, Infrastruktur) & Administratoren \\
+% \addlinespace
+% Cloud-/IaaS-Self-Service (OpenStack Horizon, Aria Automation, Morpheus) & Mittel bis hoch (Multi-Cloud) & Hoch & Sehr hoch (Plattformaufbau, Lizenzen) & Endnutzer und Administratoren \\
+% \addlinespace
+% Infrastructure-as-Code (Terraform, Ansible) & Hoch (Provider-Modell) & Keiner (kein interaktives Frontend) & Mittel (Tooling, Know-how) & Administratoren, Entwickler \\
+% \addlinespace
+% Programmatische Schnittstellen (PowerShell, REST-APIs, libvirt) & Je Schnittstelle; libvirt ohne direkte Hyper-V-Unterstützung & Keiner (Bausteine, kein Portal) & Mittel (Eigenentwicklung nötig) & Entwickler \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+\begin{figure}[H]
 \centering
+\includegraphics[width=\textwidth]{tables/rendered/stand-vergleich.png}
 \caption[Vergleich der Ansätze zur VM-Verwaltung]{Vergleich der Ansätze zur VM-Verwaltung und -Steuerung anhand der Kriterien dieser Arbeit.}
 \label{tab:stand-vergleich}
-\small
-\begin{tabular}{p{3.6cm}p{2.6cm}p{2.6cm}p{2.7cm}p{2.4cm}}
-\toprule
-\textbf{Ansatz} & \textbf{Plattform-\newline unabhängigkeit} & \textbf{Selbst-\newline bedienungsgrad} & \textbf{Integrations-\newline aufwand} & \textbf{Zielgruppe} \\
-\midrule
-Hersteller-native Tools (Hyper-V-Manager, vSphere Client, Proxmox-Web-UI) & Keine (je ein Hypervisor) & Keiner (kein Nutzer-Scope) & Gering (mitgeliefert) & Administratoren \\
-\addlinespace
-Zentrale Verwaltungsplattformen (SCVMM, vCenter) & Gering (Hersteller-Ökosystem) & Gering bis mittel (Zusatzkomponenten) & Hoch (Lizenz, Infrastruktur) & Administratoren \\
-\addlinespace
-Cloud-/IaaS-Self-Service (OpenStack Horizon, Aria Automation, Morpheus) & Mittel bis hoch (Multi-Cloud) & Hoch & Sehr hoch (Plattformaufbau, Lizenzen) & Endnutzer und Administratoren \\
-\addlinespace
-Infrastructure-as-Code (Terraform, Ansible) & Hoch (Provider-Modell) & Keiner (kein interaktives Frontend) & Mittel (Tooling, Know-how) & Administratoren, Entwickler \\
-\addlinespace
-Programmatische Schnittstellen (PowerShell, REST-APIs, libvirt) & Je Schnittstelle; libvirt ohne direkte Hyper-V-Unterstützung & Keiner (Bausteine, kein Portal) & Mittel (Eigenentwicklung nötig) & Entwickler \\
-\bottomrule
-\end{tabular}
-\end{table}
+\end{figure}
 
 Der Vergleich zeigt ein strukturelles Muster. Ansätze mit hohem Selbstbedienungsgrad (Cloud-Plattformen) erkaufen diesen mit sehr hohem Integrationsaufwand und eigener Plattform-Bindung, während leichtgewichtige Ansätze (native Tools, programmatische Schnittstellen) keinen Endnutzer-Self-Service bieten. Kein betrachteter Ansatz vereint gleichzeitig einen hohen Selbstbedienungsgrad für Endnutzer, geringen Integrationsaufwand in eine bestehende einzelne Hyper-V-Umgebung und ein plattformunabhängiges Architekturprinzip.
 
@@ -1107,44 +1114,51 @@ Die Bewertung der Plattformunabhängigkeit erfolgt als konzeptioneller Vergleich
 
 Tabelle~\ref{tab:proxmox-mapping} bildet jede Operation der Schnittstelle auf den jeweiligen Proxmox-VE-API-Aufruf ab und schätzt den Übertragungsaufwand dreistufig ein: \emph{gering} (direkte 1:1-Entsprechung, reine Aufrufübersetzung), \emph{mittel} (Proxmox-API deckt die Funktion ab, erfordert aber eine Modellanpassung oder mehrere Aufrufe) und \emph{hoch} (keine direkte Entsprechung, alternative Umsetzung oder Verzicht nötig).
 
-\begin{footnotesize}
-\begin{longtable}{p{3.1cm}p{3.6cm}p{5.4cm}p{1.4cm}}
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/proxmox-mapping.xlsx
+% \begin{footnotesize}
+% \begin{longtable}{p{3.1cm}p{3.6cm}p{5.4cm}p{1.4cm}}
+% \caption[Operationen-Mapping Hyper-V–Proxmox VE]{Abbildung der \texttt{IVirtualizationProvider}-Operationen auf die Proxmox-VE-REST-API.}
+% \label{tab:proxmox-mapping}\\
+% \toprule
+% \textbf{Operation} & \textbf{Hyper-V (aktuell)} & \textbf{Proxmox VE (Zielabbildung)} & \textbf{Aufwand} \\
+% \midrule
+% \endfirsthead
+% \toprule
+% \textbf{Operation} & \textbf{Hyper-V (aktuell)} & \textbf{Proxmox VE (Zielabbildung)} & \textbf{Aufwand} \\
+% \midrule
+% \endhead
+% \bottomrule
+% \endfoot
+% GetVmsAsync & \texttt{Get-VM} & \texttt{GET /\allowbreak nodes/\allowbreak \{node\}/\allowbreak qemu} & gering \\
+% GetVmByIdAsync & \texttt{Get-VM -Name} & \texttt{GET .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak current} — Proxmox identifiziert VMs numerisch (\texttt{vmid}) statt namentlich, eine Namensauflösung wäre vorzuschalten & mittel \\
+% GetMeteringAsync & \texttt{Measure-VM} & \texttt{GET .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak rrddata} (Zeitreihen statt Einzelwert) & mittel \\
+% StartVmAsync & \texttt{Start-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak start} & gering \\
+% StopVmAsync & \texttt{Stop-VM -Force} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak stop} (hartes Stoppen; \texttt{shutdown} wäre das Pendant zum sanften Herunterfahren) & gering \\
+% PauseVmAsync & \texttt{Suspend-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak suspend} & gering \\
+% ResumeVmAsync & \texttt{Resume-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak resume} & gering \\
+% SaveStateAsync & \texttt{Save-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak suspend} mit \texttt{todisk=1} — Proxmox kennt keinen separaten „Save State"-Befehl, sondern parametrisiert denselben Suspend-Aufruf & mittel \\
+% ResetVmAsync & \texttt{Restart-VM -Force} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak reset} & gering \\
+% CreateSnapshotAsync & \texttt{Checkpoint-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak snapshot} & gering \\
+% ApplySnapshotAsync & \texttt{Restore-VMSnapshot} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak snapshot/\allowbreak \{snapname\}/\allowbreak rollback} & gering \\
+% DeleteSnapshotAsync & \texttt{Remove-VMSnapshot} & \texttt{DELETE .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak snapshot/\allowbreak \{snapname\}} & gering \\
+% GetConsoleConnectionAsync & nicht implementiert (kein Cmdlet, Abschnitt~\ref{sec:hypervisor-abstraktion}) & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak vncproxy} liefert Ticket für eine Web-Konsole (noVNC) & hoch (auf Hyper-V-Seite fehlt jedes Äquivalent) \\
+% ResizeRamAsync & \texttt{Set-VM -MemoryStartupBytes} & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak config} mit \texttt{memory} & gering \\
+% ResizeCpuAsync & \texttt{Set-VM -ProcessorCount} & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak config} mit \texttt{cores} & gering \\
+% AttachNetworkAdapterAsync & \texttt{Add-VMNetworkAdapter} & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak config} mit \texttt{net\{N\}=...} — Proxmox modelliert Netzwerkadapter als Konfigurationszeile statt als eigene Ressource & mittel \\
+% ResizeVhdAsync & \texttt{Resize-VHD} (setzt vorherige \texttt{Get-VMHardDiskDrive}-Abfrage voraus) & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak resize} mit Datenträgerbezeichner & gering \\
+% CompactVhdAsync & \texttt{Optimize-VHD} & kein direktes Äquivalent; \texttt{qm move-disk} mit Zielformat oder Storage-seitiges Trimmen je nach Backend & hoch \\
+% ExportVmAsync & \texttt{Export-VM} & Proxmox-Backup (\texttt{POST /\allowbreak nodes/\allowbreak \{node\}/\allowbreak vzdump}) folgt einem anderen Format (\texttt{vzdump}/\allowbreak Proxmox-Backup-Server statt Hyper-V-Exportordner) & hoch \\
+% ImportVmAsync & \texttt{Import-VM} & Restore aus Proxmox-Backup (\texttt{POST .../\allowbreak qemu} mit \texttt{archive}); kein Import des Hyper-V-Exportformats & hoch \\
+% CloneVmAsync & nicht implementiert (Abschnitt~\ref{sec:hypervisor-abstraktion}) & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak clone} — Proxmox bietet Klonen nativ, obwohl Hyper-V es nicht tut & gering (auf Proxmox-Seite) \\
+% LiveMigrateVmAsync & nicht implementiert (Einzelhost, Abschnitt~\ref{sec:hypervisor-abstraktion}) & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak migrate} — setzt wie bei Hyper-V Cluster-Infrastruktur voraus & hoch (Infrastruktur, nicht API) \\
+% \end{longtable}
+% \end{footnotesize}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/proxmox-mapping.png}
 \caption[Operationen-Mapping Hyper-V–Proxmox VE]{Abbildung der \texttt{IVirtualizationProvider}-Operationen auf die Proxmox-VE-REST-API.}
-\label{tab:proxmox-mapping}\\
-\toprule
-\textbf{Operation} & \textbf{Hyper-V (aktuell)} & \textbf{Proxmox VE (Zielabbildung)} & \textbf{Aufwand} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Operation} & \textbf{Hyper-V (aktuell)} & \textbf{Proxmox VE (Zielabbildung)} & \textbf{Aufwand} \\
-\midrule
-\endhead
-\bottomrule
-\endfoot
-GetVmsAsync & \texttt{Get-VM} & \texttt{GET /\allowbreak nodes/\allowbreak \{node\}/\allowbreak qemu} & gering \\
-GetVmByIdAsync & \texttt{Get-VM -Name} & \texttt{GET .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak current} — Proxmox identifiziert VMs numerisch (\texttt{vmid}) statt namentlich, eine Namensauflösung wäre vorzuschalten & mittel \\
-GetMeteringAsync & \texttt{Measure-VM} & \texttt{GET .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak rrddata} (Zeitreihen statt Einzelwert) & mittel \\
-StartVmAsync & \texttt{Start-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak start} & gering \\
-StopVmAsync & \texttt{Stop-VM -Force} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak stop} (hartes Stoppen; \texttt{shutdown} wäre das Pendant zum sanften Herunterfahren) & gering \\
-PauseVmAsync & \texttt{Suspend-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak suspend} & gering \\
-ResumeVmAsync & \texttt{Resume-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak resume} & gering \\
-SaveStateAsync & \texttt{Save-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak suspend} mit \texttt{todisk=1} — Proxmox kennt keinen separaten „Save State"-Befehl, sondern parametrisiert denselben Suspend-Aufruf & mittel \\
-ResetVmAsync & \texttt{Restart-VM -Force} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak status/\allowbreak reset} & gering \\
-CreateSnapshotAsync & \texttt{Checkpoint-VM} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak snapshot} & gering \\
-ApplySnapshotAsync & \texttt{Restore-VMSnapshot} & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak snapshot/\allowbreak \{snapname\}/\allowbreak rollback} & gering \\
-DeleteSnapshotAsync & \texttt{Remove-VMSnapshot} & \texttt{DELETE .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak snapshot/\allowbreak \{snapname\}} & gering \\
-GetConsoleConnectionAsync & nicht implementiert (kein Cmdlet, Abschnitt~\ref{sec:hypervisor-abstraktion}) & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak vncproxy} liefert Ticket für eine Web-Konsole (noVNC) & hoch (auf Hyper-V-Seite fehlt jedes Äquivalent) \\
-ResizeRamAsync & \texttt{Set-VM -MemoryStartupBytes} & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak config} mit \texttt{memory} & gering \\
-ResizeCpuAsync & \texttt{Set-VM -ProcessorCount} & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak config} mit \texttt{cores} & gering \\
-AttachNetworkAdapterAsync & \texttt{Add-VMNetworkAdapter} & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak config} mit \texttt{net\{N\}=...} — Proxmox modelliert Netzwerkadapter als Konfigurationszeile statt als eigene Ressource & mittel \\
-ResizeVhdAsync & \texttt{Resize-VHD} (setzt vorherige \texttt{Get-VMHardDiskDrive}-Abfrage voraus) & \texttt{PUT .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak resize} mit Datenträgerbezeichner & gering \\
-CompactVhdAsync & \texttt{Optimize-VHD} & kein direktes Äquivalent; \texttt{qm move-disk} mit Zielformat oder Storage-seitiges Trimmen je nach Backend & hoch \\
-ExportVmAsync & \texttt{Export-VM} & Proxmox-Backup (\texttt{POST /\allowbreak nodes/\allowbreak \{node\}/\allowbreak vzdump}) folgt einem anderen Format (\texttt{vzdump}/\allowbreak Proxmox-Backup-Server statt Hyper-V-Exportordner) & hoch \\
-ImportVmAsync & \texttt{Import-VM} & Restore aus Proxmox-Backup (\texttt{POST .../\allowbreak qemu} mit \texttt{archive}); kein Import des Hyper-V-Exportformats & hoch \\
-CloneVmAsync & nicht implementiert (Abschnitt~\ref{sec:hypervisor-abstraktion}) & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak clone} — Proxmox bietet Klonen nativ, obwohl Hyper-V es nicht tut & gering (auf Proxmox-Seite) \\
-LiveMigrateVmAsync & nicht implementiert (Einzelhost, Abschnitt~\ref{sec:hypervisor-abstraktion}) & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak migrate} — setzt wie bei Hyper-V Cluster-Infrastruktur voraus & hoch (Infrastruktur, nicht API) \\
-\end{longtable}
-\end{footnotesize}
+\label{tab:proxmox-mapping}
+\end{figure}
 
 \subsubsection{Bewertung}
 

@@ -1,0 +1,61 @@
+<mxfile host="app.diagrams.net" agent="claude-code" version="24.7.0">
+  <diagram id="er_diagramm_autorisierung" name="er_diagramm_autorisierung">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Implementierte Autorisierungsschicht (SQLite/EF Core)" style="text;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1040" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="noteN1" value="Persistente RBAC-Schicht neben dem Active Directory (Hybrid: AD authentifiziert, SQLite autorisiert). Ersetzt die zuvor im JWT-Claim &quot;vmroles&quot; gefuehrte, nicht persistente Zuordnung (Kapitel 5.3/6.3)." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=14;fillColor=#FAFAFA;strokeColor=#999999;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="740" y="60" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="virtualServers" value="&lt;b&gt;VirtualServers&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;Address, Platform, Name" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="virtualMachines" value="&lt;b&gt;VirtualMachines&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;ServerId : FK -&amp;gt; VirtualServers.Id&lt;br&gt;GroupId : FK -&amp;gt; VirtualMachineGroups.Id (nullable)&lt;br&gt;Name, VmGuid (nullable)&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;GroupId = null -&amp;gt; secure-by-default&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="360" y="60" width="320" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="virtualMachineGroups" value="&lt;b&gt;VirtualMachineGroups&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;Name : string" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="740" y="240" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="userGroups" value="&lt;b&gt;UserGroups&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;Name : string&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;1:1-Abbild einer AD-Gruppe&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="groupPermissions" value="&lt;b&gt;GroupPermissions&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;VmGroupId : FK -&amp;gt; VirtualMachineGroups.Id&lt;br&gt;UserGroupId : FK -&amp;gt; UserGroups.Id&lt;br&gt;RoleId : FK -&amp;gt; Roles.Id&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;mehrere Rollen pro Paar moeglich&lt;br&gt;-&amp;gt; Union statt &quot;hoechste Rolle gewinnt&quot;&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="360" y="280" width="320" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="roles" value="&lt;b&gt;Roles&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;Name, IsSystemRole, Level" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="740" y="400" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vmActions" value="&lt;b&gt;VMActions&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;Name : string&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;Abbild von VmAction (22 Werte)&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="530" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="roleActions" value="&lt;b&gt;RoleActions&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;u&gt;Id&lt;/u&gt; : PK&lt;br&gt;RoleId : FK -&amp;gt; Roles.Id&lt;br&gt;ActionId : FK -&amp;gt; VMActions.Id&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;explizite Rechtemenge je Rolle,&lt;br&gt;keine Vererbung&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="360" y="510" width="320" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="rSrvVm" value="hostet" style="html=1;strokeColor=#4D4D4D;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" edge="1" parent="1" source="virtualServers" target="virtualMachines">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rVmgVm" value="enthaelt (optional)" style="html=1;strokeColor=#4D4D4D;fontSize=11;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;exitX=0.5;exitY=0;entryX=1;entryY=0.7;" edge="1" parent="1" source="virtualMachineGroups" target="virtualMachines">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rRolesRa" value="erlaubt" style="html=1;strokeColor=#4D4D4D;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;exitX=0.5;exitY=1;entryX=1;entryY=0.3;" edge="1" parent="1" source="roles" target="roleActions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rActionsRa" value="ist erlaubt in" style="html=1;strokeColor=#4D4D4D;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="vmActions" target="roleActions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rVmgGp" value="wird berechtigt fuer" style="html=1;strokeColor=#4D4D4D;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;exitX=0;exitY=0.7;entryX=1;entryY=0.3;" edge="1" parent="1" source="virtualMachineGroups" target="groupPermissions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUgGp" value="erhaelt Berechtigung auf" style="html=1;strokeColor=#4D4D4D;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;exitX=1;exitY=0.5;entryX=0;entryY=0.4;" edge="1" parent="1" source="userGroups" target="groupPermissions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rRolesGp" value="als zugewiesene Rolle" style="html=1;strokeColor=#4D4D4D;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;exitX=0;exitY=0.3;entryX=1;entryY=0.7;" edge="1" parent="1" source="roles" target="groupPermissions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,131 @@
+<mxfile host="app.diagrams.net" agent="claude-code" version="24.7.0">
+  <diagram id="klassendiagramm_auth" name="klassendiagramm_auth">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Klassendiagramm: Authentifizierung &amp;amp; Autorisierung (VmPortal.Core)" style="text;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1060" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgIfaces" value="Interfaces" style="rounded=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacing=6;fontStyle=1;fontSize=12;fillColor=none;strokeColor=#999999;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1060" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iAuthService" value="&lt;i&gt;«interface»&lt;/i&gt;&lt;br&gt;&lt;b&gt;IAuthService&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ LoginAsync(username, password) : AuthResult&lt;br&gt;+ ValidateTokenAsync(token) : bool" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgIfaces">
+          <mxGeometry x="20" y="35" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="iTokenService" value="&lt;i&gt;«interface»&lt;/i&gt;&lt;br&gt;&lt;b&gt;ITokenService&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ GenerateToken(username, role, vmRoles) : string&lt;br&gt;+ ValidateToken(token) : bool" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgIfaces">
+          <mxGeometry x="370" y="35" width="330" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="iDbAuthService" value="&lt;i&gt;«interface»&lt;/i&gt;&lt;br&gt;&lt;b&gt;IDbAuthorizationService&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ GetAllowedActionsAsync(adGroups, vmName) : IReadOnlySet&amp;lt;VmAction&amp;gt;&lt;br&gt;+ IsAllowedAsync(adGroups, vmName, action) : bool&lt;br&gt;+ IsBootstrapFullAdmin(adGroups) : bool" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E3F2F1;strokeColor=#00707A;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgIfaces">
+          <mxGeometry x="730" y="35" width="310" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgImpls" value="Implementierungen" style="rounded=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacing=6;fontStyle=1;fontSize=12;fillColor=none;strokeColor=#999999;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="290" width="1060" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ldapAuthService" value="&lt;b&gt;LdapAuthService&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ LoginAsync(username, password)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgImpls">
+          <mxGeometry x="20" y="40" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dummyAuthService" value="&lt;b&gt;DummyAuthService&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ LoginAsync(username, password)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgImpls">
+          <mxGeometry x="270" y="40" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="jwtTokenService" value="&lt;b&gt;JwtTokenService&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ GenerateToken(username, role, vmRoles)&lt;br&gt;+ ValidateToken(token)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgImpls">
+          <mxGeometry x="520" y="40" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dbAuthService" value="&lt;b&gt;DbAuthorizationService&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ GetAllowedActionsAsync(adGroups, vmName)&lt;br&gt;+ IsAllowedAsync(adGroups, vmName, action)&lt;br&gt;+ IsBootstrapFullAdmin(adGroups)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgImpls">
+          <mxGeometry x="810" y="40" width="230" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgRbac" value="RBAC-Modelle &amp;amp; Hilfsklassen" style="rounded=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacing=6;fontStyle=1;fontSize=12;fillColor=none;strokeColor=#999999;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="510" width="1060" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="vmAction" value="&lt;i&gt;«enum»&lt;/i&gt;&lt;br&gt;&lt;b&gt;VmAction&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;ViewStatus, Start, Stop, ...&lt;br&gt;(22 Werte, vollständig: Tabelle&lt;br&gt;RolePermissions bzw. VMActions)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgRbac">
+          <mxGeometry x="20" y="40" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="vmRole" value="&lt;i&gt;«enum»&lt;/i&gt;&lt;br&gt;&lt;b&gt;VmRole&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;Viewer &amp;lt; Operator &amp;lt; PowerUser&lt;br&gt;&amp;lt; Admin &amp;lt; FullAdmin&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;Vorstufe, s. Kapitel 5.3&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgRbac">
+          <mxGeometry x="300" y="40" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="authResult" value="&lt;i&gt;«record»&lt;/i&gt;&lt;br&gt;&lt;b&gt;AuthResult&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ Success : bool&lt;br&gt;+ Token : string?" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgRbac">
+          <mxGeometry x="570" y="40" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="rolePermissions" value="&lt;i&gt;«static»&lt;/i&gt;&lt;br&gt;&lt;b&gt;RolePermissions&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ &lt;u&gt;IsAllowed(role, action)&lt;/u&gt; : bool" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgRbac">
+          <mxGeometry x="800" y="40" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="adGroupClaims" value="&lt;i&gt;«static»&lt;/i&gt;&lt;br&gt;&lt;b&gt;AdGroupClaims&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;+ &lt;u&gt;FromPrincipal(user)&lt;/u&gt; : IReadOnlyCollection&amp;lt;string&amp;gt;&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;massgeblich fuer DbAuthorizationService&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgRbac">
+          <mxGeometry x="300" y="180" width="380" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="vmRoleClaims" value="&lt;i&gt;«static»&lt;/i&gt;&lt;br&gt;&lt;b&gt;VmRoleClaims&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;i&gt;seit 6.3 kein Konsument mehr im Backend&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#4D4D4D;fontSize=12;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="pkgRbac">
+          <mxGeometry x="710" y="180" width="330" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="realLdap" style="html=1;endArrow=block;endFill=0;dashed=1;strokeColor=#4D4D4D;exitX=0.5;exitY=0;entryX=0.3;entryY=1;" edge="1" parent="1" source="ldapAuthService" target="iAuthService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="realDummy" style="html=1;endArrow=block;endFill=0;dashed=1;strokeColor=#4D4D4D;exitX=0.3;exitY=0;entryX=0.7;entryY=1;" edge="1" parent="1" source="dummyAuthService" target="iAuthService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="realJwt" style="html=1;endArrow=block;endFill=0;dashed=1;strokeColor=#4D4D4D;exitX=0.4;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="jwtTokenService" target="iTokenService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="realDbAuth" style="html=1;endArrow=block;endFill=0;dashed=1;strokeColor=#4D4D4D;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="dbAuthService" target="iDbAuthService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="depLdapToken" value="verwendet" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0.8;exitY=0;entryX=0.15;entryY=1;" edge="1" parent="1" source="ldapAuthService" target="iTokenService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="depDummyToken" value="verwendet" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0.7;exitY=0;entryX=0.35;entryY=1;" edge="1" parent="1" source="dummyAuthService" target="iTokenService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="depIAuthResult" value="liefert" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="iAuthService" target="authResult">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="260" />
+              <mxPoint x="710" y="475" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="depITokenVmRole" value="verwendet" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="iTokenService" target="vmRole">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="575" y="265" />
+              <mxPoint x="460" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="depIDbVmAction" value="verwendet" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0;exitY=0.5;entryX=0.5;entryY=0;" edge="1" parent="1" source="iDbAuthService" target="vmAction">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="185" y="155" />
+              <mxPoint x="185" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="depRpVmAction" value="verwendet" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0;exitY=0.8;entryX=1;entryY=0.3;" edge="1" parent="1" source="rolePermissions" target="vmAction">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="depRpVmRole" value="verwendet" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0;exitY=0.5;entryX=1;entryY=0.2;" edge="1" parent="1" source="rolePermissions" target="vmRole">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="depVrcVmRole" value="verwendet" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0;exitY=0.5;entryX=1;entryY=0.8;" edge="1" parent="1" source="vmRoleClaims" target="vmRole">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="depDbAdgc" value="liest Claim ueber" style="html=1;endArrow=open;dashed=1;strokeColor=#4D4D4D;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="dbAuthService" target="adGroupClaims">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="965" y="480" />
+              <mxPoint x="530" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="noteDb" value="Persistenz (VmPortalDbContext, Entities) ist im ER-Diagramm der Autorisierungsschicht dargestellt, nicht hier. Konfigurationsklassen (JwtSettings, LdapSettings, AuthorizationSettings, ...) stehen in der Konfigurationsparameter-Tabelle im Anhang." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=14;fillColor=#FAFAFA;strokeColor=#999999;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="640" y="830" width="460" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="eNoteDb" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;exitX=0.5;exitY=0;entryX=1;entryY=0.5;" edge="1" parent="1" source="noteDb" target="dbAuthService">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1120" y="700" />
+              <mxPoint x="1120" y="385" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
