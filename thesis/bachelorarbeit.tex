@@ -353,34 +353,27 @@ Werkzeuge zur Verwaltung und Steuerung virtueller Maschinen existieren in große
 
 Tabelle~\ref{tab:stand-vergleich} stellt die fünf Kategorien anhand der für diese Arbeit maßgeblichen Kriterien gegenüber: Plattformunabhängigkeit (funktioniert der Ansatz über mehrere Hypervisoren hinweg?), Selbstbedienungsgrad (können Endnutzer ohne IT-Fachwissen eigenständig agieren?), Integrationsaufwand (welcher Aufwand entsteht für Einführung und Betrieb im konkreten Umfeld?) und Zielgruppe.
 
-% ALT — durch Excel-Export ersetzt, siehe thesis/tables/stand-vergleich.xlsx
-% \begin{table}[H]
-% \centering
-% \caption[Vergleich der Ansätze zur VM-Verwaltung]{Vergleich der Ansätze zur VM-Verwaltung und -Steuerung anhand der Kriterien dieser Arbeit.}
-% \label{tab:stand-vergleich}
-% \small
-% \begin{tabular}{p{3.6cm}p{2.6cm}p{2.6cm}p{2.7cm}p{2.4cm}}
-% \toprule
-% \textbf{Ansatz} & \textbf{Plattform-\newline unabhängigkeit} & \textbf{Selbst-\newline bedienungsgrad} & \textbf{Integrations-\newline aufwand} & \textbf{Zielgruppe} \\
-% \midrule
-% Hersteller-native Tools (Hyper-V-Manager, vSphere Client, Proxmox-Web-UI) & Keine (je ein Hypervisor) & Keiner (kein Nutzer-Scope) & Gering (mitgeliefert) & Administratoren \\
-% \addlinespace
-% Zentrale Verwaltungsplattformen (SCVMM, vCenter) & Gering (Hersteller-Ökosystem) & Gering bis mittel (Zusatzkomponenten) & Hoch (Lizenz, Infrastruktur) & Administratoren \\
-% \addlinespace
-% Cloud-/IaaS-Self-Service (OpenStack Horizon, Aria Automation, Morpheus) & Mittel bis hoch (Multi-Cloud) & Hoch & Sehr hoch (Plattformaufbau, Lizenzen) & Endnutzer und Administratoren \\
-% \addlinespace
-% Infrastructure-as-Code (Terraform, Ansible) & Hoch (Provider-Modell) & Keiner (kein interaktives Frontend) & Mittel (Tooling, Know-how) & Administratoren, Entwickler \\
-% \addlinespace
-% Programmatische Schnittstellen (PowerShell, REST-APIs, libvirt) & Je Schnittstelle; libvirt ohne direkte Hyper-V-Unterstützung & Keiner (Bausteine, kein Portal) & Mittel (Eigenentwicklung nötig) & Entwickler \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
-\begin{figure}[H]
+\begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/stand-vergleich.png}
 \caption[Vergleich der Ansätze zur VM-Verwaltung]{Vergleich der Ansätze zur VM-Verwaltung und -Steuerung anhand der Kriterien dieser Arbeit.}
 \label{tab:stand-vergleich}
-\end{figure}
+\small
+\begin{tabular}{p{3.6cm}p{2.6cm}p{2.6cm}p{2.7cm}p{2.4cm}}
+\toprule
+\textbf{Ansatz} & \textbf{Plattform-\newline unabhängigkeit} & \textbf{Selbst-\newline bedienungsgrad} & \textbf{Integrations-\newline aufwand} & \textbf{Zielgruppe} \\
+\midrule
+Hersteller-native Tools (Hyper-V-Manager, vSphere Client, Proxmox-Web-UI) & Keine (je ein Hypervisor) & Keiner (kein Nutzer-Scope) & Gering (mitgeliefert) & Administratoren \\
+\addlinespace
+Zentrale Verwaltungsplattformen (SCVMM, vCenter) & Gering (Hersteller-Ökosystem) & Gering bis mittel (Zusatzkomponenten) & Hoch (Lizenz, Infrastruktur) & Administratoren \\
+\addlinespace
+Cloud-/IaaS-Self-Service (OpenStack Horizon, Aria Automation, Morpheus) & Mittel bis hoch (Multi-Cloud) & Hoch & Sehr hoch (Plattformaufbau, Lizenzen) & Endnutzer und Administratoren \\
+\addlinespace
+Infrastructure-as-Code (Terraform, Ansible) & Hoch (Provider-Modell) & Keiner (kein interaktives Frontend) & Mittel (Tooling, Know-how) & Administratoren, Entwickler \\
+\addlinespace
+Programmatische Schnittstellen (PowerShell, REST-APIs, libvirt) & Je Schnittstelle; libvirt ohne direkte Hyper-V-Unterstützung & Keiner (Bausteine, kein Portal) & Mittel (Eigenentwicklung nötig) & Entwickler \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 Der Vergleich zeigt ein strukturelles Muster. Ansätze mit hohem Selbstbedienungsgrad (Cloud-Plattformen) erkaufen diesen mit sehr hohem Integrationsaufwand und eigener Plattform-Bindung, während leichtgewichtige Ansätze (native Tools, programmatische Schnittstellen) keinen Endnutzer-Self-Service bieten. Kein betrachteter Ansatz vereint gleichzeitig einen hohen Selbstbedienungsgrad für Endnutzer, geringen Integrationsaufwand in eine bestehende einzelne Hyper-V-Umgebung und ein plattformunabhängiges Architekturprinzip.
 
@@ -735,7 +728,7 @@ Abbildung~\ref{fig:er-autorisierung} zeigt dieses Modell als Entity-Relationship
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{diagrams/rendered/er_diagramm_autorisierung.pdf}
+\includegraphics[width=\textwidth]{diagrams/rendered/er_diagramm_autorisierung.png}
 \caption[ER-Diagramm der implementierten Autorisierungsschicht]{Implementiertes datenbankgestütztes Autorisierungsmodell (SQLite/EF~Core), Stand nach der Basismigration \texttt{InitialAuthorizationSchema} und mehreren additiven Folgemigrationen (u.\,a. \texttt{VirtualMachines.VmGuid}). Gegenüber der ursprünglichen Betreuervorlage ergänzt: das Attribut \texttt{Platform} in \texttt{VirtualServers} für die Plattformunabhängigkeit sowie \texttt{Level} in \texttt{Role} zur reinen UI-Sortierung (nicht zur Rechteableitung, s.\,o.).}
 \label{fig:er-autorisierung}
 \end{figure}
@@ -1224,7 +1217,7 @@ Abbildung~\ref{fig:deployment-umgebungen} stellt der Entwicklungsumgebung die Zi
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{diagrams/rendered/deployment_umgebungen.pdf}
+\includegraphics[width=\textwidth]{diagrams/rendered/deployment_umgebungen.png}
 \caption[Deploymentdiagramm: Entwicklungs- und Zielumgebung]{Gegenüberstellung von Entwicklungsumgebung (verschachtelte Virtualisierung auf einem einzelnen Laptop) und Zielumgebung im Siemens-Firmennetz. Die räumliche Trennung von Anwendungs- und Hyper-V-Host in der Zielumgebung nutzt den implementierten und produktiv getesteten WinRM-Remote-Modus.}
 \label{fig:deployment-umgebungen}
 \end{figure}
