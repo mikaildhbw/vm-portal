@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}
+\documentclass[12pt,a4paper]{article}
 
 % ---- Sprache & Schrift ----
 \usepackage[ngerman]{babel}
@@ -143,6 +143,20 @@
 % VORLAUF (römische Zählung)
 % ======================================
 \pagenumbering{Roman}
+
+\newpage
+\section*{Sperrvermerk}
+\addcontentsline{toc}{section}{Sperrvermerk}
+
+Die vorliegende Bachelorarbeit beinhaltet vertrauliche Informationen und Daten der Siemens AG, Abteilung RC-DE Di PA-PRJ CE COC-D. Der Inhalt dieser Arbeit darf ohne ausdrückliche schriftliche Genehmigung der Siemens AG weder vollständig noch auszugsweise vervielfältigt, veröffentlicht oder Dritten zugänglich gemacht werden.
+
+Diese Bachelorarbeit ist ausschließlich zur Begutachtung im Rahmen des Prüfungsverfahrens der Dualen Hochschule Baden-Württemberg Mannheim bestimmt. Ausgenommen von der vorstehenden Regelung sind die satzungsgemäß bestellten Gutachterinnen und Gutachter, die im Rahmen des Prüfungsverfahrens uneingeschränkten Einblick in die vollständige Arbeit erhalten.
+
+\vspace{2cm}
+\noindent Mannheim, \underline{\hspace{4cm}} \hfill \underline{\hspace{5cm}}\\
+\hspace*{4.5cm} Datum \hfill (Unterschrift)
+
+\newpage
 \begin{center}
 
 \section*{Erklärung der Eigenleistung}
@@ -154,6 +168,43 @@
 KI-basierte Werkzeuge wurden unterstützend zur sprachlichen Überarbeitung (Grammatik, Rechtschreibung und Schreibstil), zur Strukturierung einzelner Textpassagen sowie zur Recherche und Identifikation relevanter Quellen eingesetzt. Die inhaltliche Konzeption, die fachlichen Aussagen sowie die Auswahl, Bewertung und Einordnung aller verwendeten Quellen wurden eigenständig vorgenommen. Sämtliche mit KI-Unterstützung erstellten oder überarbeiteten Textstellen wurden von mir inhaltlich geprüft, verifiziert und verantwortet.
 
 \vspace{2cm}
+\noindent Mannheim, \underline{\hspace{4cm}} \hfill \underline{\hspace{5cm}}\\
+\hspace*{4.5cm} Datum \hfill (Unterschrift)
+
+\newpage
+\section*{Anmerkung zur Nutzung von Künstlicher Intelligenz}
+\addcontentsline{toc}{section}{Anmerkung zur Nutzung von Künstlicher Intelligenz}
+
+Im Rahmen dieser Bachelorarbeit wurden KI-basierte Werkzeuge ausschließlich unterstützend eingesetzt. Alle durch KI-Werkzeuge bereitgestellten Informationen, Formulierungen und Vorschläge wurden vom Verfasser kritisch geprüft und ausschließlich nach eigener fachlicher Bewertung verwendet.
+
+\begin{table}[H]
+\centering
+\caption[Übersicht der verwendeten KI-Werkzeuge]{Übersicht der verwendeten KI-Werkzeuge.}
+\label{tab:ki-vermerk}
+\small
+\begin{tabular}{p{3.2cm}p{10.5cm}}
+\toprule
+\textbf{Werkzeug} & \textbf{Beschreibung der Nutzung} \\
+\midrule
+Anthropic Claude &
+Sprachliche Überarbeitung, Formulierungshilfe und stilistische Glättung
+von Textentwürfen in allen Kapiteln; Korrektur von Rechtschreib-,
+Grammatik- und Syntaxfehlern; Unterstützung bei der Identifikation und
+Bereinigung inhaltlicher Inkonsistenzen infolge praktischer
+Projektanpassungen; Prüfung von Quellenangaben auf inhaltliche Passung;
+methodische Unterstützung bei der Konzeption und grafischen Aufbereitung
+von Abbildungen und Tabellen. \\
+\addlinespace
+OpenAI ChatGPT &
+Für vergleichbare Aufgaben wie Anthropic Claude eingesetzt: sprachliche
+Überarbeitung und Formulierungshilfe, Strukturierungsunterstützung bei
+Textpassagen sowie Unterstützung bei der Identifikation inhaltlicher
+Unstimmigkeiten. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{1cm}
 \noindent Mannheim, \underline{\hspace{4cm}} \hfill \underline{\hspace{5cm}}\\
 \hspace*{4.5cm} Datum \hfill (Unterschrift)
 
@@ -420,7 +471,7 @@ Der Bearbeitungszeitraum von zwölf Wochen (02.06.2026 bis 25.08.2026) ist in si
 % \end{table}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/meilensteine.png}
+\includegraphics[width=\textwidth]{tables/rendered/meilensteine.jpg}
 \caption[Meilensteine des Projektplans]{Meilensteine des Projektplans (Bearbeitungszeitraum 02.06.2026–25.08.2026).}
 \label{tab:meilensteine}
 \end{table}
@@ -480,7 +531,7 @@ Aus dem organisatorischen und technischen Umfeld der Abteilung ergeben sich verb
 % \end{table}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/randbedingungen.png}
+\includegraphics[width=\textwidth]{tables/rendered/randbedingungen.jpg}
 \caption[Randbedingungen des Projektumfelds]{Randbedingungen des Projektumfelds für die Umsetzung.}
 \label{tab:randbedingungen}
 \end{table}
@@ -536,7 +587,7 @@ Das Pflichtenheft konkretisiert die Anforderungen des Lastenhefts aus Auftragneh
 % \end{footnotesize}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/fa-anforderungen.png}
+\includegraphics[width=\textwidth]{tables/rendered/fa-anforderungen.jpg}
 \caption[Funktionale Anforderungen (FA)]{Funktionale Anforderungen an das Self-Service-VM-Portal.}
 \label{tab:fa}
 \end{table}
@@ -579,7 +630,7 @@ Das Pflichtenheft konkretisiert die Anforderungen des Lastenhefts aus Auftragneh
 % \end{footnotesize}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/nfa-anforderungen.png}
+\includegraphics[width=\textwidth]{tables/rendered/nfa-anforderungen.jpg}
 \caption[Nicht-funktionale Anforderungen (NFA)]{Nicht-funktionale Anforderungen an das Self-Service-VM-Portal.}
 \label{tab:nfa}
 \end{table}
@@ -622,7 +673,7 @@ Das Pflichtenheft konkretisiert die Anforderungen des Lastenhefts aus Auftragneh
 % \end{footnotesize}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/oa-anforderungen.png}
+\includegraphics[width=\textwidth]{tables/rendered/oa-anforderungen.jpg}
 \caption[Organisatorische Anforderungen (OA)]{Organisatorische Anforderungen an das Projektumfeld.}
 \label{tab:oa}
 \end{table}
@@ -983,42 +1034,42 @@ Die API ist auf zwei funktionale Bereiche aufgeteilt: VM-Endpunkte, die jeder au
 % \end{footnotesize}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/endpunkte-1-auth.png}
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-1-auth.jpg}
 \caption[Endpunkte der REST-API — Authentifizierung]{Endpunkte der REST-API des VM-Portals — Authentifizierung (\texttt{AuthController}, \texttt{[AllowAnonymous]} nur beim Login).}
 \label{tab:endpunkte}
 \end{table}
 
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/endpunkte-2-vm-abfrage.png}
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-2-vm-abfrage.jpg}
 \caption[Endpunkte der REST-API — VM-Abfrage]{Endpunkte der REST-API des VM-Portals — VM-Abfrage (\texttt{VmController}, Mindestaktion \texttt{ViewStatus}/\texttt{ViewDetails}/\texttt{ViewMetering}).}
 \label{tab:endpunkte-vm-abfrage}
 \end{table}
 
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/endpunkte-3-lebenszyklus.png}
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-3-lebenszyklus.jpg}
 \caption[Endpunkte der REST-API — VM-Lebenszyklus]{Endpunkte der REST-API des VM-Portals — VM-Lebenszyklus.}
 \label{tab:endpunkte-lebenszyklus}
 \end{table}
 
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/endpunkte-4-snapshots.png}
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-4-snapshots.jpg}
 \caption[Endpunkte der REST-API — Snapshots]{Endpunkte der REST-API des VM-Portals — Snapshots.}
 \label{tab:endpunkte-snapshots}
 \end{table}
 
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/endpunkte-5-ressourcen.png}
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-5-ressourcen.jpg}
 \caption[Endpunkte der REST-API — Konsole und Ressourcen]{Endpunkte der REST-API des VM-Portals — Konsole, Ressourcen, Datenträger, Weitergabe.}
 \label{tab:endpunkte-ressourcen}
 \end{table}
 
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/endpunkte-6-admin.png}
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-6-admin.jpg}
 \caption[Endpunkte der REST-API — Administration]{Endpunkte der REST-API des VM-Portals — Administration (\texttt{Controllers/Admin}, nur Bootstrap-FullAdmin).}
 \label{tab:endpunkte-admin}
 \end{table}
@@ -1128,7 +1179,7 @@ Acht der neun oben benannten Prüfszenarien wurden am 25.08.2026 automatisiert g
 % \end{table}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/security-testfaelle.png}
+\includegraphics[width=\textwidth]{tables/rendered/security-testfaelle.jpg}
 \caption[Ergebnisse der Sicherheits-Testfälle]{Ergebnisse der automatisierten Sicherheits-Testfälle gegen die Produktions-VM (Lauf vom 25.08.2026).}
 \label{tab:security-testfaelle}
 \end{table}
@@ -1334,40 +1385,33 @@ Nicht zuletzt steht die in Abschnitt~\ref{sec:eval-usability} konzipierte Usabil
 
 Sämtliche umgebungsspezifischen Parameter des Portals werden über die \texttt{appsettings}-Dateien konfiguriert und beim Start typsicher an die Konfigurationsklassen \texttt{LdapSettings}, \texttt{JwtSettings} und \texttt{AuthorizationSettings} (\texttt{VmPortal.Core/Configuration}) gebunden; fehlen die Abschnitte \texttt{Jwt}, \texttt{Ldap} oder \texttt{Authorization}, verweigert die Anwendung den Start mit einer sprechenden Fehlermeldung. Tabelle~\ref{tab:configparams} listet alle Parameter.
 
-% ALT — durch Excel-Export ersetzt, siehe thesis/tables/configparams.xlsx
-% \begin{table}[H]
-% \centering
-% \caption[Konfigurationsparameter des VM-Portals]{Konfigurationsparameter des VM-Portals mit Standardwerten.}
-% \label{tab:configparams}
-% \small
-% \begin{tabular}{llp{6.0cm}l}
-% \toprule
-% \textbf{Abschnitt} & \textbf{Parameter} & \textbf{Bedeutung} & \textbf{Standard} \\
-% \midrule
-% \texttt{Ldap} & \texttt{Host} & Hostname/IP des Domänencontrollers & — \\
-% \texttt{Ldap} & \texttt{Port} & LDAP-Port (389; für LDAPS 636) & \texttt{389} \\
-% \texttt{Ldap} & \texttt{BaseDn} & Basis-DN der AD-Domäne für die Suche & — \\
-% \addlinespace
-% \texttt{Jwt} & \texttt{Secret} & Signaturgeheimnis (HMAC-SHA256) & — \\
-% \texttt{Jwt} & \texttt{Issuer} & Aussteller-Claim des Tokens & — \\
-% \texttt{Jwt} & \texttt{Audience} & Adressat-Claim des Tokens & — \\
-% \texttt{Jwt} & \texttt{ExpiryHours} & Token-Gültigkeit in Stunden & \texttt{8} \\
-% \addlinespace
-% \texttt{Virtualization} & \texttt{Provider} & Provider-Auswahl: \texttt{HyperV} oder \texttt{Dummy} & \texttt{Dummy} \\
-% \texttt{Auth} & \texttt{Provider} & Auth-Auswahl: \texttt{Ldap} oder \texttt{Dummy} & \texttt{Ldap} \\
-% \addlinespace
-% \texttt{ConnectionStrings} & \texttt{VmPortalDb} & SQLite-Connection-String der Autorisierungs-DB & \texttt{Data Source=vmportal.db} \\
-% \texttt{Authorization} & \texttt{BootstrapFullAdminGroup} & AD-Gruppe mit globalem FullAdmin-Bootstrap-Zugriff & — \\
-% \addlinespace
-% \texttt{Cors} & \texttt{AllowedOrigins} & Erlaubte Origins für den Dev-Server & leer \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/configparams.png}
 \caption[Konfigurationsparameter des VM-Portals]{Konfigurationsparameter des VM-Portals mit Standardwerten.}
 \label{tab:configparams}
+\small
+\begin{tabular}{llp{6.0cm}l}
+\toprule
+\textbf{Abschnitt} & \textbf{Parameter} & \textbf{Bedeutung} & \textbf{Standard} \\
+\midrule
+\texttt{Ldap} & \texttt{Host} & Hostname/IP des Domänencontrollers & — \\
+\texttt{Ldap} & \texttt{Port} & LDAP-Port (389; für LDAPS 636) & \texttt{389} \\
+\texttt{Ldap} & \texttt{BaseDn} & Basis-DN der AD-Domäne für die Suche & — \\
+\addlinespace
+\texttt{Jwt} & \texttt{Secret} & Signaturgeheimnis (HMAC-SHA256) & — \\
+\texttt{Jwt} & \texttt{Issuer} & Aussteller-Claim des Tokens & — \\
+\texttt{Jwt} & \texttt{Audience} & Adressat-Claim des Tokens & — \\
+\texttt{Jwt} & \texttt{ExpiryHours} & Token-Gültigkeit in Stunden & \texttt{8} \\
+\addlinespace
+\texttt{Virtualization} & \texttt{Provider} & Provider-Auswahl: \texttt{HyperV} oder \texttt{Dummy} & \texttt{Dummy} \\
+\texttt{Auth} & \texttt{Provider} & Auth-Auswahl: \texttt{Ldap} oder \texttt{Dummy} & \texttt{Ldap} \\
+\addlinespace
+\texttt{ConnectionStrings} & \texttt{VmPortalDb} & SQLite-Connection-String der Autorisierungs-DB & \texttt{Data Source=vmportal.db} \\
+\texttt{Authorization} & \texttt{BootstrapFullAdminGroup} & AD-Gruppe mit globalem FullAdmin-Bootstrap-Zugriff & — \\
+\addlinespace
+\texttt{Cors} & \texttt{AllowedOrigins} & Erlaubte Origins für den Dev-Server & leer \\
+\bottomrule
+\end{tabular}
 \end{table}
 
 \section{Katalog der autorisierbaren VM-Aktionen}
@@ -1416,7 +1460,7 @@ Tabelle~\ref{tab:vmactions} listet den vollständigen, in \texttt{VmAction} (\te
 % \end{table}
 \begin{table}[H]
 \centering
-\includegraphics[width=\textwidth]{tables/rendered/vmactions.png}
+\includegraphics[width=\textwidth]{tables/rendered/vmactions.jpg}
 \caption[Katalog der autorisierbaren VM-Aktionen]{Katalog der autorisierbaren VM-Aktionen (\texttt{VmAction}) mit Mindestrolle der fünf System-Rollen.}
 \label{tab:vmactions}
 \end{table}
