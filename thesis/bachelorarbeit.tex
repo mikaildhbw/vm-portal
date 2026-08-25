@@ -398,24 +398,31 @@ Die Arbeit folgt einem konstruktiv-gestaltenden Forschungsansatz. Die Forschungs
 
 Der Bearbeitungszeitraum von zwölf Wochen (02.06.2026 bis 25.08.2026) ist in sieben Phasen mit definierten Meilensteinen (M1–M7) gegliedert. Die iterative Struktur stellt sicher, dass nach jeder Phase ein überprüfbares Zwischenergebnis vorliegt und Risiken, etwa die Stabilität der verschachtelten Virtualisierung in der Testumgebung, früh sichtbar werden. Tabelle~\ref{tab:meilensteine} zeigt die Meilensteine im Überblick; die Phasen 4 und 5 laufen bewusst parallel, da Hypervisor-Anbindung und Frontend-Entwicklung weitgehend unabhängig voneinander umsetzbar sind.
 
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/meilensteine.xlsx
+% \begin{table}[H]
+% \centering
+% \caption[Meilensteine des Projektplans]{Meilensteine des Projektplans (Bearbeitungszeitraum 02.06.2026–25.08.2026).}
+% \label{tab:meilensteine}
+% \small
+% \begin{tabular}{lp{2.4cm}p{10.2cm}}
+% \toprule
+% \textbf{MS} & \textbf{Termin} & \textbf{Definition} \\
+% \midrule
+% M1 & Ende Woche 2  & Entwicklungsumgebung vollständig eingerichtet und getestet. \\
+% M2 & Ende Woche 3  & REST-API- und Backend-Grundgerüst lauffähig, erste Endpunkte erreichbar. \\
+% M3 & Ende Woche 5  & Login über AD funktionsfähig, Token-basierte Sitzung abgesichert. \\
+% M4 & Ende Woche 7  & Hypervisor-Abstraktion definiert; VM kann über die Hyper-V-Implementierung gestartet, gestoppt und abgefragt werden. \\
+% M5 & Ende Woche 8  & Frontend vollständig an die REST-API angebunden, alle Kernfunktionen nutzbar; Zwischenstand mit dem DHBW-Betreuer. \\
+% M6 & Ende Woche 10 & End-to-End-Test erfolgreich, Sicherheitsprüfung abgeschlossen. \\
+% M7 & Ende Woche 12 & Migrationskonzept dokumentiert, Proxmox-Vergleich ausgearbeitet, schriftliche Arbeit fertiggestellt. \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 \begin{table}[H]
 \centering
+\includegraphics[width=\textwidth]{tables/rendered/meilensteine.png}
 \caption[Meilensteine des Projektplans]{Meilensteine des Projektplans (Bearbeitungszeitraum 02.06.2026–25.08.2026).}
 \label{tab:meilensteine}
-\small
-\begin{tabular}{lp{2.4cm}p{10.2cm}}
-\toprule
-\textbf{MS} & \textbf{Termin} & \textbf{Definition} \\
-\midrule
-M1 & Ende Woche 2  & Entwicklungsumgebung vollständig eingerichtet und getestet. \\
-M2 & Ende Woche 3  & REST-API- und Backend-Grundgerüst lauffähig, erste Endpunkte erreichbar. \\
-M3 & Ende Woche 5  & Login über AD funktionsfähig, Token-basierte Sitzung abgesichert. \\
-M4 & Ende Woche 7  & Hypervisor-Abstraktion definiert; VM kann über die Hyper-V-Implementierung gestartet, gestoppt und abgefragt werden. \\
-M5 & Ende Woche 8  & Frontend vollständig an die REST-API angebunden, alle Kernfunktionen nutzbar; Zwischenstand mit dem DHBW-Betreuer. \\
-M6 & Ende Woche 10 & End-to-End-Test erfolgreich, Sicherheitsprüfung abgeschlossen. \\
-M7 & Ende Woche 12 & Migrationskonzept dokumentiert, Proxmox-Vergleich ausgearbeitet, schriftliche Arbeit fertiggestellt. \\
-\bottomrule
-\end{tabular}
 \end{table}
 
 Die Entwicklung erfolgt vollständig gegen eine Windows-Server-Testumgebung mit AD und Hyper-V, die die Produktionsbedingungen strukturell nachbildet. Ein Windows Server 2022 dient zugleich als Hyper-V-Host und als Domänencontroller einer Test-Active-Directory-Domäne (\texttt{testumgebung.local}). Testbenutzer und Test-VMs bilden das Zuordnungsszenario der Produktionsumgebung nach. Die Konfiguration (Hostnamen, Verbindungsdaten) wird ausschließlich über externe Konfigurationsdateien gesteuert, damit die spätere Migration in die Siemens-Produktivumgebung ohne Codeänderung möglich ist.
@@ -451,24 +458,31 @@ Nicht-funktional fordert der Auftraggeber zudem Folgendes. Die Lösung muss den 
 
 Der betriebliche Betreuer hat verbindliche Randbedingungen vorgegeben, die Tabelle~\ref{tab:randbedingungen} zusammenfasst.
 
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/randbedingungen.xlsx
+% \begin{table}[H]
+% \centering
+% \caption[Randbedingungen des Auftraggebers]{Vorgaben des betrieblichen Betreuers für die Umsetzung.}
+% \label{tab:randbedingungen}
+% \small
+% \begin{tabular}{p{4.2cm}p{10.6cm}}
+% \toprule
+% \textbf{Bereich} & \textbf{Vorgabe} \\
+% \midrule
+% Frontend-Technologie & React \\
+% Backend-Umgebung & Microsoft-Ökosystem (kein Python/Django) \\
+% Webserver & Internet Information Services (IIS) \\
+% Netzwerk & Bestehender Reverse Proxy übernimmt HTTPS-Terminierung in Produktion \\
+% Verzeichnisdienst & Bestehende Active-Directory-Domäne, keine strukturellen Änderungen \\
+% Entwicklungsstrategie & Lokale Entwicklung und Test vor Produktionsmigration \\
+% Primäre Zielplattform & Hyper-V (Siemens-Infrastruktur); plattformunabhängiges Konzept wird in der Arbeit diskutiert \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 \begin{table}[H]
 \centering
+\includegraphics[width=\textwidth]{tables/rendered/randbedingungen.png}
 \caption[Randbedingungen des Auftraggebers]{Vorgaben des betrieblichen Betreuers für die Umsetzung.}
 \label{tab:randbedingungen}
-\small
-\begin{tabular}{p{4.2cm}p{10.6cm}}
-\toprule
-\textbf{Bereich} & \textbf{Vorgabe} \\
-\midrule
-Frontend-Technologie & React \\
-Backend-Umgebung & Microsoft-Ökosystem (kein Python/Django) \\
-Webserver & Internet Information Services (IIS) \\
-Netzwerk & Bestehender Reverse Proxy übernimmt HTTPS-Terminierung in Produktion \\
-Verzeichnisdienst & Bestehende Active-Directory-Domäne, keine strukturellen Änderungen \\
-Entwicklungsstrategie & Lokale Entwicklung und Test vor Produktionsmigration \\
-Primäre Zielplattform & Hyper-V (Siemens-Infrastruktur); plattformunabhängiges Konzept wird in der Arbeit diskutiert \\
-\bottomrule
-\end{tabular}
 \end{table}
 
 Das Projekt gilt aus Kundensicht als erfolgreich abgeschlossen, wenn sich ein Testbenutzer über seine AD-Zugangsdaten erfolgreich anmelden kann, ausschließlich ihm zugewiesene VMs sichtbar und steuerbar sind, Start-, Stopp- und Statusfunktionen nachweislich funktionieren, die Kommunikation durchgängig verschlüsselt erfolgt, ein Sicherheitskonzept vorliegt, das die Authentifizierungs- und Berechtigungslogik nachvollziehbar begründet, und die Architektur nachvollziehbar als plattformunabhängig konzipiert ist und ihre Übertragbarkeit argumentativ diskutiert wird.
@@ -478,119 +492,140 @@ Das Projekt gilt aus Kundensicht als erfolgreich abgeschlossen, wenn sich ein Te
 
 Das Pflichtenheft konkretisiert die Anforderungen des Lastenhefts aus Auftragnehmersicht in prüfbare Einzelanforderungen. Jede Anforderung erhält eine eindeutige Kennung (FA für funktionale, NFA für nicht-funktionale, OA für organisatorische Anforderungen), ein Akzeptanz- bzw. Messkriterium und eine MoSCoW-Priorität. Die Tabellen~\ref{tab:fa} bis~\ref{tab:oa} geben die Anforderungen wieder; sie dienen in Kapitel~7 als Prüfreferenz.
 
-\begin{footnotesize}
-\begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/fa-anforderungen.xlsx
+% \begin{footnotesize}
+% \begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+% \caption[Funktionale Anforderungen (FA)]{Funktionale Anforderungen an das Self-Service-VM-Portal.}
+% \label{tab:fa}\\
+% \toprule
+% \textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium} & \textbf{Priorität} \\
+% \midrule
+% \endfirsthead
+% \toprule
+% \textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium} & \textbf{Priorität} \\
+% \midrule
+% \endhead
+% \bottomrule
+% \endfoot
+% FA-01 & Der Benutzer meldet sich über seine bestehenden Active-Directory-Zugangsdaten am Portal an. & Login mit gültigen AD-Credentials führt zu autorisierter Sitzung; ungültige Credentials werden abgelehnt. & Must \\
+% \addlinespace
+% FA-02 & Die Kommunikation mit dem LDAP-Verzeichnis erfolgt verschlüsselt (LDAPS). & Keine Übertragung von Zugangsdaten im Klartext (Verifikation per Netzwerk-Trace). & Must \\
+% \addlinespace
+% FA-03 & Das System ordnet jedem Benutzer anhand seiner AD-Gruppenmitgliedschaft eine Rolle zu. & Benutzer ohne passende AD-Gruppe erhalten keinen Zugriff auf VM-Funktionen. & Must \\
+% \addlinespace
+% FA-04 & Ein Benutzer sieht ausschließlich die ihm zugewiesenen VMs in der Übersicht. & VM-Übersicht zeigt für Testbenutzer A nur VMs aus dessen Profil, nicht die von Benutzer B. & Must \\
+% \addlinespace
+% FA-05 & Der Benutzer kann eine ihm zugewiesene VM starten. & Klick auf „Start" führt zu Statuswechsel der VM von „Aus" zu „Läuft" innerhalb definierter Zeit. & Must \\
+% \addlinespace
+% FA-06 & Der Benutzer kann eine ihm zugewiesene VM beenden (herunterfahren). & Klick auf „Stopp" führt zu Statuswechsel der VM von „Läuft" zu „Aus". & Must \\
+% \addlinespace
+% FA-07 & Der Benutzer kann eine ihm zugewiesene VM zurücksetzen (Reset/Restart). & Klick auf „Reset" führt zu Neustart der VM. & Should \\
+% \addlinespace
+% FA-08 & Der Benutzer kann den aktuellen Status seiner VM(s) abrufen (an/aus/im Übergang). & Statusanzeige aktualisiert sich nach jeder Aktion innerhalb definierter Zeit (z.\,B. 5~Sek.). & Must \\
+% \addlinespace
+% FA-09 & Der Benutzer kann (falls berechtigt) einen Snapshot seiner VM erstellen. & Snapshot wird auf dem Hyper-V-Host erzeugt und ist im Hyper-V-Manager sichtbar. & Should \\
+% \addlinespace
+% FA-10 & Der Benutzer kann (falls berechtigt) einen vorhandenen Snapshot wiederherstellen. & Auswahl eines Snapshots stellt den entsprechenden VM-Zustand wieder her. & Could \\
+% \addlinespace
+% FA-11 & Administratoren können einzelne VM-Aktionen pro Benutzer oder Rolle einschränken. & Eine als „kein Ausschalten" konfigurierte Rolle kann den Stopp-Button nicht erfolgreich auslösen. & Must \\
+% \addlinespace
+% FA-12 & Jede VM-Aktion (Start, Stopp, Snapshot) wird mit Benutzer, Zeitstempel und Ergebnis protokolliert. & Log-Einträge sind nach Aktion auffindbar und enthalten Benutzer-ID, Zeit, Aktion, Erfolg/Fehler. & Should \\
+% \addlinespace
+% FA-13 & Bei nicht erreichbarem Hyper-V-Host erhält der Benutzer eine verständliche Fehlermeldung. & Simulierter Verbindungsabbruch zeigt Fehlermeldung statt technischer Exception. & Should \\
+% \end{longtable}
+% \end{footnotesize}
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/fa-anforderungen.png}
 \caption[Funktionale Anforderungen (FA)]{Funktionale Anforderungen an das Self-Service-VM-Portal.}
-\label{tab:fa}\\
-\toprule
-\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium} & \textbf{Priorität} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium} & \textbf{Priorität} \\
-\midrule
-\endhead
-\bottomrule
-\endfoot
-FA-01 & Der Benutzer meldet sich über seine bestehenden Active-Directory-Zugangsdaten am Portal an. & Login mit gültigen AD-Credentials führt zu autorisierter Sitzung; ungültige Credentials werden abgelehnt. & Must \\
-\addlinespace
-FA-02 & Die Kommunikation mit dem LDAP-Verzeichnis erfolgt verschlüsselt (LDAPS). & Keine Übertragung von Zugangsdaten im Klartext (Verifikation per Netzwerk-Trace). & Must \\
-\addlinespace
-FA-03 & Das System ordnet jedem Benutzer anhand seiner AD-Gruppenmitgliedschaft eine Rolle zu. & Benutzer ohne passende AD-Gruppe erhalten keinen Zugriff auf VM-Funktionen. & Must \\
-\addlinespace
-FA-04 & Ein Benutzer sieht ausschließlich die ihm zugewiesenen VMs in der Übersicht. & VM-Übersicht zeigt für Testbenutzer A nur VMs aus dessen Profil, nicht die von Benutzer B. & Must \\
-\addlinespace
-FA-05 & Der Benutzer kann eine ihm zugewiesene VM starten. & Klick auf „Start" führt zu Statuswechsel der VM von „Aus" zu „Läuft" innerhalb definierter Zeit. & Must \\
-\addlinespace
-FA-06 & Der Benutzer kann eine ihm zugewiesene VM beenden (herunterfahren). & Klick auf „Stopp" führt zu Statuswechsel der VM von „Läuft" zu „Aus". & Must \\
-\addlinespace
-FA-07 & Der Benutzer kann eine ihm zugewiesene VM zurücksetzen (Reset/Restart). & Klick auf „Reset" führt zu Neustart der VM. & Should \\
-\addlinespace
-FA-08 & Der Benutzer kann den aktuellen Status seiner VM(s) abrufen (an/aus/im Übergang). & Statusanzeige aktualisiert sich nach jeder Aktion innerhalb definierter Zeit (z.\,B. 5~Sek.). & Must \\
-\addlinespace
-FA-09 & Der Benutzer kann (falls berechtigt) einen Snapshot seiner VM erstellen. & Snapshot wird auf dem Hyper-V-Host erzeugt und ist im Hyper-V-Manager sichtbar. & Should \\
-\addlinespace
-FA-10 & Der Benutzer kann (falls berechtigt) einen vorhandenen Snapshot wiederherstellen. & Auswahl eines Snapshots stellt den entsprechenden VM-Zustand wieder her. & Could \\
-\addlinespace
-FA-11 & Administratoren können einzelne VM-Aktionen pro Benutzer oder Rolle einschränken. & Eine als „kein Ausschalten" konfigurierte Rolle kann den Stopp-Button nicht erfolgreich auslösen. & Must \\
-\addlinespace
-FA-12 & Jede VM-Aktion (Start, Stopp, Snapshot) wird mit Benutzer, Zeitstempel und Ergebnis protokolliert. & Log-Einträge sind nach Aktion auffindbar und enthalten Benutzer-ID, Zeit, Aktion, Erfolg/Fehler. & Should \\
-\addlinespace
-FA-13 & Bei nicht erreichbarem Hyper-V-Host erhält der Benutzer eine verständliche Fehlermeldung. & Simulierter Verbindungsabbruch zeigt Fehlermeldung statt technischer Exception. & Should \\
-\end{longtable}
-\end{footnotesize}
+\label{tab:fa}
+\end{table}
 
-\begin{footnotesize}
-\begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/nfa-anforderungen.xlsx
+% \begin{footnotesize}
+% \begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+% \caption[Nicht-funktionale Anforderungen (NFA)]{Nicht-funktionale Anforderungen an das Self-Service-VM-Portal.}
+% \label{tab:nfa}\\
+% \toprule
+% \textbf{ID} & \textbf{Beschreibung} & \textbf{Messkriterium} & \textbf{Priorität} \\
+% \midrule
+% \endfirsthead
+% \toprule
+% \textbf{ID} & \textbf{Beschreibung} & \textbf{Messkriterium} & \textbf{Priorität} \\
+% \midrule
+% \endhead
+% \bottomrule
+% \endfoot
+% NFA-01 & Sämtliche Kommunikation (Frontend\,$\leftrightarrow$\,Backend, Backend\,$\leftrightarrow$\,AD, Backend\,$\leftrightarrow$\,Hyper-V) erfolgt verschlüsselt. & Netzwerk-Trace zeigt ausschließlich TLS-verschlüsselten Verkehr. & Must \\
+% \addlinespace
+% NFA-02 & Authentifizierungstoken werden so gespeichert, dass clientseitiges JavaScript keinen Lesezugriff hat. & Token ist nicht über \texttt{document.cookie} oder \texttt{localStorage} im Browser auslesbar (httpOnly). & Must \\
+% \addlinespace
+% NFA-03 & Das Backend folgt dem Prinzip der minimalen Rechte (Least Privilege) gegenüber AD und Hyper-V. & Service-Accounts besitzen ausschließlich die für den Betrieb nötigen Lese-/Steuerrechte, keine Admin-Rechte. & Must \\
+% \addlinespace
+% NFA-04 & Das Portal ist ohne IT-Fachwissen bedienbar. & Usability-Test mit fachfremder Testperson: Kernfunktionen ohne Anleitung auffindbar. & Should \\
+% \addlinespace
+% NFA-05 & Die VM-Übersicht lädt den aktuellen Status aller zugewiesenen VMs in akzeptabler Zeit. & Ladezeit unter definiertem Schwellwert (z.\,B. $<$\,3~Sek.) bei bis zu $N$ VMs pro Benutzer. & Should \\
+% \addlinespace
+% NFA-06 & Das System erkennt den Verbindungsstatus zum Hyper-V-Host und meldet Ausfälle. & Bei Host-Ausfall erscheint im Frontend ein klarer Hinweis statt eines undefinierten Fehlerzustands. & Could \\
+% \addlinespace
+% NFA-07 & Frontend und Backend sind als getrennte Komponenten mit klar definierter REST-Schnittstelle aufgebaut. & Frontend und Backend lassen sich unabhängig voneinander deployen und testen. & Should \\
+% \addlinespace
+% NFA-08 & Die Anwendung wird zunächst lokal entwickelt und ist ohne Codeänderung in die Produktionsumgebung migrierbar. & Konfiguration (Hostnamen, Zertifikate, Verbindungsstrings) erfolgt ausschließlich über externe Konfigurationsdateien. & Must \\
+% \addlinespace
+% NFA-09 & Das Sicherheitskonzept orientiert sich an anerkannten Normen und Standards. & Nachvollziehbarer Bezug zu ISO/IEC~27001, RFC~4511, RFC~4513 im Sicherheitskonzept dokumentiert. & Must \\
+% \addlinespace
+% NFA-10 & Fehlerhafte Zugriffsversuche werden erkennbar protokolliert. & Mehrere fehlgeschlagene Login-Versuche sind im Log nachvollziehbar (Zeitpunkt, Benutzer, IP). & Could \\
+% \end{longtable}
+% \end{footnotesize}
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/nfa-anforderungen.png}
 \caption[Nicht-funktionale Anforderungen (NFA)]{Nicht-funktionale Anforderungen an das Self-Service-VM-Portal.}
-\label{tab:nfa}\\
-\toprule
-\textbf{ID} & \textbf{Beschreibung} & \textbf{Messkriterium} & \textbf{Priorität} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{ID} & \textbf{Beschreibung} & \textbf{Messkriterium} & \textbf{Priorität} \\
-\midrule
-\endhead
-\bottomrule
-\endfoot
-NFA-01 & Sämtliche Kommunikation (Frontend\,$\leftrightarrow$\,Backend, Backend\,$\leftrightarrow$\,AD, Backend\,$\leftrightarrow$\,Hyper-V) erfolgt verschlüsselt. & Netzwerk-Trace zeigt ausschließlich TLS-verschlüsselten Verkehr. & Must \\
-\addlinespace
-NFA-02 & Authentifizierungstoken werden so gespeichert, dass clientseitiges JavaScript keinen Lesezugriff hat. & Token ist nicht über \texttt{document.cookie} oder \texttt{localStorage} im Browser auslesbar (httpOnly). & Must \\
-\addlinespace
-NFA-03 & Das Backend folgt dem Prinzip der minimalen Rechte (Least Privilege) gegenüber AD und Hyper-V. & Service-Accounts besitzen ausschließlich die für den Betrieb nötigen Lese-/Steuerrechte, keine Admin-Rechte. & Must \\
-\addlinespace
-NFA-04 & Das Portal ist ohne IT-Fachwissen bedienbar. & Usability-Test mit fachfremder Testperson: Kernfunktionen ohne Anleitung auffindbar. & Should \\
-\addlinespace
-NFA-05 & Die VM-Übersicht lädt den aktuellen Status aller zugewiesenen VMs in akzeptabler Zeit. & Ladezeit unter definiertem Schwellwert (z.\,B. $<$\,3~Sek.) bei bis zu $N$ VMs pro Benutzer. & Should \\
-\addlinespace
-NFA-06 & Das System erkennt den Verbindungsstatus zum Hyper-V-Host und meldet Ausfälle. & Bei Host-Ausfall erscheint im Frontend ein klarer Hinweis statt eines undefinierten Fehlerzustands. & Could \\
-\addlinespace
-NFA-07 & Frontend und Backend sind als getrennte Komponenten mit klar definierter REST-Schnittstelle aufgebaut. & Frontend und Backend lassen sich unabhängig voneinander deployen und testen. & Should \\
-\addlinespace
-NFA-08 & Die Anwendung wird zunächst lokal entwickelt und ist ohne Codeänderung in die Produktionsumgebung migrierbar. & Konfiguration (Hostnamen, Zertifikate, Verbindungsstrings) erfolgt ausschließlich über externe Konfigurationsdateien. & Must \\
-\addlinespace
-NFA-09 & Das Sicherheitskonzept orientiert sich an anerkannten Normen und Standards. & Nachvollziehbarer Bezug zu ISO/IEC~27001, RFC~4511, RFC~4513 im Sicherheitskonzept dokumentiert. & Must \\
-\addlinespace
-NFA-10 & Fehlerhafte Zugriffsversuche werden erkennbar protokolliert. & Mehrere fehlgeschlagene Login-Versuche sind im Log nachvollziehbar (Zeitpunkt, Benutzer, IP). & Could \\
-\end{longtable}
-\end{footnotesize}
+\label{tab:nfa}
+\end{table}
 
-\begin{footnotesize}
-\begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/oa-anforderungen.xlsx
+% \begin{footnotesize}
+% \begin{longtable}{p{1.2cm}p{5.6cm}p{5.6cm}p{1.5cm}}
+% \caption[Organisatorische Anforderungen (OA)]{Organisatorische Anforderungen an das Projektumfeld.}
+% \label{tab:oa}\\
+% \toprule
+% \textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium / Nachweis} & \textbf{Priorität} \\
+% \midrule
+% \endfirsthead
+% \toprule
+% \textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium / Nachweis} & \textbf{Priorität} \\
+% \midrule
+% \endhead
+% \bottomrule
+% \endfoot
+% OA-01 & Es ist festgelegt, wer nach Projektende für Betrieb und Wartung des Portals zuständig ist. & Schriftliche Benennung einer verantwortlichen Stelle im Abschlussbericht. & Must \\
+% \addlinespace
+% OA-02 & Die Inbetriebnahme in der Produktivumgebung erfordert eine formale Freigabe durch die IT-Sicherheit. & Dokumentierte Freigabe (z.\,B. Sicherheitsabnahme) liegt vor Produktivbetrieb vor. & Must \\
+% \addlinespace
+% OA-03 & Mitarbeitende erhalten eine kurze Einweisung oder Dokumentation zur Nutzung des Portals. & Eine Kurzanleitung (max. 1--2 Seiten) liegt bei Projektabschluss vor. & Should \\
+% \addlinespace
+% OA-04 & Es ist geklärt, wer festlegt, welcher Mitarbeitende welche VM zugewiesen bekommt. & Dokumentierter Prozess: Wer beantragt, wer genehmigt, wer pflegt die Zuordnung ein. & Must \\
+% \addlinespace
+% OA-05 & Änderungen am Portal nach Projektabschluss folgen einem definierten Änderungsprozess. & Verweis auf bestehenden Siemens-internen Change-Prozess oder einfache Übergaberegelung dokumentiert. & Could \\
+% \addlinespace
+% OA-06 & Bei technischen Problemen mit dem Portal existiert ein klarer Ansprechpartner / Eskalationsweg. & Eskalationsweg ist in der Kurzanleitung oder im Abschlussbericht benannt. & Should \\
+% \addlinespace
+% OA-07 & Die Speicherung von Protokolldaten entspricht den betrieblichen Datenschutzvorgaben. & Rücksprache mit Datenschutzbeauftragtem oder Verweis auf bestehende Richtlinie dokumentiert. & Must \\
+% \addlinespace
+% OA-08 & Für die Entwicklung stehen die notwendigen Testressourcen rechtzeitig zur Verfügung. & Lokale Entwicklungsumgebung ist bis Ende Phase 1 (Woche 2) nutzbar. & Must \\
+% \addlinespace
+% OA-09 & Es ist ein regelmäßiger Abstimmungstermin mit dem betrieblichen und dem DHBW-Betreuer etabliert. & Mindestens monatlicher Termin vereinbart; Zwischenstand Ende Juli eingeplant. & Must \\
+% \addlinespace
+% OA-10 & Es ist definiert, wie und durch wen die fachliche Abnahme des Portals erfolgt. & Abnahmekriterien aus dem Lastenheft werden gemeinsam mit dem betrieblichen Betreuer geprüft und bestätigt. & Must \\
+% \end{longtable}
+% \end{footnotesize}
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/oa-anforderungen.png}
 \caption[Organisatorische Anforderungen (OA)]{Organisatorische Anforderungen an das Projektumfeld.}
-\label{tab:oa}\\
-\toprule
-\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium / Nachweis} & \textbf{Priorität} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{ID} & \textbf{Beschreibung} & \textbf{Akzeptanzkriterium / Nachweis} & \textbf{Priorität} \\
-\midrule
-\endhead
-\bottomrule
-\endfoot
-OA-01 & Es ist festgelegt, wer nach Projektende für Betrieb und Wartung des Portals zuständig ist. & Schriftliche Benennung einer verantwortlichen Stelle im Abschlussbericht. & Must \\
-\addlinespace
-OA-02 & Die Inbetriebnahme in der Produktivumgebung erfordert eine formale Freigabe durch die IT-Sicherheit. & Dokumentierte Freigabe (z.\,B. Sicherheitsabnahme) liegt vor Produktivbetrieb vor. & Must \\
-\addlinespace
-OA-03 & Mitarbeitende erhalten eine kurze Einweisung oder Dokumentation zur Nutzung des Portals. & Eine Kurzanleitung (max. 1--2 Seiten) liegt bei Projektabschluss vor. & Should \\
-\addlinespace
-OA-04 & Es ist geklärt, wer festlegt, welcher Mitarbeitende welche VM zugewiesen bekommt. & Dokumentierter Prozess: Wer beantragt, wer genehmigt, wer pflegt die Zuordnung ein. & Must \\
-\addlinespace
-OA-05 & Änderungen am Portal nach Projektabschluss folgen einem definierten Änderungsprozess. & Verweis auf bestehenden Siemens-internen Change-Prozess oder einfache Übergaberegelung dokumentiert. & Could \\
-\addlinespace
-OA-06 & Bei technischen Problemen mit dem Portal existiert ein klarer Ansprechpartner / Eskalationsweg. & Eskalationsweg ist in der Kurzanleitung oder im Abschlussbericht benannt. & Should \\
-\addlinespace
-OA-07 & Die Speicherung von Protokolldaten entspricht den betrieblichen Datenschutzvorgaben. & Rücksprache mit Datenschutzbeauftragtem oder Verweis auf bestehende Richtlinie dokumentiert. & Must \\
-\addlinespace
-OA-08 & Für die Entwicklung stehen die notwendigen Testressourcen rechtzeitig zur Verfügung. & Lokale Entwicklungsumgebung ist bis Ende Phase 1 (Woche 2) nutzbar. & Must \\
-\addlinespace
-OA-09 & Es ist ein regelmäßiger Abstimmungstermin mit dem betrieblichen und dem DHBW-Betreuer etabliert. & Mindestens monatlicher Termin vereinbart; Zwischenstand Ende Juli eingeplant. & Must \\
-\addlinespace
-OA-10 & Es ist definiert, wie und durch wen die fachliche Abnahme des Portals erfolgt. & Abnahmekriterien aus dem Lastenheft werden gemeinsam mit dem betrieblichen Betreuer geprüft und bestätigt. & Must \\
-\end{longtable}
-\end{footnotesize}
+\label{tab:oa}
+\end{table}
 
 Eine Planungsentscheidung des ursprünglichen Pflichtenhefts wurde im Projektverlauf revidiert. Für die Hyper-V-Anbindung war zunächst PowerShell-Remoting über WinRM (HTTPS) vorgesehen. Da die Anwendung im gewählten Deployment-Modell direkt auf dem Hyper-V-Host läuft, wurde die Anbindung stattdessen als lokale PowerShell-Ausführung umgesetzt; die Begründung dieser Entscheidung erfolgt in Abschnitt~\ref{sec:technologieentscheidungen}, die Auswirkungen auf ein verteiltes Deployment werden in Kapitel~8 diskutiert.
 
@@ -852,7 +887,7 @@ Beide Controller sind klassenweit mit \texttt{[Authorize]} annotiert; einzig der
 
 Die in Abschnitt~\ref{sec:sicherheitskonzept} konzipierte RBAC-Schicht ist als eigener EF-Core-\texttt{DbContext} (\texttt{VmPortalDbContext}) gegen eine lokale SQLite-Datei (\texttt{vmportal.db}) umgesetzt. \texttt{Program.cs} registriert den \texttt{DbContext} über die Connection-String-Sektion \texttt{ConnectionStrings:VmPortalDb} und legt beim Start das Zielverzeichnis der Datenbankdatei an, falls es fehlt (relevant für \texttt{C:\textbackslash VmPortal\textbackslash data} in Produktion, das bei einem frischen Deployment noch nicht existiert). Die Migration \texttt{InitialAuthorizationSchema} wurde mit \texttt{dotnet ef migrations add} erzeugt und enthält über \texttt{HasData} in \texttt{VmPortalDbContext.OnModelCreating} zugleich die Seed-Daten aus \texttt{AuthorizationSeedData}: die fünf System-Rollen mit den aus \texttt{RolePermissions} übernommenen \texttt{RoleActions}, den vollständigen \texttt{VMActions}-Katalog sowie die beiden Bootstrap-\texttt{UserGroups} (\texttt{VM-Portal-Benutzer} bzw.\ \texttt{ESX Admins}, vgl.\ Tabelle~\ref{tab:configparams}). Diese Migration wird \textbf{nicht} automatisch beim Anwendungsstart ausgeführt (kein \texttt{context.Database.Migrate()} in \texttt{Program.cs}), sondern ist ein eigener Deployment-Schritt (\texttt{dotnet ef database update}, Abschnitt~\ref{sec:deployment}). Drei additive Folgemigrationen ergänzen den Ausgangsstand, ohne ihn zu ersetzen. \texttt{FixVirtualServersHostCount} korrigiert einen ursprünglich vierten, nicht real existierenden Hosteintrag; \texttt{SeedTestUserPermissions} legt eine Testzuordnung für die Entwicklung an; \texttt{AddVmGuidToVirtualMachines} ergänzt das in Abschnitt~\ref{sec:sicherheitskonzept} erwähnte, optionale \texttt{VmGuid}-Feld.
 
-\texttt{DbAuthorizationService} implementiert \texttt{IDbAuthorizationService} mit den drei Methoden \texttt{IsBootstrapFullAdmin}, \texttt{GetAllowedActionsAsync} und \texttt{IsAllowedAsync} (Abschnitt~\ref{sec:sicherheitskonzept} beschreibt die Herleitungslogik). Sämtliche Lesezugriffe auf den \texttt{DbContext} verwenden \texttt{AsNoTracking()}, da die Autorisierungsprüfung reinen Lesezugriff ohne anschließende Änderungsverfolgung benötigt. Für die administrative Pflege der Autorisierungsdaten stellt die API sechs weitere Controller unter \texttt{/api/admin} bereit (Tabelle~\ref{tab:endpunkte}): \texttt{RolesController} (Anlegen, Aktionsliste ändern, Löschen von Custom-Rollen; System-Rollen sind über alle drei Operationen hinweg geschützt), \texttt{PermissionsController} (Anlegen/Löschen einzelner \texttt{GroupPermission}-Zuordnungen), \texttt{VmGroupsController} (VM-Gruppen anlegen, umbenennen, löschen sowie deren Mitgliedschaft verwalten; beim Löschen einer Gruppe werden zugeordnete VMs nicht mitgelöscht, sondern über \texttt{DeleteBehavior.SetNull} gruppenlos und damit secure-by-default wieder unsichtbar), \texttt{ServersController} (Erfassen von Hyper-V-Hosts mit Adresse, Plattform-Kennung und Namen), \texttt{AdGroupsController} (AD-Gruppensuche) sowie \texttt{VmDiscoveryController} (Abgleich des Hypervisor-Inventars gegen die Autorisierungs-DB). Alle sechs erben von \texttt{AdminControllerBase}, die als \texttt{IActionFilter} vor jeder Aktion prüft, ob der Nutzer laut \texttt{adgroups}-Claim Mitglied der Bootstrap-Gruppe ist, und andernfalls mit \texttt{403} abbricht, eine zusätzliche, vom regulären VM-Autorisierungspfad unabhängige Prüfung, da Rollen- und Zuordnungsverwaltung bewusst nicht über \texttt{GroupPermissions} selbst geregelt werden kann (das liefe auf eine zirkuläre Abhängigkeit hinaus). Abschnitt~\ref{sec:impl-admin-ui} beschreibt die zugehörige Administrationsoberfläche im Frontend.
+\texttt{DbAuthorizationService} implementiert \texttt{IDbAuthorizationService} mit den drei Methoden \texttt{IsBootstrapFullAdmin}, \texttt{GetAllowedActionsAsync} und \texttt{IsAllowedAsync} (Abschnitt~\ref{sec:sicherheitskonzept} beschreibt die Herleitungslogik). Sämtliche Lesezugriffe auf den \texttt{DbContext} verwenden \texttt{AsNoTracking()}, da die Autorisierungsprüfung reinen Lesezugriff ohne anschließende Änderungsverfolgung benötigt. Für die administrative Pflege der Autorisierungsdaten stellt die API sechs weitere Controller unter \texttt{/api/admin} bereit (Tabelle~\ref{tab:endpunkte-admin}): \texttt{RolesController} (Anlegen, Aktionsliste ändern, Löschen von Custom-Rollen; System-Rollen sind über alle drei Operationen hinweg geschützt), \texttt{PermissionsController} (Anlegen/Löschen einzelner \texttt{GroupPermission}-Zuordnungen), \texttt{VmGroupsController} (VM-Gruppen anlegen, umbenennen, löschen sowie deren Mitgliedschaft verwalten; beim Löschen einer Gruppe werden zugeordnete VMs nicht mitgelöscht, sondern über \texttt{DeleteBehavior.SetNull} gruppenlos und damit secure-by-default wieder unsichtbar), \texttt{ServersController} (Erfassen von Hyper-V-Hosts mit Adresse, Plattform-Kennung und Namen), \texttt{AdGroupsController} (AD-Gruppensuche) sowie \texttt{VmDiscoveryController} (Abgleich des Hypervisor-Inventars gegen die Autorisierungs-DB). Alle sechs erben von \texttt{AdminControllerBase}, die als \texttt{IActionFilter} vor jeder Aktion prüft, ob der Nutzer laut \texttt{adgroups}-Claim Mitglied der Bootstrap-Gruppe ist, und andernfalls mit \texttt{403} abbricht, eine zusätzliche, vom regulären VM-Autorisierungspfad unabhängige Prüfung, da Rollen- und Zuordnungsverwaltung bewusst nicht über \texttt{GroupPermissions} selbst geregelt werden kann (das liefe auf eine zirkuläre Abhängigkeit hinaus). Abschnitt~\ref{sec:impl-admin-ui} beschreibt die zugehörige Administrationsoberfläche im Frontend.
 
 \subsection{Hypervisor-Anbindung}
 \label{sec:impl-hyperv}
@@ -892,80 +927,122 @@ Der \texttt{DummyVirtualizationProvider} bildet dieselbe 22-Operationen-Schnitts
 \subsection{REST-API und Fehlerbehandlung}
 \label{sec:impl-api}
 
-Die API ist auf zwei funktionale Bereiche aufgeteilt: VM-Endpunkte, die jeder authentifizierte Benutzer im Rahmen seiner \texttt{GroupPermissions} nutzen kann, und Admin-Endpunkte unter \texttt{/api/admin}, die zusätzlich globalen Bootstrap-FullAdmin-Zugriff voraussetzen (Abschnitt~\ref{sec:impl-db-authz}). Tabelle~\ref{tab:endpunkte} listet alle Endpunkte; die Kennung der VM wird durchgehend als Routenparameter übergeben, Nutzdaten für schreibende Aktionen im Request-Body.
+Die API ist auf zwei funktionale Bereiche aufgeteilt: VM-Endpunkte, die jeder authentifizierte Benutzer im Rahmen seiner \texttt{GroupPermissions} nutzen kann, und Admin-Endpunkte unter \texttt{/api/admin}, die zusätzlich globalen Bootstrap-FullAdmin-Zugriff voraussetzen (Abschnitt~\ref{sec:impl-db-authz}). Die Tabellen~\ref{tab:endpunkte} bis~\ref{tab:endpunkte-admin} listen alle Endpunkte nach funktionalen Gruppen; die Kennung der VM wird durchgehend als Routenparameter übergeben, Nutzdaten für schreibende Aktionen im Request-Body.
 
-\begin{footnotesize}
-\begin{longtable}{llp{7.4cm}}
-\caption[Endpunkte der REST-API]{Endpunkte der REST-API des VM-Portals.}
-\label{tab:endpunkte}\\
-\toprule
-\textbf{Methode} & \textbf{Pfad} & \textbf{Funktion} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Methode} & \textbf{Pfad} & \textbf{Funktion} \\
-\midrule
-\endhead
-\bottomrule
-\endfoot
-\multicolumn{3}{l}{\textit{Authentifizierung (\texttt{AuthController}, \texttt{[AllowAnonymous]} nur beim Login)}} \\
-POST & \texttt{/api/auth/login} & Anmeldung; setzt bei Erfolg das JWT-Cookie \\
-POST & \texttt{/api/auth/logout} & Abmeldung; löscht das JWT-Cookie \\
-\addlinespace
-\multicolumn{3}{l}{\textit{VM-Abfrage (\texttt{VmController}, Mindestaktion \texttt{ViewStatus}/\texttt{ViewDetails}/\texttt{ViewMetering})}} \\
-GET  & \texttt{/api/vm} & Liste der für den Benutzer sichtbaren VMs \\
-GET  & \texttt{/api/vm/\{id\}} & Details einer VM \\
-GET  & \texttt{/api/vm/\{id\}/metering} & Auslastungsdaten (CPU, RAM, Datenträger) \\
-\addlinespace
-\multicolumn{3}{l}{\textit{VM-Lebenszyklus}} \\
-POST & \texttt{/api/vm/\{id\}/start} & Startet die VM \\
-POST & \texttt{/api/vm/\{id\}/stop} & Stoppt die VM (erzwungen) \\
-POST & \texttt{/api/vm/\{id\}/pause} & Pausiert die VM \\
-POST & \texttt{/api/vm/\{id\}/resume} & Setzt eine pausierte VM fort \\
-POST & \texttt{/api/vm/\{id\}/save-state} & Sichert den VM-Zustand \\
-POST & \texttt{/api/vm/\{id\}/reset} & Startet die VM neu (erzwungen) \\
-\addlinespace
-\multicolumn{3}{l}{\textit{Snapshots}} \\
-POST   & \texttt{/api/vm/\{id\}/snapshot} & Erstellt einen Snapshot (Name im Body) \\
-POST   & \texttt{/api/vm/\{id\}/snapshot/apply} & Stellt einen Snapshot wieder her \\
-DELETE & \texttt{/api/vm/\{id\}/snapshot/\{snapshotName\}} & Löscht einen Snapshot \\
-\addlinespace
-\multicolumn{3}{l}{\textit{Konsole, Ressourcen, Datenträger, Weitergabe}} \\
-POST & \texttt{/api/vm/\{id\}/console} & Konsolenverbindung (im \texttt{HyperVProvider} nicht implementiert) \\
-POST & \texttt{/api/vm/\{id\}/resize-ram} & Ändert den zugewiesenen Arbeitsspeicher \\
-POST & \texttt{/api/vm/\{id\}/resize-cpu} & Ändert die Anzahl virtueller CPUs \\
-POST & \texttt{/api/vm/\{id\}/network-adapter} & Fügt einen Netzwerkadapter hinzu \\
-POST & \texttt{/api/vm/\{id\}/vhd/resize} & Vergrößert die virtuelle Festplatte \\
-POST & \texttt{/api/vm/\{id\}/vhd/compact} & Kompaktiert die virtuelle Festplatte \\
-POST & \texttt{/api/vm/\{id\}/export} & Exportiert die VM \\
-POST & \texttt{/api/vm/\{id\}/import} & Importiert eine VM \\
-POST & \texttt{/api/vm/\{id\}/clone} & Klont die VM (im \texttt{HyperVProvider} nicht implementiert) \\
-POST & \texttt{/api/vm/\{id\}/migrate} & Live-Migration (im \texttt{HyperVProvider} nicht implementiert) \\
-\addlinespace
-\multicolumn{3}{l}{\textit{Administration (\texttt{Controllers/Admin}, nur Bootstrap-FullAdmin)}} \\
-GET    & \texttt{/api/admin/roles} & Alle Rollen mit ihren Aktionsmengen \\
-POST   & \texttt{/api/admin/roles} & Legt eine Custom-Rolle an (optional per Klon) \\
-PUT    & \texttt{/api/admin/roles/\{id\}} & Ändert die Aktionsmenge einer Custom-Rolle \\
-DELETE & \texttt{/api/admin/roles/\{id\}} & Löscht eine unbenutzte Custom-Rolle \\
-GET    & \texttt{/api/admin/permissions} & Alle \texttt{GroupPermission}-Zuordnungen \\
-POST   & \texttt{/api/admin/permissions} & Weist einer Benutzergruppe eine Rolle auf einer VM-Gruppe zu \\
-DELETE & \texttt{/api/admin/permissions/\{id\}} & Entfernt eine Zuordnung \\
-GET    & \texttt{/api/admin/vm-groups} & Alle VM-Gruppen mit VM-Anzahl \\
-GET    & \texttt{/api/admin/vm-groups/\{id\}} & Details einer VM-Gruppe inkl.\ VM-Liste \\
-POST   & \texttt{/api/admin/vm-groups} & Legt eine VM-Gruppe an \\
-PUT    & \texttt{/api/admin/vm-groups/\{id\}} & Benennt eine VM-Gruppe um \\
-DELETE & \texttt{/api/admin/vm-groups/\{id\}} & Löscht eine VM-Gruppe (VMs werden secure-by-default gruppenlos) \\
-GET    & \texttt{/api/admin/servers} & Alle erfassten Hypervisor-Hosts \\
-POST   & \texttt{/api/admin/servers} & Erfasst einen neuen Hypervisor-Host \\
-GET    & \texttt{/api/admin/vm-groups/\{id\}/members} & Mitglieder einer VM-Gruppe (Host + VM-Name) \\
-POST   & \texttt{/api/admin/vm-groups/\{id\}/members} & Fügt VMs hinzu; legt unbekannte VMs bei Bedarf an \\
-DELETE & \texttt{/api/admin/vm-groups/\{id\}/members/\{memberId\}} & Entfernt eine VM aus der Gruppe (gruppenlos, nicht gelöscht) \\
-GET    & \texttt{/api/admin/discover-vms} & Read-only-Abgleich des Hypervisor-Inventars gegen die DB \\
-GET    & \texttt{/api/admin/ad-groups} & Durchsucht AD-Gruppen (Parameter \texttt{search}, begrenzte Trefferzahl) \\
-\end{longtable}
-\end{footnotesize}
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/endpunkte-1-auth.xlsx
+% \begin{footnotesize}
+% \begin{longtable}{llp{7.4cm}}
+% \caption[Endpunkte der REST-API]{Endpunkte der REST-API des VM-Portals.}
+% \label{tab:endpunkte}\\
+% \toprule
+% \textbf{Methode} & \textbf{Pfad} & \textbf{Funktion} \\
+% \midrule
+% \endfirsthead
+% \toprule
+% \textbf{Methode} & \textbf{Pfad} & \textbf{Funktion} \\
+% \midrule
+% \endhead
+% \bottomrule
+% \endfoot
+% \multicolumn{3}{l}{\textit{Authentifizierung (\texttt{AuthController}, \texttt{[AllowAnonymous]} nur beim Login)}} \\
+% POST & \texttt{/api/auth/login} & Anmeldung; setzt bei Erfolg das JWT-Cookie \\
+% POST & \texttt{/api/auth/logout} & Abmeldung; löscht das JWT-Cookie \\
+% \addlinespace
+% \multicolumn{3}{l}{\textit{VM-Abfrage (\texttt{VmController}, Mindestaktion \texttt{ViewStatus}/\texttt{ViewDetails}/\texttt{ViewMetering})}} \\
+% GET  & \texttt{/api/vm} & Liste der für den Benutzer sichtbaren VMs \\
+% GET  & \texttt{/api/vm/\{id\}} & Details einer VM \\
+% GET  & \texttt{/api/vm/\{id\}/metering} & Auslastungsdaten (CPU, RAM, Datenträger) \\
+% \addlinespace
+% \multicolumn{3}{l}{\textit{VM-Lebenszyklus}} \\
+% POST & \texttt{/api/vm/\{id\}/start} & Startet die VM \\
+% POST & \texttt{/api/vm/\{id\}/stop} & Stoppt die VM (erzwungen) \\
+% POST & \texttt{/api/vm/\{id\}/pause} & Pausiert die VM \\
+% POST & \texttt{/api/vm/\{id\}/resume} & Setzt eine pausierte VM fort \\
+% POST & \texttt{/api/vm/\{id\}/save-state} & Sichert den VM-Zustand \\
+% POST & \texttt{/api/vm/\{id\}/reset} & Startet die VM neu (erzwungen) \\
+% \addlinespace
+% \multicolumn{3}{l}{\textit{Snapshots}} \\
+% POST   & \texttt{/api/vm/\{id\}/snapshot} & Erstellt einen Snapshot (Name im Body) \\
+% POST   & \texttt{/api/vm/\{id\}/snapshot/apply} & Stellt einen Snapshot wieder her \\
+% DELETE & \texttt{/api/vm/\{id\}/snapshot/\{snapshotName\}} & Löscht einen Snapshot \\
+% \addlinespace
+% \multicolumn{3}{l}{\textit{Konsole, Ressourcen, Datenträger, Weitergabe}} \\
+% POST & \texttt{/api/vm/\{id\}/console} & Konsolenverbindung (im \texttt{HyperVProvider} nicht implementiert) \\
+% POST & \texttt{/api/vm/\{id\}/resize-ram} & Ändert den zugewiesenen Arbeitsspeicher \\
+% POST & \texttt{/api/vm/\{id\}/resize-cpu} & Ändert die Anzahl virtueller CPUs \\
+% POST & \texttt{/api/vm/\{id\}/network-adapter} & Fügt einen Netzwerkadapter hinzu \\
+% POST & \texttt{/api/vm/\{id\}/vhd/resize} & Vergrößert die virtuelle Festplatte \\
+% POST & \texttt{/api/vm/\{id\}/vhd/compact} & Kompaktiert die virtuelle Festplatte \\
+% POST & \texttt{/api/vm/\{id\}/export} & Exportiert die VM \\
+% POST & \texttt{/api/vm/\{id\}/import} & Importiert eine VM \\
+% POST & \texttt{/api/vm/\{id\}/clone} & Klont die VM (im \texttt{HyperVProvider} nicht implementiert) \\
+% POST & \texttt{/api/vm/\{id\}/migrate} & Live-Migration (im \texttt{HyperVProvider} nicht implementiert) \\
+% \addlinespace
+% \multicolumn{3}{l}{\textit{Administration (\texttt{Controllers/Admin}, nur Bootstrap-FullAdmin)}} \\
+% GET    & \texttt{/api/admin/roles} & Alle Rollen mit ihren Aktionsmengen \\
+% POST   & \texttt{/api/admin/roles} & Legt eine Custom-Rolle an (optional per Klon) \\
+% PUT    & \texttt{/api/admin/roles/\{id\}} & Ändert die Aktionsmenge einer Custom-Rolle \\
+% DELETE & \texttt{/api/admin/roles/\{id\}} & Löscht eine unbenutzte Custom-Rolle \\
+% GET    & \texttt{/api/admin/permissions} & Alle \texttt{GroupPermission}-Zuordnungen \\
+% POST   & \texttt{/api/admin/permissions} & Weist einer Benutzergruppe eine Rolle auf einer VM-Gruppe zu \\
+% DELETE & \texttt{/api/admin/permissions/\{id\}} & Entfernt eine Zuordnung \\
+% GET    & \texttt{/api/admin/vm-groups} & Alle VM-Gruppen mit VM-Anzahl \\
+% GET    & \texttt{/api/admin/vm-groups/\{id\}} & Details einer VM-Gruppe inkl.\ VM-Liste \\
+% POST   & \texttt{/api/admin/vm-groups} & Legt eine VM-Gruppe an \\
+% PUT    & \texttt{/api/admin/vm-groups/\{id\}} & Benennt eine VM-Gruppe um \\
+% DELETE & \texttt{/api/admin/vm-groups/\{id\}} & Löscht eine VM-Gruppe (VMs werden secure-by-default gruppenlos) \\
+% GET    & \texttt{/api/admin/servers} & Alle erfassten Hypervisor-Hosts \\
+% POST   & \texttt{/api/admin/servers} & Erfasst einen neuen Hypervisor-Host \\
+% GET    & \texttt{/api/admin/vm-groups/\{id\}/members} & Mitglieder einer VM-Gruppe (Host + VM-Name) \\
+% POST   & \texttt{/api/admin/vm-groups/\{id\}/members} & Fügt VMs hinzu; legt unbekannte VMs bei Bedarf an \\
+% DELETE & \texttt{/api/admin/vm-groups/\{id\}/members/\{memberId\}} & Entfernt eine VM aus der Gruppe (gruppenlos, nicht gelöscht) \\
+% GET    & \texttt{/api/admin/discover-vms} & Read-only-Abgleich des Hypervisor-Inventars gegen die DB \\
+% GET    & \texttt{/api/admin/ad-groups} & Durchsucht AD-Gruppen (Parameter \texttt{search}, begrenzte Trefferzahl) \\
+% \end{longtable}
+% \end{footnotesize}
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-1-auth.png}
+\caption[Endpunkte der REST-API — Authentifizierung]{Endpunkte der REST-API des VM-Portals — Authentifizierung (\texttt{AuthController}, \texttt{[AllowAnonymous]} nur beim Login).}
+\label{tab:endpunkte}
+\end{table}
 
-Die Fehlersemantik trennt konsequent vier Fälle. Fachliche Fehler beantwortet der Controller selbst: 401 bei fehlender oder ungültiger Sitzung, 403 bei unzureichender Berechtigung (fehlende \texttt{GroupPermission} bzw.\ fehlender Bootstrap-Status), 404 bei unbekannter VM. Infrastrukturfehler (etwa wenn die Hyper-V-Ausführung fehlschlägt) erreichen den Controller nicht als HTTP-Antwort, sondern als \texttt{VirtualizationException}; die \texttt{VirtualizationExceptionMiddleware} am Anfang der Pipeline fängt sie ab, protokolliert sie und übersetzt sie in einen Status~502 (Bad Gateway) mit einer verständlichen JSON-Meldung. Der Status~502 ist bewusst gewählt, denn die API selbst arbeitet korrekt, aber das dahinterliegende System (der Hypervisor) ist nicht verfügbar. Ein generischer Status~500 würde diese Unterscheidung verwischen und die Fehlersuche erschweren (FA-13). Denselben sauberen Umgang gibt es für die drei im \texttt{HyperVProvider} nicht implementierten Operationen (Konsole, Klonen, Migration, Tabelle~\ref{tab:endpunkte}). Ihre \texttt{NotImplementedException} fängt dieselbe Middleware in einem eigenen \texttt{catch}-Zweig ab und übersetzt sie in einen Status~501 (Not Implemented) mit der jeweiligen Begründung als JSON-Meldung, statt einen undefinierten Serverfehler zu liefern. Alle sicherheits- und infrastrukturrelevanten Ereignisse (Anmeldungen, VM-Aktionen, Fehler) werden über das Logging-Framework protokolliert.
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-2-vm-abfrage.png}
+\caption[Endpunkte der REST-API — VM-Abfrage]{Endpunkte der REST-API des VM-Portals — VM-Abfrage (\texttt{VmController}, Mindestaktion \texttt{ViewStatus}/\texttt{ViewDetails}/\texttt{ViewMetering}).}
+\label{tab:endpunkte-vm-abfrage}
+\end{table}
+
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-3-lebenszyklus.png}
+\caption[Endpunkte der REST-API — VM-Lebenszyklus]{Endpunkte der REST-API des VM-Portals — VM-Lebenszyklus.}
+\label{tab:endpunkte-lebenszyklus}
+\end{table}
+
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-4-snapshots.png}
+\caption[Endpunkte der REST-API — Snapshots]{Endpunkte der REST-API des VM-Portals — Snapshots.}
+\label{tab:endpunkte-snapshots}
+\end{table}
+
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-5-ressourcen.png}
+\caption[Endpunkte der REST-API — Konsole und Ressourcen]{Endpunkte der REST-API des VM-Portals — Konsole, Ressourcen, Datenträger, Weitergabe.}
+\label{tab:endpunkte-ressourcen}
+\end{table}
+
+\begin{table}[H]
+\centering
+\includegraphics[width=\textwidth]{tables/rendered/endpunkte-6-admin.png}
+\caption[Endpunkte der REST-API — Administration]{Endpunkte der REST-API des VM-Portals — Administration (\texttt{Controllers/Admin}, nur Bootstrap-FullAdmin).}
+\label{tab:endpunkte-admin}
+\end{table}
+
+Die Fehlersemantik trennt konsequent vier Fälle. Fachliche Fehler beantwortet der Controller selbst: 401 bei fehlender oder ungültiger Sitzung, 403 bei unzureichender Berechtigung (fehlende \texttt{GroupPermission} bzw.\ fehlender Bootstrap-Status), 404 bei unbekannter VM. Infrastrukturfehler (etwa wenn die Hyper-V-Ausführung fehlschlägt) erreichen den Controller nicht als HTTP-Antwort, sondern als \texttt{VirtualizationException}; die \texttt{VirtualizationExceptionMiddleware} am Anfang der Pipeline fängt sie ab, protokolliert sie und übersetzt sie in einen Status~502 (Bad Gateway) mit einer verständlichen JSON-Meldung. Der Status~502 ist bewusst gewählt, denn die API selbst arbeitet korrekt, aber das dahinterliegende System (der Hypervisor) ist nicht verfügbar. Ein generischer Status~500 würde diese Unterscheidung verwischen und die Fehlersuche erschweren (FA-13). Denselben sauberen Umgang gibt es für die drei im \texttt{HyperVProvider} nicht implementierten Operationen (Konsole, Klonen, Migration, Tabelle~\ref{tab:endpunkte-ressourcen}). Ihre \texttt{NotImplementedException} fängt dieselbe Middleware in einem eigenen \texttt{catch}-Zweig ab und übersetzt sie in einen Status~501 (Not Implemented) mit der jeweiligen Begründung als JSON-Meldung, statt einen undefinierten Serverfehler zu liefern. Alle sicherheits- und infrastrukturrelevanten Ereignisse (Anmeldungen, VM-Aktionen, Fehler) werden über das Logging-Framework protokolliert.
 
 \subsection{Frontend}
 \label{sec:impl-frontend}
@@ -1046,26 +1123,33 @@ Die Sicherheitsevaluation ist als testfallbasierte Prüfung der Authentifizierun
 
 Acht der neun oben benannten Prüfszenarien wurden am 25.08.2026 automatisiert gegen die laufende Produktions-VM durchgeführt (Basis-URL \texttt{http://localhost:5000}). Das eigens dafür erstellte PowerShell-Skript \texttt{thesis/tests/security-testfaelle.ps1} meldet sich mit einem gültigen AD-Benutzer ohne FullAdmin-Berechtigung an und bildet die Testfälle als HTTP-Anfragen gegen \texttt{AuthController}, \texttt{VmController} und den Admin-Endpunkt \texttt{/api/admin/discover-vms} ab; für jeden Testfall wird der tatsächliche HTTP-Statuscode beziehungsweise das tatsächlich gesetzte Cookie-Attribut gegen die erwartete Vorgabe geprüft. Das Sitzungscookie wird über eine reguläre \texttt{WebRequestSession} mit \texttt{CookieContainer} gesetzt statt über einen manuell konstruierten \texttt{Cookie}-Header, weil Letzterer unter Windows PowerShell~5.1 unzuverlässig behandelt wird und dadurch fälschlich 401-Antworten hätte erzeugen können. Zugangsdaten werden ausschließlich als Laufzeitparameter entgegengenommen und weder im Skript noch in der erzeugten Ergebnisdatei persistiert. Tabelle~\ref{tab:security-testfaelle} zeigt die Ergebnisse.
 
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/security-testfaelle.xlsx
+% \begin{table}[H]
+% \centering
+% \caption[Ergebnisse der Sicherheits-Testfälle]{Ergebnisse der automatisierten Sicherheits-Testfälle gegen die Produktions-VM (Lauf vom 25.08.2026).}
+% \label{tab:security-testfaelle}
+% \small
+% \begin{tabular}{cp{5.6cm}p{2.5cm}p{3.2cm}l}
+% \toprule
+% \textbf{Nr} & \textbf{Testfall} & \textbf{Erwartet} & \textbf{Ist} & \textbf{Ergebnis} \\
+% \midrule
+% TF1 & Login mit gültigen AD-Zugangsdaten & 200 + gültiges Cookie & 200 + Cookie vorhanden & PASS \\
+% TF2 & Login mit ungültigen Zugangsdaten & 401 & 401 & PASS \\
+% TF3 & Zugriff auf \texttt{/api/vm} ohne Cookie & 401 & 401 & PASS \\
+% TF4 & Zugriff auf \texttt{/api/vm} mit manipuliertem JWT & 401 & 401 & PASS \\
+% TF5 & Zugriff auf eine nicht zugewiesene VM (bekannt im Inventar, ohne \texttt{GroupPermission}) & 403 & 403 & PASS \\
+% TF6 & Zugriff auf eine nicht existierende VM-Id & 404 & 404 & PASS \\
+% TF7 & Admin-Endpunkt (\texttt{/api/admin/discover-vms}) mit Nicht-FullAdmin-Token & 403 & 403 & PASS \\
+% TF8 & Cookie-Attribute der Login-Antwort (\texttt{httpOnly}, \texttt{Secure}, \texttt{SameSite=Strict}) & alle drei gesetzt & httpOnly=wahr, Secure=wahr, SameSite=Strict=wahr & PASS \\
+% TF9 & Nicht erreichbarer Hypervisor-Pfad (502 über \texttt{VirtualizationExceptionMiddleware}) & 502 & n/a & MANUAL \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 \begin{table}[H]
 \centering
+\includegraphics[width=\textwidth]{tables/rendered/security-testfaelle.png}
 \caption[Ergebnisse der Sicherheits-Testfälle]{Ergebnisse der automatisierten Sicherheits-Testfälle gegen die Produktions-VM (Lauf vom 25.08.2026).}
 \label{tab:security-testfaelle}
-\small
-\begin{tabular}{cp{5.6cm}p{2.5cm}p{3.2cm}l}
-\toprule
-\textbf{Nr} & \textbf{Testfall} & \textbf{Erwartet} & \textbf{Ist} & \textbf{Ergebnis} \\
-\midrule
-TF1 & Login mit gültigen AD-Zugangsdaten & 200 + gültiges Cookie & 200 + Cookie vorhanden & PASS \\
-TF2 & Login mit ungültigen Zugangsdaten & 401 & 401 & PASS \\
-TF3 & Zugriff auf \texttt{/api/vm} ohne Cookie & 401 & 401 & PASS \\
-TF4 & Zugriff auf \texttt{/api/vm} mit manipuliertem JWT & 401 & 401 & PASS \\
-TF5 & Zugriff auf eine nicht zugewiesene VM (bekannt im Inventar, ohne \texttt{GroupPermission}) & 403 & 403 & PASS \\
-TF6 & Zugriff auf eine nicht existierende VM-Id & 404 & 404 & PASS \\
-TF7 & Admin-Endpunkt (\texttt{/api/admin/discover-vms}) mit Nicht-FullAdmin-Token & 403 & 403 & PASS \\
-TF8 & Cookie-Attribute der Login-Antwort (\texttt{httpOnly}, \texttt{Secure}, \texttt{SameSite=Strict}) & alle drei gesetzt & httpOnly=wahr, Secure=wahr, SameSite=Strict=wahr & PASS \\
-TF9 & Nicht erreichbarer Hypervisor-Pfad (502 über \texttt{VirtualizationExceptionMiddleware}) & 502 & n/a & MANUAL \\
-\bottomrule
-\end{tabular}
 \end{table}
 
 Alle acht automatisiert durchführbaren Testfälle bestehen mit dem erwarteten Ergebnis. TF1 bis TF4 bestätigen die Authentifizierungslogik empirisch. Ein gültiger Login liefert ein Sitzungscookie, ein ungültiger wird mit 401 abgelehnt, und ein geschützter Endpunkt ist sowohl ohne Cookie als auch mit einer nachträglich veränderten Signatur unzugänglich. Dieses Verhalten bestätigt auf Netzwerkebene, was Abschnitt~\ref{sec:code-security-review} bereits code-seitig als durchgängige Tokenvalidierung feststellt (OWASP A07, Identification and Authentication Failures). TF5 und TF7 prüfen die Autorisierung. TF5 zeigt, dass eine im Hypervisor-Inventar vorhandene, aber keiner \texttt{GroupPermission} zugeordnete VM auch beim direkten API-Zugriff mit 403 beantwortet wird, statt lediglich in der Oberfläche ausgeblendet zu sein; TF7 belegt dieselbe serverseitige Durchsetzung für die FullAdmin-only-Admin-Endpunkte. Beide Ergebnisse bestätigen empirisch die in Abschnitt~\ref{sec:code-security-review} beschriebene secure-by-default-Konstruktion der Zugriffskontrolle (OWASP A01, Broken Access Control). TF6 bestätigt mit 404 die korrekte Fehlersemantik für nicht existierende Ressourcen. TF8 verifiziert, dass die drei sicherheitsrelevanten Cookie-Attribute \texttt{httpOnly}, \texttt{Secure} und \texttt{SameSite=Strict} tatsächlich in der HTTP-Antwort gesetzt sind und nicht nur im Quellcode konfiguriert wurden, und bestätigt damit empirisch die in Kapitel~2 hergeleitete Absicherung gegen XSS-Tokendiebstahl und CSRF.
@@ -1146,12 +1230,12 @@ Tabelle~\ref{tab:proxmox-mapping} bildet jede Operation der Schnittstelle auf de
 % LiveMigrateVmAsync & nicht implementiert (Einzelhost, Abschnitt~\ref{sec:hypervisor-abstraktion}) & \texttt{POST .../\allowbreak qemu/\allowbreak \{vmid\}/\allowbreak migrate} — setzt wie bei Hyper-V Cluster-Infrastruktur voraus & hoch (Infrastruktur, nicht API) \\
 % \end{longtable}
 % \end{footnotesize}
-\begin{figure}[H]
+\begin{table}[H]
 \centering
 \includegraphics[width=\textwidth]{tables/rendered/proxmox-mapping.png}
 \caption[Operationen-Mapping Hyper-V–Proxmox VE]{Abbildung der \texttt{IVirtualizationProvider}-Operationen auf die Proxmox-VE-REST-API.}
 \label{tab:proxmox-mapping}
-\end{figure}
+\end{table}
 
 \subsubsection{Bewertung}
 
@@ -1190,7 +1274,7 @@ Unabhängig von den Evaluationsergebnissen weist der implementierte Stand bekann
 
 \paragraph{VM-Discovery ohne Hintergrundabgleich.} \texttt{GET~/api/admin/discover-vms} liefert ausschließlich eine Vorschau des Hypervisor-Inventars zum Abrufzeitpunkt; ein automatisierter Sync-Mechanismus, der neu entstehende oder entfernte VMs selbstständig in die Autorisierungs-DB einpflegt, existiert nicht. Die Zuordnung neuer VMs zu einer \texttt{VirtualMachineGroup} bleibt vollständig manuell. Ein Bootstrap-FullAdmin muss die Discovery-Ansicht aktiv aufrufen und die gewünschten VMs auswählen; VMs, die zwischen zwei manuellen Abgleichen entstehen, bleiben bis dahin unsichtbar (secure-by-default) statt automatisch erfasst zu werden.
 
-\paragraph{Drei Provider-Operationen ohne Hyper-V-Implementierung.} Wie in Abschnitt~\ref{sec:hypervisor-abstraktion} begründet, liefern \texttt{GetConsoleConnectionAsync}, \texttt{CloneVmAsync} und \texttt{LiveMigrateVmAsync} im \texttt{HyperVProvider} kontrolliert einen Status~501 statt einer echten Ausführung. Die zugehörigen API-Endpunkte und der Autorisierungscode dafür existieren bereits (Tabelle~\ref{tab:endpunkte}), sind aber in der Testumgebung nicht sinnvoll nutzbar.
+\paragraph{Drei Provider-Operationen ohne Hyper-V-Implementierung.} Wie in Abschnitt~\ref{sec:hypervisor-abstraktion} begründet, liefern \texttt{GetConsoleConnectionAsync}, \texttt{CloneVmAsync} und \texttt{LiveMigrateVmAsync} im \texttt{HyperVProvider} kontrolliert einen Status~501 statt einer echten Ausführung. Die zugehörigen API-Endpunkte und der Autorisierungscode dafür existieren bereits (Tabelle~\ref{tab:endpunkte-ressourcen}), sind aber in der Testumgebung nicht sinnvoll nutzbar.
 
 \paragraph{Import ohne Zielhost im Remote-Modus.} Der zuvor hier beschriebene Single-Host-Zwang besteht nicht mehr. \texttt{HyperVProvider} unterstützt seit der WinRM-Anbindung (Abschnitt~\ref{sec:impl-hyperv}) einen Remote-Modus, der mehrere Hyper-V-Hosts von einem getrennten Anwendungsserver aus gleichzeitig ansteuert und produktiv gegen alle drei Zielhosts erfolgreich getestet wurde. Eine schmale Lücke bleibt an der Schnittstelle selbst. \texttt{ImportVmAsync} erhält nur einen Importpfad, keinen Zielhost-Parameter; im Remote-Modus lässt sich daraus kein eindeutiger Host ableiten, weshalb die Operation dort bewusst eine \texttt{NotImplementedException} liefert, statt einen Host zu erraten, während sie im \texttt{Local}-Modus unverändert funktioniert.
 
@@ -1269,33 +1353,40 @@ Nicht zuletzt steht die in Abschnitt~\ref{sec:eval-usability} konzipierte Usabil
 
 Sämtliche umgebungsspezifischen Parameter des Portals werden über die \texttt{appsettings}-Dateien konfiguriert und beim Start typsicher an die Konfigurationsklassen \texttt{LdapSettings}, \texttt{JwtSettings} und \texttt{AuthorizationSettings} (\texttt{VmPortal.Core/Configuration}) gebunden; fehlen die Abschnitte \texttt{Jwt}, \texttt{Ldap} oder \texttt{Authorization}, verweigert die Anwendung den Start mit einer sprechenden Fehlermeldung. Tabelle~\ref{tab:configparams} listet alle Parameter.
 
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/configparams.xlsx
+% \begin{table}[H]
+% \centering
+% \caption[Konfigurationsparameter des VM-Portals]{Konfigurationsparameter des VM-Portals mit Standardwerten.}
+% \label{tab:configparams}
+% \small
+% \begin{tabular}{llp{6.0cm}l}
+% \toprule
+% \textbf{Abschnitt} & \textbf{Parameter} & \textbf{Bedeutung} & \textbf{Standard} \\
+% \midrule
+% \texttt{Ldap} & \texttt{Host} & Hostname/IP des Domänencontrollers & — \\
+% \texttt{Ldap} & \texttt{Port} & LDAP-Port (389; für LDAPS 636) & \texttt{389} \\
+% \texttt{Ldap} & \texttt{BaseDn} & Basis-DN der AD-Domäne für die Suche & — \\
+% \addlinespace
+% \texttt{Jwt} & \texttt{Secret} & Signaturgeheimnis (HMAC-SHA256) & — \\
+% \texttt{Jwt} & \texttt{Issuer} & Aussteller-Claim des Tokens & — \\
+% \texttt{Jwt} & \texttt{Audience} & Adressat-Claim des Tokens & — \\
+% \texttt{Jwt} & \texttt{ExpiryHours} & Token-Gültigkeit in Stunden & \texttt{8} \\
+% \addlinespace
+% \texttt{Virtualization} & \texttt{Provider} & Provider-Auswahl: \texttt{HyperV} oder \texttt{Dummy} & \texttt{Dummy} \\
+% \texttt{Auth} & \texttt{Provider} & Auth-Auswahl: \texttt{Ldap} oder \texttt{Dummy} & \texttt{Ldap} \\
+% \addlinespace
+% \texttt{ConnectionStrings} & \texttt{VmPortalDb} & SQLite-Connection-String der Autorisierungs-DB & \texttt{Data Source=vmportal.db} \\
+% \texttt{Authorization} & \texttt{BootstrapFullAdminGroup} & AD-Gruppe mit globalem FullAdmin-Bootstrap-Zugriff & — \\
+% \addlinespace
+% \texttt{Cors} & \texttt{AllowedOrigins} & Erlaubte Origins für den Dev-Server & leer \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 \begin{table}[H]
 \centering
+\includegraphics[width=\textwidth]{tables/rendered/configparams.png}
 \caption[Konfigurationsparameter des VM-Portals]{Konfigurationsparameter des VM-Portals mit Standardwerten.}
 \label{tab:configparams}
-\small
-\begin{tabular}{llp{6.0cm}l}
-\toprule
-\textbf{Abschnitt} & \textbf{Parameter} & \textbf{Bedeutung} & \textbf{Standard} \\
-\midrule
-\texttt{Ldap} & \texttt{Host} & Hostname/IP des Domänencontrollers & — \\
-\texttt{Ldap} & \texttt{Port} & LDAP-Port (389; für LDAPS 636) & \texttt{389} \\
-\texttt{Ldap} & \texttt{BaseDn} & Basis-DN der AD-Domäne für die Suche & — \\
-\addlinespace
-\texttt{Jwt} & \texttt{Secret} & Signaturgeheimnis (HMAC-SHA256) & — \\
-\texttt{Jwt} & \texttt{Issuer} & Aussteller-Claim des Tokens & — \\
-\texttt{Jwt} & \texttt{Audience} & Adressat-Claim des Tokens & — \\
-\texttt{Jwt} & \texttt{ExpiryHours} & Token-Gültigkeit in Stunden & \texttt{8} \\
-\addlinespace
-\texttt{Virtualization} & \texttt{Provider} & Provider-Auswahl: \texttt{HyperV} oder \texttt{Dummy} & \texttt{Dummy} \\
-\texttt{Auth} & \texttt{Provider} & Auth-Auswahl: \texttt{Ldap} oder \texttt{Dummy} & \texttt{Ldap} \\
-\addlinespace
-\texttt{ConnectionStrings} & \texttt{VmPortalDb} & SQLite-Connection-String der Autorisierungs-DB & \texttt{Data Source=vmportal.db} \\
-\texttt{Authorization} & \texttt{BootstrapFullAdminGroup} & AD-Gruppe mit globalem FullAdmin-Bootstrap-Zugriff & — \\
-\addlinespace
-\texttt{Cors} & \texttt{AllowedOrigins} & Erlaubte Origins für den Dev-Server & leer \\
-\bottomrule
-\end{tabular}
 \end{table}
 
 \section{Katalog der autorisierbaren VM-Aktionen}
@@ -1303,43 +1394,50 @@ Sämtliche umgebungsspezifischen Parameter des Portals werden über die \texttt{
 
 Tabelle~\ref{tab:vmactions} listet den vollständigen, in \texttt{VmAction} (\texttt{VmPortal.Core/Models}) definierten Katalog der 22 autorisierbaren VM-Aktionen mit der jeweils mindestens benötigten Systemrolle aus \texttt{RolePermissions} (Abschnitt~\ref{sec:sicherheitskonzept}). Custom-Rollen der datenbankgestützten RBAC-Schicht können davon abweichende, frei zusammengestellte Teilmengen dieser Aktionen tragen; die hier gezeigte Mindestrolle bezieht sich ausschließlich auf die fünf System-Rollen.
 
+% ALT — durch Excel-Export ersetzt, siehe thesis/tables/vmactions.xlsx
+% \begin{table}[H]
+% \centering
+% \caption[Katalog der autorisierbaren VM-Aktionen]{Katalog der autorisierbaren VM-Aktionen (\texttt{VmAction}) mit Mindestrolle der fünf System-Rollen.}
+% \label{tab:vmactions}
+% \small
+% \begin{tabular}{llp{7.2cm}}
+% \toprule
+% \textbf{Aktion} & \textbf{Mindestrolle} & \textbf{Beschreibung} \\
+% \midrule
+% \texttt{ViewStatus} & Viewer & Betriebsstatus abfragen \\
+% \texttt{ViewDetails} & Viewer & Detailinformationen abrufen \\
+% \texttt{ViewMetering} & Viewer & Metering-/Auslastungsdaten abrufen \\
+% \addlinespace
+% \texttt{Start} & Operator & VM starten \\
+% \texttt{Stop} & Operator & VM stoppen (hart) \\
+% \texttt{Pause} & Operator & VM pausieren \\
+% \texttt{Resume} & Operator & VM fortsetzen \\
+% \texttt{SaveState} & Operator & Zustand sichern (Save State) \\
+% \addlinespace
+% \texttt{Reset} & PowerUser & VM neu starten (hart) \\
+% \texttt{SnapshotCreate} & PowerUser & Snapshot erstellen \\
+% \texttt{SnapshotApply} & PowerUser & Snapshot anwenden \\
+% \texttt{ConsoleConnect} & PowerUser & Konsolenzugriff (im \texttt{HyperVProvider} nicht implementiert) \\
+% \addlinespace
+% \texttt{SnapshotDelete} & Admin & Snapshot löschen \\
+% \texttt{ResizeRam} & Admin & Arbeitsspeicher anpassen \\
+% \texttt{ResizeCpu} & Admin & Prozessoranzahl anpassen \\
+% \texttt{AttachNetworkAdapter} & Admin & Netzwerkadapter anfügen \\
+% \texttt{VhdResize} & Admin & Virtuelle Festplatte vergrößern \\
+% \texttt{VhdCompact} & Admin & Virtuelle Festplatte kompaktieren \\
+% \addlinespace
+% \texttt{Export} & FullAdmin & VM exportieren \\
+% \texttt{Import} & FullAdmin & VM importieren \\
+% \texttt{Clone} & FullAdmin & VM klonen (im \texttt{HyperVProvider} nicht implementiert) \\
+% \texttt{LiveMigrate} & FullAdmin & Live-Migration (im \texttt{HyperVProvider} nicht implementiert) \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 \begin{table}[H]
 \centering
+\includegraphics[width=\textwidth]{tables/rendered/vmactions.png}
 \caption[Katalog der autorisierbaren VM-Aktionen]{Katalog der autorisierbaren VM-Aktionen (\texttt{VmAction}) mit Mindestrolle der fünf System-Rollen.}
 \label{tab:vmactions}
-\small
-\begin{tabular}{llp{7.2cm}}
-\toprule
-\textbf{Aktion} & \textbf{Mindestrolle} & \textbf{Beschreibung} \\
-\midrule
-\texttt{ViewStatus} & Viewer & Betriebsstatus abfragen \\
-\texttt{ViewDetails} & Viewer & Detailinformationen abrufen \\
-\texttt{ViewMetering} & Viewer & Metering-/Auslastungsdaten abrufen \\
-\addlinespace
-\texttt{Start} & Operator & VM starten \\
-\texttt{Stop} & Operator & VM stoppen (hart) \\
-\texttt{Pause} & Operator & VM pausieren \\
-\texttt{Resume} & Operator & VM fortsetzen \\
-\texttt{SaveState} & Operator & Zustand sichern (Save State) \\
-\addlinespace
-\texttt{Reset} & PowerUser & VM neu starten (hart) \\
-\texttt{SnapshotCreate} & PowerUser & Snapshot erstellen \\
-\texttt{SnapshotApply} & PowerUser & Snapshot anwenden \\
-\texttt{ConsoleConnect} & PowerUser & Konsolenzugriff (im \texttt{HyperVProvider} nicht implementiert) \\
-\addlinespace
-\texttt{SnapshotDelete} & Admin & Snapshot löschen \\
-\texttt{ResizeRam} & Admin & Arbeitsspeicher anpassen \\
-\texttt{ResizeCpu} & Admin & Prozessoranzahl anpassen \\
-\texttt{AttachNetworkAdapter} & Admin & Netzwerkadapter anfügen \\
-\texttt{VhdResize} & Admin & Virtuelle Festplatte vergrößern \\
-\texttt{VhdCompact} & Admin & Virtuelle Festplatte kompaktieren \\
-\addlinespace
-\texttt{Export} & FullAdmin & VM exportieren \\
-\texttt{Import} & FullAdmin & VM importieren \\
-\texttt{Clone} & FullAdmin & VM klonen (im \texttt{HyperVProvider} nicht implementiert) \\
-\texttt{LiveMigrate} & FullAdmin & Live-Migration (im \texttt{HyperVProvider} nicht implementiert) \\
-\bottomrule
-\end{tabular}
 \end{table}
 
 \section{Auszug der appsettings.json-Struktur}
