@@ -1392,33 +1392,40 @@ Nicht zuletzt steht die in Abschnitt~\ref{sec:eval-usability} konzipierte Usabil
 
 Sämtliche umgebungsspezifischen Parameter des Portals werden über die \texttt{appsettings}-Dateien konfiguriert und beim Start typsicher an die Konfigurationsklassen \texttt{LdapSettings}, \texttt{JwtSettings} und \texttt{AuthorizationSettings} (\texttt{VmPortal.Core/Configuration}) gebunden; fehlen die Abschnitte \texttt{Jwt}, \texttt{Ldap} oder \texttt{Authorization}, verweigert die Anwendung den Start mit einer sprechenden Fehlermeldung. Tabelle~\ref{tab:configparams} listet alle Parameter.
 
+% ALT — durch Bild-Export ersetzt, siehe thesis/tables/rendered/configparams.png
+% \begin{table}[H]
+% \centering
+% \caption[Konfigurationsparameter des VM-Portals]{Konfigurationsparameter des VM-Portals mit Standardwerten.}
+% \label{tab:configparams}
+% \small
+% \begin{tabular}{llp{6.0cm}l}
+% \toprule
+% \textbf{Abschnitt} & \textbf{Parameter} & \textbf{Bedeutung} & \textbf{Standard} \\
+% \midrule
+% \texttt{Ldap} & \texttt{Host} & Hostname/IP des Domänencontrollers & — \\
+% \texttt{Ldap} & \texttt{Port} & LDAP-Port (389; für LDAPS 636) & \texttt{389} \\
+% \texttt{Ldap} & \texttt{BaseDn} & Basis-DN der AD-Domäne für die Suche & — \\
+% \addlinespace
+% \texttt{Jwt} & \texttt{Secret} & Signaturgeheimnis (HMAC-SHA256) & — \\
+% \texttt{Jwt} & \texttt{Issuer} & Aussteller-Claim des Tokens & — \\
+% \texttt{Jwt} & \texttt{Audience} & Adressat-Claim des Tokens & — \\
+% \texttt{Jwt} & \texttt{ExpiryHours} & Token-Gültigkeit in Stunden & \texttt{8} \\
+% \addlinespace
+% \texttt{Virtualization} & \texttt{Provider} & Provider-Auswahl: \texttt{HyperV} oder \texttt{Dummy} & \texttt{Dummy} \\
+% \texttt{Auth} & \texttt{Provider} & Auth-Auswahl: \texttt{Ldap} oder \texttt{Dummy} & \texttt{Ldap} \\
+% \addlinespace
+% \texttt{ConnectionStrings} & \texttt{VmPortalDb} & SQLite-Connection-String der Autorisierungs-DB & \texttt{Data Source=vmportal.db} \\
+% \texttt{Authorization} & \texttt{BootstrapFullAdminGroup} & AD-Gruppe mit globalem FullAdmin-Bootstrap-Zugriff & — \\
+% \addlinespace
+% \texttt{Cors} & \texttt{AllowedOrigins} & Erlaubte Origins für den Dev-Server & leer \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 \begin{table}[H]
 \centering
+\includegraphics[width=\textwidth]{tables/rendered/configparams.png}
 \caption[Konfigurationsparameter des VM-Portals]{Konfigurationsparameter des VM-Portals mit Standardwerten.}
 \label{tab:configparams}
-\small
-\begin{tabular}{llp{6.0cm}l}
-\toprule
-\textbf{Abschnitt} & \textbf{Parameter} & \textbf{Bedeutung} & \textbf{Standard} \\
-\midrule
-\texttt{Ldap} & \texttt{Host} & Hostname/IP des Domänencontrollers & — \\
-\texttt{Ldap} & \texttt{Port} & LDAP-Port (389; für LDAPS 636) & \texttt{389} \\
-\texttt{Ldap} & \texttt{BaseDn} & Basis-DN der AD-Domäne für die Suche & — \\
-\addlinespace
-\texttt{Jwt} & \texttt{Secret} & Signaturgeheimnis (HMAC-SHA256) & — \\
-\texttt{Jwt} & \texttt{Issuer} & Aussteller-Claim des Tokens & — \\
-\texttt{Jwt} & \texttt{Audience} & Adressat-Claim des Tokens & — \\
-\texttt{Jwt} & \texttt{ExpiryHours} & Token-Gültigkeit in Stunden & \texttt{8} \\
-\addlinespace
-\texttt{Virtualization} & \texttt{Provider} & Provider-Auswahl: \texttt{HyperV} oder \texttt{Dummy} & \texttt{Dummy} \\
-\texttt{Auth} & \texttt{Provider} & Auth-Auswahl: \texttt{Ldap} oder \texttt{Dummy} & \texttt{Ldap} \\
-\addlinespace
-\texttt{ConnectionStrings} & \texttt{VmPortalDb} & SQLite-Connection-String der Autorisierungs-DB & \texttt{Data Source=vmportal.db} \\
-\texttt{Authorization} & \texttt{BootstrapFullAdminGroup} & AD-Gruppe mit globalem FullAdmin-Bootstrap-Zugriff & — \\
-\addlinespace
-\texttt{Cors} & \texttt{AllowedOrigins} & Erlaubte Origins für den Dev-Server & leer \\
-\bottomrule
-\end{tabular}
 \end{table}
 
 \section{Katalog der autorisierbaren VM-Aktionen}
