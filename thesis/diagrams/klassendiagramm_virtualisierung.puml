@@ -23,7 +23,7 @@ interface IVirtualizationProvider #E3F2F1;line:00707A {
   + StopVmAsync(id)
   + CreateSnapshotAsync(id, name)
   + GetMeteringAsync(id)
-  + ... (20 Operationen gesamt,
+  + ... (22 Operationen gesamt,
     vollständig: Kapitel 5.2)
 }
 
