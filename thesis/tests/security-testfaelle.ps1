@@ -29,6 +29,12 @@
     und nirgends persistiert: weder im Skript, noch in der Konsolen-/Markdown-Ausgabe, noch in
     einer Zwischendatei.
 
+    HINWEIS ZUR AUTHENTIFIZIERUNG: Das JWT-Cookie wird NICHT über einen manuellen
+    "Cookie"-Header gesetzt, sondern über eine echte WebRequestSession mit CookieContainer
+    (siehe New-JwtWebSession). Ein manuell gesetzter Cookie-Header wird von
+    Invoke-WebRequest unter Windows PowerShell 5.1 unzuverlässig behandelt und kann
+    stillschweigend verworfen werden, was zu falschen 401-Ergebnissen führt.
+
 .PARAMETER BaseUrl
     Basis-URL der laufenden VmPortal-Instanz, z. B. https://vmportal.example.com (ohne
     abschließenden Slash).
@@ -102,17 +108,22 @@ param(
 
     [string]$HypervisorUnreachableVmId,
 
-    [string]$OutputMarkdownPath = (Join-Path $PSScriptRoot "security-testfaelle-ergebnis.md"),
+    [string]$OutputMarkdownPath,
 
     [switch]$AllowInsecureSsl
 )
 
 $ErrorActionPreference = "Stop"
 
+# Default fuer OutputMarkdownPath erst hier setzen, NICHT als Parameter-Default -
+# $PSScriptRoot ist bei fehlenden Pflichtparametern (interaktiver Prompt) zum Zeitpunkt
+# der Parameter-Default-Auswertung u.U. noch nicht gesetzt.
+if (-not $OutputMarkdownPath) {
+    $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+    $OutputMarkdownPath = Join-Path $scriptDir "security-testfaelle-ergebnis.md"
+}
+
 # --- Sicherheitsleitplanke: state-changing Aktionen nur gegen diese Test-VMs -----------------
-# Wird von diesem Skript aktuell an keiner Stelle tatsächlich für einen POST /start|/stop
-# benutzt (siehe .DESCRIPTION) - dient als Guard, falls das Skript künftig um einen echten
-# state-changing Testfall erweitert wird.
 $AllowedStateChangingTestVmIds = @("HVP_1", "HVP_2", "HVP_3", "HVP_4", "HVP_5", "HVP_6", "HVP_7", "HVP_8", "HVP_9")
 
 function Assert-SafeForStateChange {
@@ -149,19 +160,25 @@ function ConvertTo-PlainText {
     }
 }
 
-<#
-    Führt einen HTTP-Aufruf aus und liefert IMMER ein Ergebnisobjekt mit Statuscode zurück -
-    auch bei 4xx/5xx, die Invoke-WebRequest standardmäßig als Exception wirft. Damit
-    funktioniert dasselbe Skript unter Windows PowerShell 5.1 (Response ist
-    System.Net.HttpWebResponse) und PowerShell 7+ (Response ist
-    System.Net.Http.HttpResponseMessage) ohne Versionsverzweigung im Testfall-Code.
-#>
+function New-JwtWebSession {
+    param(
+        [Parameter(Mandatory = $true)][string]$Jwt,
+        [Parameter(Mandatory = $true)][string]$BaseUrl
+    )
+    $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+    $uri = [Uri]$BaseUrl
+    $cookie = New-Object System.Net.Cookie("jwt", $Jwt, "/", $uri.Host)
+    $session.Cookies.Add($cookie)
+    return $session
+}
+
 function Invoke-ApiRequest {
     param(
         [Parameter(Mandatory = $true)][string]$Method,
         [Parameter(Mandatory = $true)][string]$Uri,
         [hashtable]$Headers = @{},
-        [string]$Body
+        [string]$Body,
+        [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession
     )
 
     $params = @{
@@ -170,6 +187,10 @@ function Invoke-ApiRequest {
         Headers     = $Headers
         ErrorAction = "Stop"
     } + $script:SkipCertCheckParam
+
+    if ($WebSession) {
+        $params.WebSession = $WebSession
+    }
 
     if ($PSBoundParameters.ContainsKey("Body")) {
         $params.Body = $Body
@@ -273,7 +294,7 @@ Write-Host "=== Sicherheits-Testfälle Kapitel 7.2 - VmPortal ($BaseUrl) ===" -F
 Write-Host "Testbenutzer: $Username (erwartet: kein FullAdmin)" -ForegroundColor White
 Write-Host ""
 
-# --- Testfall 1: Login mit gültigen Zugangsdaten -> 200 + gültiges Cookie -------------------
+# --- Testfall 1 ---
 $validLoginBody = @{ username = $Username; password = $plainPassword } | ConvertTo-Json
 $validLoginResponse = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/auth/login" -Body $validLoginBody
 $rawSetCookie = Get-RawSetCookieHeader -ApiResponse $validLoginResponse
@@ -285,27 +306,28 @@ Add-TestResult -Id "TF1" -Name "Login mit gültigen AD-Zugangsdaten" -Expected "
     -Actual "$($validLoginResponse.StatusCode)$(if ($jwt) { ' + Cookie vorhanden' } else { ' + Cookie fehlt' })" `
     -Result $tf1Result -Details $tf1Details
 
-# Klartext-Passwort so früh wie möglich aus dem Speicher entfernen.
 $plainPassword = $null
+$jwtSession = if ($jwt) { New-JwtWebSession -Jwt $jwt -BaseUrl $BaseUrl } else { $null }
 
 if (-not $jwt) {
-    Write-Warning "Kein gültiges JWT aus Testfall 1 erhalten - Testfälle 5-8, die eine authentifizierte Sitzung benötigen, werden übersprungen."
+    Write-Warning "Kein gültiges JWT aus Testfall 1 erhalten - Testfälle 4-9, die eine authentifizierte Sitzung benötigen, werden übersprungen."
 }
 
-# --- Testfall 2: Login mit ungültigen Zugangsdaten -> 401 -----------------------------------
+# --- Testfall 2 ---
 $invalidLoginBody = @{ username = $Username; password = $plainInvalidPassword } | ConvertTo-Json
 $invalidLoginResponse = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/auth/login" -Body $invalidLoginBody
 $plainInvalidPassword = $null
 Test-StatusExpectation -Id "TF2" -Name "Login mit ungültigen Zugangsdaten" -ExpectedStatus 401 -ApiResponse $invalidLoginResponse
 
-# --- Testfall 3: Zugriff auf /api/vm ohne Cookie -> 401 --------------------------------------
+# --- Testfall 3 ---
 $noCookieResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm"
 Test-StatusExpectation -Id "TF3" -Name "Zugriff auf /api/vm ohne Cookie" -ExpectedStatus 401 -ApiResponse $noCookieResponse
 
-# --- Testfall 4: Zugriff auf /api/vm mit manipuliertem JWT -> 401 ----------------------------
+# --- Testfall 4 ---
 if ($jwt) {
     $tamperedJwt = $jwt.Substring(0, $jwt.Length - 1) + $(if ($jwt.Substring($jwt.Length - 1) -eq "A") { "B" } else { "A" })
-    $tamperedResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm" -Headers @{ Cookie = "jwt=$tamperedJwt" }
+    $tamperedSession = New-JwtWebSession -Jwt $tamperedJwt -BaseUrl $BaseUrl
+    $tamperedResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm" -WebSession $tamperedSession
     Test-StatusExpectation -Id "TF4" -Name "Zugriff auf /api/vm mit manipuliertem JWT" -ExpectedStatus 401 -ApiResponse $tamperedResponse `
         -Details "letztes Zeichen der Signatur verändert"
 } else {
@@ -313,28 +335,27 @@ if ($jwt) {
         -Details "Kein gültiges JWT aus Testfall 1 verfügbar"
 }
 
-# --- Testfall 5: Zugriff auf eine nicht zugewiesene VM -> 403 --------------------------------
-# Bewusst GET (ViewDetails), keine state-changing Aktion - siehe .DESCRIPTION.
+# --- Testfall 5 ---
 if ($jwt -and $OtherUserVmId) {
-    $foreignVmResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm/$OtherUserVmId" -Headers @{ Cookie = "jwt=$jwt" }
+    $foreignVmResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm/$OtherUserVmId" -WebSession $jwtSession
     Test-StatusExpectation -Id "TF5" -Name "Zugriff auf nicht zugewiesene VM ($OtherUserVmId)" -ExpectedStatus 403 -ApiResponse $foreignVmResponse
 } else {
     $reason = if (-not $jwt) { "Kein gültiges JWT aus Testfall 1 verfügbar" } else { "-OtherUserVmId nicht angegeben" }
     Add-TestResult -Id "TF5" -Name "Zugriff auf eine nicht zugewiesene VM" -Expected "403" -Actual "n/a" -Result "SKIPPED" -Details $reason
 }
 
-# --- Testfall 6: Zugriff auf nicht existierende VM-Id -> 404 --------------------------------
+# --- Testfall 6 ---
 if ($jwt) {
-    $missingVmResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm/$NonExistentVmId" -Headers @{ Cookie = "jwt=$jwt" }
+    $missingVmResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm/$NonExistentVmId" -WebSession $jwtSession
     Test-StatusExpectation -Id "TF6" -Name "Zugriff auf nicht existierende VM-Id ($NonExistentVmId)" -ExpectedStatus 404 -ApiResponse $missingVmResponse
 } else {
     Add-TestResult -Id "TF6" -Name "Zugriff auf nicht existierende VM-Id" -Expected "404" -Actual "n/a" -Result "SKIPPED" `
         -Details "Kein gültiges JWT aus Testfall 1 verfügbar"
 }
 
-# --- Testfall 7: Admin-Endpunkt mit Nicht-FullAdmin-Token -> 403 ----------------------------
+# --- Testfall 7 ---
 if ($jwt) {
-    $adminResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl$AdminEndpoint" -Headers @{ Cookie = "jwt=$jwt" }
+    $adminResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl$AdminEndpoint" -WebSession $jwtSession
     Test-StatusExpectation -Id "TF7" -Name "Admin-Endpunkt ($AdminEndpoint) mit Nicht-FullAdmin-Token" -ExpectedStatus 403 -ApiResponse $adminResponse `
         -Details "Falls FAIL mit 200: -Username ist FullAdmin, für diesen Testfall ist ein Nicht-FullAdmin-Konto erforderlich"
 } else {
@@ -342,7 +363,7 @@ if ($jwt) {
         -Details "Kein gültiges JWT aus Testfall 1 verfügbar"
 }
 
-# --- Testfall 8: Cookie-Attribute aus der Login-Antwort (httpOnly, Secure, SameSite=Strict) --
+# --- Testfall 8 ---
 if ($rawSetCookie) {
     $hasHttpOnly = $rawSetCookie -match "(?i)httponly"
     $hasSecure = $rawSetCookie -match "(?i)secure"
@@ -356,9 +377,9 @@ if ($rawSetCookie) {
         -Actual "n/a" -Result "SKIPPED" -Details "Kein Set-Cookie-Header aus Testfall 1 verfügbar"
 }
 
-# --- Testfall 9: Nicht erreichbarer Hypervisor-Pfad -> 502 -----------------------------------
+# --- Testfall 9 ---
 if ($jwt -and $HypervisorUnreachableVmId) {
-    $unreachableResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm/$HypervisorUnreachableVmId" -Headers @{ Cookie = "jwt=$jwt" }
+    $unreachableResponse = Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/vm/$HypervisorUnreachableVmId" -WebSession $jwtSession
     Test-StatusExpectation -Id "TF9" -Name "Nicht erreichbarer Hypervisor-Pfad ($HypervisorUnreachableVmId)" -ExpectedStatus 502 -ApiResponse $unreachableResponse `
         -Details "Erwartete Fehlerquelle: VirtualizationExceptionMiddleware"
 } else {
@@ -366,7 +387,7 @@ if ($jwt -and $HypervisorUnreachableVmId) {
         -Details "Nicht ohne echten Host-Ausfall sicher simulierbar - manuell durchführen: gezielt einen Hyper-V-Host stoppen/vom Netz trennen, dann GET /api/vm/{id} einer dort gehosteten VM aufrufen und die 502-Antwort prüfen. Siehe Kapitel 7.2."
 }
 
-# --- Zusammenfassung -------------------------------------------------------------------------
+# --- Zusammenfassung ---
 Write-Host ""
 Write-Host "=== Zusammenfassung ===" -ForegroundColor White
 $script:Results | Format-Table -Property Id, Name, Expected, Actual, Result, Timestamp -AutoSize
@@ -377,7 +398,7 @@ $skippedCount = ($script:Results | Where-Object { $_.Result -eq "SKIPPED" }).Cou
 $manualCount = ($script:Results | Where-Object { $_.Result -eq "MANUAL" }).Count
 Write-Host "PASS: $passCount | FAIL: $failCount | SKIPPED: $skippedCount | MANUAL: $manualCount" -ForegroundColor White
 
-# --- Markdown-Ausgabe -------------------------------------------------------------------------
+# --- Markdown-Ausgabe ---
 $mdLines = New-Object System.Collections.Generic.List[string]
 $mdLines.Add("# Ergebnisse der Sicherheits-Testfälle (Kapitel 7.2)")
 $mdLines.Add("")
@@ -402,5 +423,4 @@ Set-Content -Path $OutputMarkdownPath -Value $mdLines -Encoding UTF8
 Write-Host ""
 Write-Host "Markdown-Ergebnis geschrieben nach: $OutputMarkdownPath" -ForegroundColor White
 
-# Verbleibende sensible Werte im Speicher aufräumen.
 $jwt = $null
