@@ -456,12 +456,12 @@ Nicht-funktional fordert der Auftraggeber zudem Folgendes. Die Lösung muss den 
 
 \subsubsection{Randbedingungen und Abnahmekriterien}
 
-Der betriebliche Betreuer hat verbindliche Randbedingungen vorgegeben, die Tabelle~\ref{tab:randbedingungen} zusammenfasst.
+Aus dem organisatorischen und technischen Umfeld der Abteilung ergeben sich verbindliche Randbedingungen, die Tabelle~\ref{tab:randbedingungen} zusammenfasst.
 
 % ALT — durch Excel-Export ersetzt, siehe thesis/tables/randbedingungen.xlsx
 % \begin{table}[H]
 % \centering
-% \caption[Randbedingungen des Auftraggebers]{Vorgaben des betrieblichen Betreuers für die Umsetzung.}
+% \caption[Randbedingungen des Projektumfelds]{Randbedingungen des Projektumfelds für die Umsetzung.}
 % \label{tab:randbedingungen}
 % \small
 % \begin{tabular}{p{4.2cm}p{10.6cm}}
@@ -481,7 +481,7 @@ Der betriebliche Betreuer hat verbindliche Randbedingungen vorgegeben, die Tabel
 \begin{table}[H]
 \centering
 \includegraphics[width=\textwidth]{tables/rendered/randbedingungen.png}
-\caption[Randbedingungen des Auftraggebers]{Vorgaben des betrieblichen Betreuers für die Umsetzung.}
+\caption[Randbedingungen des Projektumfelds]{Randbedingungen des Projektumfelds für die Umsetzung.}
 \label{tab:randbedingungen}
 \end{table}
 
@@ -678,14 +678,7 @@ Schicht~1 ist eine browserbasierte Single-Page-Anwendung in React mit den Ansich
 \subsection{Hypervisor-Abstraktion}
 \label{sec:hypervisor-abstraktion}
 
-Kern der Plattformunabhängigkeit ist die Schnittstelle \texttt{IVirtualizationProvider} in \texttt{VmPortal.Core}. Abbildung~\ref{fig:architektur-komponenten} zeigt die Komponentensicht der vier Schichten und hebt diese Abstraktion visuell hervor: API- und Präsentationsschicht kennen ausschließlich die Schnittstelle, nie eine konkrete Hypervisor- oder Auth-Implementierung. Sie beschreibt genau die fachlich notwendigen Operationen des Portals, nicht mehr und nicht weniger:
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{diagrams/rendered/architektur_uebersicht.pdf}
-\caption[Komponentensicht mit hervorgehobener Hypervisor-Abstraktion]{Komponentensicht der 4-Schichten-Architektur. Die Schnittstelle \texttt{IVirtualizationProvider} ist hervorgehoben, da sie den technischen Kern der in der Forschungsfrage formulierten Plattformunabhängigkeit bildet.}
-\label{fig:architektur-komponenten}
-\end{figure}
+Kern der Plattformunabhängigkeit ist die Schnittstelle \texttt{IVirtualizationProvider} in \texttt{VmPortal.Core}. API- und Präsentationsschicht kennen ausschließlich diese Schnittstelle, nie eine konkrete Hypervisor- oder Auth-Implementierung; \texttt{VmController} ruft ausschließlich gegen \texttt{IVirtualizationProvider} auf, ohne zu wissen, ob dahinter \texttt{HyperVProvider} oder \texttt{DummyVirtualizationProvider} steht. Die Schnittstelle beschreibt genau die fachlich notwendigen Operationen des Portals, nicht mehr und nicht weniger:
 
 \begin{lstlisting}[language={[Sharp]C}, caption={Die zentrale Hypervisor-Abstraktion \texttt{IVirtualizationProvider} (Kurzform; vollständig vgl.\ Tabelle~\ref{tab:proxmox-mapping} bzw.\ Tabelle~\ref{tab:vmactions})}, label={lst:provider}]
 public interface IVirtualizationProvider
@@ -764,7 +757,7 @@ Abbildung~\ref{fig:er-autorisierung} zeigt dieses Modell als Entity-Relationship
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{diagrams/rendered/er_diagramm_autorisierung.png}
-\caption[ER-Diagramm der implementierten Autorisierungsschicht]{Implementiertes datenbankgestütztes Autorisierungsmodell (SQLite/EF~Core), Stand nach der Basismigration \texttt{InitialAuthorizationSchema} und mehreren additiven Folgemigrationen (u.\,a. \texttt{VirtualMachines.VmGuid}). Gegenüber der ursprünglichen Betreuervorlage ergänzt: das Attribut \texttt{Platform} in \texttt{VirtualServers} für die Plattformunabhängigkeit sowie \texttt{Level} in \texttt{Role} zur reinen UI-Sortierung (nicht zur Rechteableitung, s.\,o.).}
+\caption[ER-Diagramm der implementierten Autorisierungsschicht]{Implementiertes datenbankgestütztes Autorisierungsmodell (SQLite/EF~Core), Stand nach der Basismigration \texttt{InitialAuthorizationSchema} und mehreren additiven Folgemigrationen (u.\,a. \texttt{VirtualMachines.VmGuid}). Das Attribut \texttt{Platform} in \texttt{VirtualServers} dient der Plattformunabhängigkeit, \texttt{Level} in \texttt{Role} ausschließlich der UI-Sortierung (nicht der Rechteableitung, s.\,o.).}
 \label{fig:er-autorisierung}
 \end{figure}
 
@@ -786,9 +779,9 @@ Zwei Abwandlungen desselben Aufrufs zeigen die beiden in Abschnitt~\ref{sec:sich
 \subsection{Technologieentscheidungen und Begründung}
 \label{sec:technologieentscheidungen}
 
-\paragraph{ASP.NET Core 8 für API und Fachlogik.} Die Backend-Umgebung ist durch den Auftraggeber auf das Microsoft-Ökosystem festgelegt (kein Python/Django, vgl. Tabelle~\ref{tab:randbedingungen}). ASP.NET Core 8 erfüllt diese Vorgabe und bietet darüber hinaus genau die benötigten Bausteine: eine ausgereifte Middleware-Pipeline für Authentifizierung und Fehlerbehandlung, einen integrierten Dependency-Injection-Container für die konfigurationsgetriebene Provider-Auswahl und plattformübergreifende Entwicklung, denn der Build läuft plattformunabhängig, was die im Vorgehen (Abschnitt~\ref{sec:vorgehen}) verankerte lokale Entwicklung ermöglicht.
+\paragraph{ASP.NET Core 8 für API und Fachlogik.} Die Wahl von ASP.NET Core 8 für API und Fachlogik ergibt sich aus dem technischen Umfeld der Abteilung, denn die bestehende Infrastruktur ist Microsoft-geprägt und im Team ist entsprechendes .NET-Know-how vorhanden, während für Python/Django keine vergleichbare Erfahrung besteht (vgl. Tabelle~\ref{tab:randbedingungen}). ASP.NET Core 8 bietet darüber hinaus genau die benötigten Bausteine: eine ausgereifte Middleware-Pipeline für Authentifizierung und Fehlerbehandlung, einen integrierten Dependency-Injection-Container für die konfigurationsgetriebene Provider-Auswahl und plattformübergreifende Entwicklung, denn der Build läuft plattformunabhängig, was die im Vorgehen (Abschnitt~\ref{sec:vorgehen}) verankerte lokale Entwicklung ermöglicht.
 
-\paragraph{React mit Vite für das Frontend.} React ist durch den Auftraggeber vorgegeben. Als Build-Werkzeug wird Vite eingesetzt; die Umsetzung erfolgt bewusst in einfachem JavaScript ohne TypeScript, denn für den überschaubaren Umfang der SPA (drei Ansichten, eine API-Schicht) stünde der zusätzliche Typisierungs- und Konfigurationsaufwand in keinem Verhältnis zum Nutzen. Der Vite-Entwicklungsserver leitet API-Anfragen per Proxy an das Backend weiter, sodass Frontend und API in der Entwicklung unter derselben Origin erscheinen und das Cookie-basierte Sitzungsmodell unverändert funktioniert.
+\paragraph{React mit Vite für das Frontend.} Auch die Wahl von React für das Frontend folgt aus dem im Team bereits vorhandenen Know-how in diesem Ökosystem. Als Build-Werkzeug wird Vite eingesetzt; die Umsetzung erfolgt bewusst in einfachem JavaScript ohne TypeScript, denn für den überschaubaren Umfang der SPA (drei Ansichten, eine API-Schicht) stünde der zusätzliche Typisierungs- und Konfigurationsaufwand in keinem Verhältnis zum Nutzen. Der Vite-Entwicklungsserver leitet API-Anfragen per Proxy an das Backend weiter, sodass Frontend und API in der Entwicklung unter derselben Origin erscheinen und das Cookie-basierte Sitzungsmodell unverändert funktioniert.
 
 \paragraph{Lokale PowerShell-Ausführung statt WinRM-Remoting.} Die Hyper-V-Cmdlets sind die offiziell unterstützte, stabile Automatisierungsschnittstelle für Hyper-V. Ursprünglich war ihre Ausführung per PowerShell-Remoting über WinRM vorgesehen; da die Anwendung im gewählten Deployment-Modell jedoch direkt auf dem Hyper-V-Host läuft, werden die Cmdlets lokal in einem eingebetteten PowerShell-Runspace ausgeführt. Das vermeidet die WinRM-Zugriffs- und Zertifikatsproblematik vollständig und benötigt keinerlei Netzwerk-Zugangsdaten für die Hypervisor-Anbindung, denn es existiert schlicht keine zusätzliche Netzwerkstrecke, die abgesichert werden müsste (NFA-01, NFA-03). Die Entscheidung ist im Provider gekapselt. Ein späterer Remote-Modus über WinRM wäre eine alternative Implementierung derselben Schnittstelle (vgl. Kapitel~8).
 
@@ -842,7 +835,7 @@ VmPortal.Frontend/             Praesentation (Schicht 1)
   vite.config.js  Dev-Proxy /api -> API
 \end{lstlisting}
 
-\texttt{VmPortal.Core} ist eine reine Klassenbibliothek. Sie definiert die Schnittstellen (\texttt{IVirtualizationProvider}, \texttt{IAuthService}, \texttt{ITokenService}, \texttt{IDbAuthorizationService}), die Modelle, die Dienste sowie (im Unterverzeichnis \texttt{Data}) den EF-Core-\texttt{DbContext} und die Entitätsklassen der SQLite-Autorisierungsschicht (Abschnitt~\ref{sec:impl-db-authz}); eine echte Web-Abhängigkeit besteht dadurch weiterhin nicht, EF~Core ist reine Datenzugriffslogik. \texttt{VmPortal.Api} referenziert \texttt{Core}, enthält die Controller (darunter die sechs Admin-Controller unter \texttt{Controllers/Admin}, Abschnitt~\ref{sec:impl-admin-ui}) und die Middleware und verdrahtet in \texttt{Program.cs} als Composition Root alle Dienste einschließlich des \texttt{DbContext} über den Dependency-Injection-Container. \texttt{VmPortal.Frontend} ist ein eigenständiges Vite-Projekt, dessen Produktions-Build in das \texttt{wwwroot}-Verzeichnis der API kopiert wird (Abschnitt~\ref{sec:deployment}). Die Abhängigkeitsrichtung ist strikt. Das Frontend kennt nur die REST-API, die API kennt nur die Schnittstellen des Core, der Core kennt keine der äußeren Schichten. Abbildung~\ref{fig:klassendiagramm-auth} und Abbildung~\ref{fig:klassendiagramm-virt} zeigen die Klassen des Core-Projekts und ihre Beziehungen im Detail, aufgeteilt nach den beiden fachlichen Schwerpunkten Authentifizierung/Autorisierung und Virtualisierung; das ER-Diagramm der Autorisierungsschicht (Abbildung~\ref{fig:er-autorisierung}) ergänzt dies um die Entitäten unter \texttt{Data/Entities}. Konfigurationsklassen (\texttt{JwtSettings}, \texttt{LdapSettings} usw.) sind der Übersichtlichkeit halber nicht in den Klassendiagrammen enthalten, sondern in Tabelle~\ref{tab:configparams} (Anhang~\ref{app:config}) gelistet.
+\texttt{VmPortal.Core} ist eine reine Klassenbibliothek. Sie definiert die Schnittstellen (\texttt{IVirtualizationProvider}, \texttt{IAuthService}, \texttt{ITokenService}, \texttt{IDbAuthorizationService}), die Modelle, die Dienste sowie (im Unterverzeichnis \texttt{Data}) den EF-Core-\texttt{DbContext} und die Entitätsklassen der SQLite-Autorisierungsschicht (Abschnitt~\ref{sec:impl-db-authz}); eine echte Web-Abhängigkeit besteht dadurch weiterhin nicht, EF~Core ist reine Datenzugriffslogik. \texttt{VmPortal.Api} referenziert \texttt{Core}, enthält die Controller (darunter die sechs Admin-Controller unter \texttt{Controllers/Admin}, Abschnitt~\ref{sec:impl-admin-ui}) und die Middleware und verdrahtet in \texttt{Program.cs} als Composition Root alle Dienste einschließlich des \texttt{DbContext} über den Dependency-Injection-Container. \texttt{VmPortal.Frontend} ist ein eigenständiges Vite-Projekt, dessen Produktions-Build in das \texttt{wwwroot}-Verzeichnis der API kopiert wird (Abschnitt~\ref{sec:deployment}). Die Abhängigkeitsrichtung ist strikt. Das Frontend kennt nur die REST-API, die API kennt nur die Schnittstellen des Core, der Core kennt keine der äußeren Schichten. Abbildung~\ref{fig:klassendiagramm-auth} zeigt die Klassen des fachlichen Schwerpunkts Authentifizierung/Autorisierung und ihre Beziehungen im Detail; das ER-Diagramm der Autorisierungsschicht (Abbildung~\ref{fig:er-autorisierung}) ergänzt dies um die Entitäten unter \texttt{Data/Entities}. Konfigurationsklassen (\texttt{JwtSettings}, \texttt{LdapSettings} usw.) sind der Übersichtlichkeit halber nicht im Klassendiagramm enthalten, sondern in Tabelle~\ref{tab:configparams} (Anhang~\ref{app:config}) gelistet.
 
 \begin{figure}[H]
 \centering
@@ -851,12 +844,7 @@ VmPortal.Frontend/             Praesentation (Schicht 1)
 \label{fig:klassendiagramm-auth}
 \end{figure}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{diagrams/rendered/klassendiagramm_virtualisierung.pdf}
-\caption[Klassendiagramm: Virtualisierungsschicht]{Klassendiagramm der Virtualisierungsschicht von \texttt{VmPortal.Core}: \texttt{IVirtualizationProvider} und seine beiden Implementierungen mit den zugehörigen Modellklassen.}
-\label{fig:klassendiagramm-virt}
-\end{figure}
+Der zweite fachliche Schwerpunkt des Core-Projekts, die Virtualisierungsschicht, ist strukturell bewusst schmal gehalten. \texttt{IVirtualizationProvider} wird von den zwei Klassen \texttt{HyperVProvider} und \texttt{DummyVirtualizationProvider} implementiert. Beide liefern \texttt{VirtualMachine}-Objekte mit den Eigenschaften \texttt{Id}, \texttt{Name}, \texttt{Status}, \texttt{AssignedUserId} sowie den im Remote-Modus befüllten Feldern \texttt{HostName} und \texttt{VmGuid} (Abschnitt~\ref{sec:impl-hyperv}); der Status ist als Enum \texttt{VmStatus} mit den vier Werten \texttt{Running}, \texttt{Stopped}, \texttt{Paused} und \texttt{Unknown} modelliert. Metering-Abfragen liefern zusätzlich das Record \texttt{VmMeteringData} mit den drei Werten \texttt{AvgCpu}, \texttt{AvgRam} und \texttt{TotalDisk}.
 
 \subsection{Authentifizierung und Autorisierung}
 \label{sec:impl-auth}
